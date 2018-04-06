@@ -1,0 +1,7 @@
+NABLA is a compact GNU/Linux image for a few selected hardware configurations. Currently PC Engines Alix2, Raspberry Pi 3, Intel 32 and 64 bit are supported. 
+
+A Buildroot installation with out-of-tree build is required in addition to generate Nabla images. 
+
+Resulting firmware images can be started via syslinux or extlinux from a USB stick or SD card and run completely within a ram disk. Configurations will be read from /written back to a directory on the boot device. 
+
+Nabla uses mpd for music playback and can access local hard drives or remote directories via NFS or SMB. Filesystems must be mounted locally to be accessible. USB drives are recognized and mounted automatically. 
