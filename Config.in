@@ -1,0 +1,9 @@
+menu "Private packages"
+	source "$BR2_EXTERNAL_NABLA_PATH/package/brutefir/Config.in"
+	source "$BR2_EXTERNAL_NABLA_PATH/package/fftwf/Config.in"
+	source "$BR2_EXTERNAL_NABLA_PATH/package/folve/Config.in"
+	source "$BR2_EXTERNAL_NABLA_PATH/package/zita-convolver/Config.in"
+endmenu
+#menu "Staging drivers"
+#	source "$BR2_EXTERNAL_NABLA_PATH/package/rtl8723bs/Config.in"
+#endmenu

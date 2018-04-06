@@ -1,0 +1,12 @@
+# Configure Loopback
+auto lo
+iface lo inet loopback
+
+# wired network
+auto eth0
+iface eth0 inet dhcp
+
+# Configure Wifi
+auto wlan0
+iface wlan0 inet dhcp
+  wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf

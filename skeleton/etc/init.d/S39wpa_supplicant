@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+# wpa_supplicant	Starts wireless connection handler.
+#
+
+script=$(basename $0)
+setup_file="/etc/wpa_supplicant/wpa_supplicant.conf"
+
+# Assure that at least one interface exists. 
+[ -e /sys/class/net/wlan0 ] || exit 0
+
+# allow for multiple interfaces
+config=""
+for i in /sys/class/net/wlan?; do
+	if [ -n "$config" ]; then config="$config -N"; fi
+	config="$config -i `basename $i` -D nl80211,wext -c $setup_file"
+done
+
+case "$1" in
+  start)
+	echo "$script: Starting wpa_supplicant..."
+	wpa_supplicant -B $config
+	;;
+  stop)
+	echo -n "Stopping wpa_supplicant..."
+	kill -9 $(ps -w | grep wpa_supplicant | awk '{print $1; exit}')
+	;;
+  restart)
+	"$0" stop
+	"$0" start
+	;;
+  *)
+	echo "Usage: $script {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

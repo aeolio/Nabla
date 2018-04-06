@@ -1,0 +1,13 @@
+--- brutefir.orig/Makefile	2013-11-29 14:55:01.000000000 +0100
++++ brutefir-1.0m/Makefile	2014-02-23 10:44:36.493142050 +0100
+@@ -79,8 +79,8 @@
+ LDMULTIPLEDEFS	= -Xlinker --allow-multiple-definition
+ # assume that we have alsa, osss and jack
+ LIB_TARGETS	+= alsa.bfio
+-LIB_TARGETS	+= oss.bfio
+-LIB_TARGETS	+= jack.bfio
++# LIB_TARGETS	+= oss.bfio
++# LIB_TARGETS	+= jack.bfio
+ endif
+ 
+ # Solaris

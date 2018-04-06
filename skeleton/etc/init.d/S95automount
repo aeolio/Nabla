@@ -1,0 +1,105 @@
+#!/bin/sh
+#
+# Automount user shares...
+#
+
+definition_file="/etc/fstab"
+mount_file="/proc/mounts"
+
+parse_options() {
+	options_in=$1
+	type=$2
+	options_out=""
+	username="mpd"
+	password=""
+	mode="ro"
+	gid=$(grep audio /etc/group | awk 'BEGIN {FS=":"} {print $3}')
+	uid=$(grep mpd /etc/passwd | awk 'BEGIN {FS=":"} {print $3}')
+	dmask="0222"
+	fmask="0333"
+	for opt in ${options_in//,/ }
+	do
+		case $opt in
+		r[ow])
+			mode=$opt
+			;;
+		gid=*)
+			gid=$opt
+			;;
+		uid=*)
+			uid=$opt
+			;;
+		username=*)
+			username=$opt
+			;;
+		password=*)
+			password=$opt
+			;;
+		*)
+			options_out="$options_out,$opt"
+			;;
+		esac
+	done
+	# default mode is ro, unless specified
+	options_out="$options_out,$mode"
+	# these options should only be relevant for CIFS shares
+	if [ $type = "cifs" ]; then
+		# add group and user id
+		options_out="$options_out,gid=$gid,uid=$uid"
+		# user name and password were supplied
+		if [ -n "$username" -a -n "$password" ]; then
+			options_out="$options_out,$username,$password"
+		# otherwise just append user name
+		elif [ -n $username ]; then
+			options_out="$options_out,username=$username"
+		fi
+	elif [ $type = "vfat" ] || [ $type = "ntfs" ] ; then
+		# set owner and group
+		options_out="$options_out,gid=$gid,uid=$uid"
+		# set dmask and fmask
+		options_out="$options_out,dmask=$dmask,fmask=$fmask"
+	fi
+	# first character will be an extra ','
+	if [ -n "$options_out" ]; then options_out=${options_out:1}; fi
+	echo "$options_out"
+	return 0
+}
+
+if [ "$1" = "start" -o "$1" = "sync" ]; then
+	echo "Automount user shares..."
+	while read file_system mount_point type options dump pass; do
+		# filter entries that are comments
+		if [ ${file_system###*} ]; then 
+			# filter entries that are incomplete
+			if [ ${file_system} -a ${mount_point} -a ${type} ]; then 
+				# check if file system is already mounted
+				mounted=`grep "$file_system $mount_point $type" $mount_file`
+				if [ -z "${mounted}" ]; then
+					# ignore entries with "noauto" set
+					if [ ! ${options##*noauto*} ]; then continue; fi
+					# create mount point
+					mkdir -p $mount_point || continue
+					# add some options for cifs file systems
+					options=`parse_options ${options} $type` || continue
+					# mount this file system
+					mount -t $type -o $options $file_system $mount_point || continue
+					echo "mounted $file_system on $mount_point"
+				fi
+			fi
+		fi
+	done < ${definition_file}
+	echo "Done"
+
+elif [ "$1" = "stop" ]; then
+	echo "Unmount network shares..."
+	cat $mount_file > /tmp/mounts
+	while read file_system mount_point type options dump pass; do
+	if [ "$type" = "cifs" -o "$type" = "nfs" ]; then
+		umount $mount_point
+	fi
+	done < /tmp/mounts
+	echo "Done"
+
+else
+        echo "Usage: $0 {start | stop | sync}"
+fi

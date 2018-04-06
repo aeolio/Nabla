@@ -1,0 +1,66 @@
+--- a/libs/Makefile
++++ b/libs/Makefile
+@@ -20,9 +20,15 @@
+ 
+ # Modify as required.
+ #
+-PREFIX = /usr/local
+-SUFFIX := $(shell uname -m | sed -e 's/^unknown/$//' -e 's/^i.86/$//' -e 's/^x86_64/$/64/')
++PREFIX := /usr
++SUFFIX := `$(CXX) -dumpmachine | sed -n -e 's/^unknown-.*//' -e 's/^i.86-.*//' -e 's/^x86_64-.*/64/p'`
+ LIBDIR = lib$(SUFFIX)
++
++
++ifdef FFTW_PATH
++LIBPATH += -L$(FFTW_PATH)/lib
++INCPATH += -I$(FFTW_PATH)/include
++endif
+ 
+ 
+ MAJVERS = 3
+@@ -30,12 +36,10 @@
+ VERSION = $(MAJVERS).$(MINVERS)
+ 
+ 
+-CPPFLAGS += -I. -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DENABLE_VECTOR_MODE 
+-CXXFLAGS += -fPIC -Wall
+-CXXFLAGS += -ffast-math -funroll-loops -O3
+-CXXFLAGS += -march=native
+-LDLFAGS += 
+-LDLIBS +=
++INCPATH += -I.
++_PFLAGS = -D_POSIX_PTHREAD_SEMANTICS -DENABLE_VECTOR_MODE 
++_CFLAGS = -pthread -fPIC -Wall -ffast-math -funroll-loops -O3
++_LFLAGS = -shared -Wl,-soname,$(ZITA-CONVOLVER_MAJ)
+ 
+ 
+ ZITA-CONVOLVER_SO = libzita-convolver.so
+@@ -43,11 +47,15 @@
+ ZITA-CONVOLVER_MIN = $(ZITA-CONVOLVER_MAJ).$(MINVERS)
+ ZITA-CONVOLVER_DEP = -lfftw3f -lpthread
+ ZITA-CONVOLVER_O = zita-convolver.o
+-ZITA-CONVOLVER_H = zita-convolver.h 
++ZITA-CONVOLVER_H = zita-convolver.h
+ 
+ 
++%.o:	%.cc
++	$(CXX) $(_PFLAGS) $(CPPFLAGS) $(_CFLAGS) $(CXXFLAGS) $(INCPATH) -c $<
++	
++
+ $(ZITA-CONVOLVER_MIN):	$(ZITA-CONVOLVER_O)
+-	g++ -shared $(LDFLAGS) -Wl,-soname,$(ZITA-CONVOLVER_MAJ) -o $(ZITA-CONVOLVER_MIN) $(ZITA-CONVOLVER_O) $(ZITA-CONVOLVER_DEP)
++	$(CXX) $(_LFLAGS) $(LDFLAGS) $(LIBPATH) -o $(ZITA-CONVOLVER_MIN) $(ZITA-CONVOLVER_O) $(ZITA-CONVOLVER_DEP)
+ 
+ 
+ install:	$(ZITA-CONVOLVER_MIN)
+@@ -56,8 +64,7 @@
+ 	install -m 644 $(ZITA-CONVOLVER_H) $(DESTDIR)$(PREFIX)/include
+ 	install -m 755 $(ZITA-CONVOLVER_MIN) $(DESTDIR)$(PREFIX)/$(LIBDIR)
+ 	ln -sf $(ZITA-CONVOLVER_MIN) $(DESTDIR)$(PREFIX)/$(LIBDIR)/$(ZITA-CONVOLVER_SO)
+-	ldconfig
++	ln -sf $(ZITA-CONVOLVER_MIN) $(DESTDIR)$(PREFIX)/$(LIBDIR)/$(ZITA-CONVOLVER_MAJ)
+ 
+ clean:
+-	/bin/rm -f *~ *.o *.a *.d *.so.*
+-
++	$(RM) -f *~ *.o *.a *.d *.so.*

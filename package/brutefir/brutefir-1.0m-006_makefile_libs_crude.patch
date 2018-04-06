@@ -1,0 +1,11 @@
+--- brutefir-1.0m/Makefile.orig	2013-11-29 14:55:01.000000000 +0100
++++ brutefir-1.0m/Makefile	2014-02-22 16:25:08.965208694 +0100
+@@ -75,7 +75,7 @@
+ BRUTEFIR_OBJS	+= $(BRUTEFIR_SSE_OBJS)
+ CC_FLAGS	+= -msse
+ endif
+-BRUTEFIR_LIBS	+= -ldl
++BRUTEFIR_LIBS	+= -ldl -lc
+ LDMULTIPLEDEFS	= -Xlinker --allow-multiple-definition
+ # assume that we have alsa, osss and jack
+ LIB_TARGETS	+= alsa.bfio

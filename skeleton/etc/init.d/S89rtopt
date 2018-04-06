@@ -1,0 +1,54 @@
+#!/bin/sh
+#
+# rtopt	Optimize RT priorities for audio related processes.
+#
+
+### initialize system variables
+[ -x /etc/nabla.conf ] && . /etc/nabla.conf
+
+### functions that are used in more than one init script
+[ -x /etc/init.d/init_functions ] && . /etc/init.d/init_functions
+
+# Change CPU frequency scaling governor to performance
+governor="performance"
+available_cpus="/sys/devices/system/cpu/cpu?"
+for cpu in $available_cpus; do
+	interface=$cpu/cpufreq
+	if $([ -d $interface ] && grep -q $governor $interface/scaling_available_governors); then
+		echo $governor > $interface/scaling_governor
+	fi
+done
+
+# decrease priority
+for process in $LOWER_PRIORITY_LIST; do
+	for pid in $(_get_pid $process); do chrt $(_chrt_policy) -p $LO_PRIO $pid; done
+done
+# encrease priority
+for process in $HIGHER_PRIORITY_LIST; do
+	for pid in $(_get_pid $process); do chrt $(_chrt_policy) -p $HI_PRIO $pid; done
+done
+# real-time priority
+for process in $REALTIME_PRIORITY_LIST; do
+	for pid in $(_get_pid $process); do chrt $(_chrt_policy) -p $RT_PRIO $pid; done
+done
+
+# favor discarding mapped (file cache) over unmapped (process memory) pages
+echo 10 > /proc/sys/vm/swappiness
+
+# OS Jitter text recommends disabling completely (sched_rt_runtime_us == -1)
+# keep rt accounting at default levels (0.95s /1.00s)
+# echo "970000" > /proc/sys/kernel/sched_rt_runtime_us # rt share of period
+# echo "1000000" > /proc/sys/kernel/sched_rt_period_us # accounting period
+
+# Time interval between which vm statistics are updated
+vm_statistics=/proc/sys/vm/stat_interval
+[ -f $vm_statistics ] && echo 20 > $vm_statistics
+
+# set processor affinities
+cpu=0                                                                      
+for process in $CPU_AFFINITY_LIST; do                                     
+        for pid in $(_get_pid $process); do
+                taskset -p $(_get_next_cpu_mask $cpu) $pid
+        done                        
+        let cpu=cpu+1                  
+done             

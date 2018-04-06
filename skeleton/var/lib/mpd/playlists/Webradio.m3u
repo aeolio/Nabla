@@ -1,0 +1,22 @@
+#EXTM3U
+#EXTINF:-1,Rock Antenne
+http://mp3.webradio.rockantenne.de:80
+#EXTINF:-1,Radio Caroline Breskens NL
+http://94.75.235.38:8253
+#EXTINF:-1,RADIO BOB! – Hessen Rock'n Pop
+http://stream.hoerradar.de/mp3-radiobob
+#EXTINF:-1,BLUES RADIO (1.FM TM)
+http://205.164.62.21:8030
+#EXTINF:-1,Campus FM Toulouse
+http://live.radio-campus.org:8000/radio_tlse
+#EXTINF:-1,Radiolla Jiraffe 192k
+http://air.radiolla.com:80/jiraffe.192k.mp3
+#EXTINF:-1,Radio Swiss Jazz
+http://streaming.swisstxt.ch/m/rsj/mp3_128
+#EXTINF:-1,Jazz Hamburg
+http://dude.mp3streams.net/jazzgeneralgvl
+#EXTINF:-1,Jazzavac.com
+http://85.10.199.221:8002
+#EXTINF:-1,Krautrock-World - Psychedelic & Progressive Rock
+http://stream.laut.fm/krautrock-world
+

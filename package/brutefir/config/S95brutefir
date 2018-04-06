@@ -1,0 +1,48 @@
+#!/bin/sh
+#
+# Start BruteFIR...
+#
+
+### initialize system variables
+[ -x /etc/nabla.conf ] && . /etc/nabla.conf
+
+### check if BruteFIR should run
+[ "$NABLA_USE_CONVOLUTION" != "Y" ] && exit 0
+
+### BruteFIR configuration and log directories
+BF_CONFIG=/etc/bruteFIR
+BF_LOG=/var/log/bruteFIR
+BF_FIFO=/var/run/bruteFIR
+
+### exit if no configuration, otherwise create directories
+[ -d $BF_CONFIG ] || exit 0;
+mkdir -p $BF_LOG
+mkdir -p $BF_FIFO && chmod a+w $BF_FIFO
+
+### create named pipes
+[ ! -p $BF_FIFO/bf_inp ] && mkfifo $BF_FIFO/bf_inp && chmod a+w $BF_FIFO/bf_inp
+[ ! -p $BF_FIFO/bf_out ] && mkfifo $BF_FIFO/bf_out && chmod a+w $BF_FIFO/bf_out
+
+### save last generation log file
+[ -f $BF_LOG/brutefir.log ] && mv $BF_LOG/brutefir.log $BF_LOG/brutefir.log.1
+
+case "$1" in
+	start)
+		echo "Starting BruteFIR..."
+		brutefir -daemon $BF_CONFIG/brutefir.config < /dev/null > $BF_LOG/brutefir.log 2>&1
+		;;
+	stop)
+		echo "Stopping BruteFIR..."
+		kill -9 $(ps -w | grep brutefir | awk '{print $1; exit}')
+		;;
+	restart|reload)
+		$0 stop
+		usleep 5000000
+		$0 start
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart}"
+		exit 1
+esac
+
+exit $?

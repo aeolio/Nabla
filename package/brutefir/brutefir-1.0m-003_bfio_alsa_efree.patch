@@ -1,0 +1,43 @@
+--- brutefir.orig/bfio_alsa.c	2013-11-29 14:55:01.000000000 +0100
++++ brutefir-1.0m/bfio_alsa.c	2014-02-23 10:44:36.213139553 +0100
+@@ -446,7 +446,7 @@
+ 	memcpy(fd2as[pollfd.fd].channel_selection, channel_selection,
+ 	       used_channels * sizeof(int));
+     }
+-    efree(settings->device);
++    // efree(settings->device);
+     efree(settings);
+     return pollfd.fd;
+ }
+@@ -595,6 +595,15 @@
+     const uint8_t *ptr;
+     int n, i, err;
+ 
++    if (as->restart) {
++        as->restart = false;
++        if ((err = snd_pcm_prepare(as->handle)) < 0) {
++            fprintf(stderr, "ALSA I/O: Could not restart audio: %s.\n",
++                    snd_strerror(err));
++            errno = -EPIPE;
++            return -1;
++        }
++    }
+     if (as->isinterleaved) {
+ 	i = as->sample_size * as->open_channels;
+ 	if ((n = snd_pcm_writei(as->handle, &((const uint8_t *)buf)[offset],
+@@ -614,15 +623,6 @@
+             goto bfio_write_error;
+         }
+     }
+-    if (as->restart) {
+-        as->restart = false;
+-        if ((err = snd_pcm_start(as->handle)) < 0) {
+-            fprintf(stderr, "ALSA I/O: Could not restart audio: %s.\n",
+-                    snd_strerror(err));
+-            errno = -EPIPE;
+-            return -1;
+-        }
+-    }
+     return n * i;
+ 
+  bfio_write_error:

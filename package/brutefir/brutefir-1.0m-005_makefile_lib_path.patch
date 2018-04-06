@@ -1,0 +1,13 @@
+--- brutefir-1.0m/Makefile.orig	2013-11-29 14:55:01.000000000 +0100
++++ brutefir-1.0m/Makefile	2014-02-22 16:25:08.965208694 +0100
+@@ -4,8 +4,8 @@
+ 
+ ###################################
+ # Where to find libraries, and their header files.
+-LIBPATHS	= -L/usr/local/lib
+-INCLUDE		= -I/usr/local/include
++LIBPATHS	= -L$(DESTDIR)/lib
++INCLUDE		= -I$(DESTDIR)/include
+ ifdef FFTW_PATH
+ LIBPATHS	+= -L$(FFTW_PATH)/lib
+ INCLUDE		+= -I$(FFTW_PATH)/include

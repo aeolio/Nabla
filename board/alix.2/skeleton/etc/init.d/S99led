@@ -1,0 +1,42 @@
+#!/bin/sh
+#
+# led	Activates LEDs on Alix platform.
+#
+
+### initialize system variables
+[ -x /etc/nabla.conf ] && . /etc/nabla.conf
+
+start() {
+	echo heartbeat > /sys/class/leds/alix\:1/trigger
+	echo netdev > /sys/class/leds/alix\:2/trigger
+	echo timer > /sys/class/leds/alix\:3/trigger
+	echo 500  > /sys/class/leds/alix\:3/delay_on
+	echo 1500  > /sys/class/leds/alix\:3/delay_off
+} 
+
+stop() {
+	echo 0 > /sys/class/leds/alix\:3/brightness
+	echo 0 > /sys/class/leds/alix\:2/brightness
+	echo 0 > /sys/class/leds/alix\:1/brightness
+}
+
+modprobe leds_gpio
+modprobe ledtrig_gpio
+modprobe ledtrig_heartbeat
+modprobe ledtrig_timer
+
+case "$1" in
+	start)
+		start
+		;;
+	stop) 
+		stop
+		;;
+	restart|reload) 
+		stop
+		start
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart}" 
+		exit 1
+esac

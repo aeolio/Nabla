@@ -1,0 +1,80 @@
+#!/bin/sh
+#
+# sshd        Starts sshd.
+#
+
+SSH_DIR="/etc/ssh"
+
+# protocol 1 has been removed
+SSH_KEY_FILES="ssh_host_dsa_key \
+	ssh_host_ecdsa_key \
+	ssh_host_ed25519_key \
+	ssh_host_rsa_key"
+
+# Make sure the ssh-keygen program exists
+[ -f /usr/bin/ssh-keygen ] || exit 0
+
+# Make sure the SSH directory exists
+mkdir -p $SSH_DIR
+
+# file permissions were lost during copy to FAT file system
+restore_permissions() {
+	key_files="$SSH_DIR/ssh_host_*"
+	# if the string can be expanded, files exist
+	if [ ! "$key_files" = "$(echo $key_files)" ]; then 
+		chmod 600 $key_files
+		chmod a+r ${key_files}.pub
+	fi
+}
+
+# generate any missing keys
+generate_missing_keys() {
+	echo -n "Generating missing SSH keys "
+	for key_file in $SSH_KEY_FILES; do
+		if [ ! -f $SSH_DIR/$key_file ] ; then
+			key_type=${key_file##ssh_host_}
+			key_type=${key_type%%_key}
+			echo -n "$key_type "
+			/usr/bin/ssh-keygen -t $key_type -f $SSH_DIR/$key_file -C '' -N '' > /dev/null 2>&1
+		fi
+	done
+	echo "[OK]"
+}
+
+umask 022
+
+start() {
+	generate_missing_keys
+	restore_permissions
+	echo -n "Starting sshd: "
+	/usr/sbin/sshd
+	touch /var/lock/sshd
+	echo "OK"
+}
+stop() {
+	echo -n "Stopping sshd: "
+	killall sshd
+	rm -f /var/lock/sshd
+	echo "OK"
+}
+restart() {
+	stop
+	start
+}
+
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  restart|reload)
+	restart
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

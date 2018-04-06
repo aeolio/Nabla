@@ -1,0 +1,81 @@
+--- brutefir.orig/brutefir.c	2013-11-29 14:55:01.000000000 +0100
++++ brutefir-1.0m/brutefir.c	2014-02-23 10:44:36.301140338 +0100
+@@ -62,7 +62,7 @@
+     
+     emalloc_set_exit_function(bf_exit, BF_EXIT_NO_MEMORY);
+     
+-    bfconf_init(config_filename, quiet, nodefault);
++    bfconf_init(config_filename, quiet, nodefault, run_as_daemon);
+ 
+     if (run_as_daemon) {
+         switch (fork()) {
+--- brutefir.orig/bfconf.h	2013-11-29 14:55:01.000000000 +0100
++++ brutefir-1.0m/bfconf.h	2014-02-23 10:44:36.301140338 +0100
+@@ -39,6 +39,7 @@
+     bool_t benchmark;
+     bool_t debug;
+     bool_t quiet;
++    bool_t daemon;
+     bool_t overflow_warnings;
+     bool_t show_progress;
+     bool_t realtime_priority;
+@@ -84,6 +85,7 @@
+ void
+ bfconf_init(char filename[],
+ 	    bool_t quiet,
+-            bool_t nodefault);
++            bool_t nodefault,
++            bool_t run_as_daemon);
+ 
+ #endif
+--- brutefir.orig/bfconf.c	2013-11-29 14:55:01.000000000 +0100
++++ brutefir-1.0m/bfconf.c	2014-02-23 10:44:36.305140373 +0100
+@@ -2319,7 +2319,8 @@
+ void
+ bfconf_init(char filename[],
+ 	    bool_t quiet,
+-            bool_t nodefault)
++            bool_t nodefault,
++            bool_t run_as_daemon)
+ {
+     struct iodev *iodevs[2][BF_MAXCHANNELS];
+     struct filter *pfilters[BF_MAXFILTERS];
+@@ -2361,6 +2362,7 @@
+     }
+     bfconf->sdf_length = -1;
+     bfconf->quiet = quiet;
++    bfconf->daemon = run_as_daemon;
+     bfconf->realsize = sizeof(float);
+     bfconf->safety_limit = 0;
+ 
+--- brutefir.orig/dai.c	2013-11-29 14:55:01.000000000 +0100
++++ brutefir-1.0m/dai.c	2014-02-23 10:44:36.309140409 +0100
+@@ -1151,6 +1151,14 @@
+         (ca->cb_frames_left != -1 &&
+          buf_index == ca->cb_lastbuf_index + 1))
+     {
++        /* do not stop inputs while running in server mode */
++        if (bfconf->daemon) {
++            // isfirst = true;
++            ca->frames_left = ca->cb_frames_left = -1;
++            ca->lastbuf_index = ca->cb_lastbuf_index = -1;
++            buf_index++;
++            return;
++        }
+ 	for (n = 0; n < bfconf->n_iomods; n++) {
+             if (bfconf->iomods[n].stop != NULL) {
+                 bfconf->iomods[n].stop(IN);
+@@ -1572,6 +1580,13 @@
+     }
+     
+     if (islast) {
++        /* do not stop outputs while running in server mode */
++        if (bfconf->daemon) {
++            // isfirst = true;
++            islast = false;
++            buf_index++;
++            return;
++        }
+ 	for (n = 0; n < bfconf->n_iomods; n++) {
+             if (bfconf->iomods[n].iscallback) {
+                 /* callback I/O is stopped elsewhere */

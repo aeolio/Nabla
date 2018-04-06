@@ -1,0 +1,11 @@
+--- interbench-orig/interbench.c
++++ interbench-0.31/interbench.c
+@@ -1043,7 +1043,7 @@
+ 		long double variance = ((long double) tbj->sum_latency_squared - 
+ 			((long double) tbj->total_latency * (long double) tbj->total_latency) / 
+ 			(long double) tbj->nr_samples) / (long double) (tbj->nr_samples - 1);
+-		sd = sqrtl(variance);
++		sd = sqrt((double) variance);
+ 	} else {
+ 		average_latency = tbj->total_latency;
+ 		sd = 0.0;

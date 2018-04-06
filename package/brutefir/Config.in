@@ -1,0 +1,8 @@
+config BR2_PACKAGE_BRUTEFIR
+	bool "brutefir"
+	select BR2_PACKAGE_FFTW
+	select BR2_PACKAGE_FFTWF
+	help
+	  Software convolution engine for applying long FIR filters to multichannel audio.
+
+	  http://www.ludd.luth.se/~torger/brutefir.html

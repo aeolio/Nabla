@@ -1,0 +1,65 @@
+#
+# function library. These functions are used in S89rtopt and S95mpd
+#
+
+# process priorities for chrt groups
+LO_PRIO=1
+HI_PRIO=50
+RT_PRIO=90
+
+# translate scheduler policy string into a chrt flag
+# needs SCHEDULER_POLICY to be set in nabla.conf
+_chrt_policy() {
+	if [ "$SCHEDULER_POLICY" = "SCHED_FIFO" ]; then
+		echo "-f"
+	elif [ "$SCHEDULER_POLICY" = "SCHED_RR" ]; then
+		echo "-r"
+	else
+		echo "-o"
+	fi
+}
+
+# retrieve a process's pid from a partial match
+_get_pid() {
+	local process=$1
+	ps | grep $process | awk '$5!="grep" {print $1}'
+}
+
+# convert an integer number into a hexadecimal mask value
+_mask() {
+	local id=$1
+	local mask=1
+	while [ $id -gt 0 ]; do
+		let mask=$mask*2
+		let id=$id-1
+	done
+	printf "0x%08X" $mask
+}
+
+# get the highest processor id in the system
+_get_last_cpu() {
+	local cpus=$(cat /sys/devices/system/cpu/online)
+	echo ${cpus#*-}
+}
+
+# get the bit mask for the highest processor id in the system
+_get_last_cpu_mask() {
+	local id=$(_get_last_cpu)
+	echo $(_mask $id)
+}
+
+# convert a processor id into a bit mask for this processor
+_get_next_cpu_mask() {
+	local id=$1
+	local cpus=$(_get_last_cpu)
+	let cpus=$cpus+1
+	let id=$id%$cpus
+	echo $(_mask $id)
+}
+
+# reads the associated IRQ number of a process
+_get_irq() {
+	local process=$1
+	irq=`grep $process /proc/interrupts | awk '{print $1}'`
+	echo ${irq%:*}
+}

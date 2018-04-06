@@ -1,0 +1,90 @@
+Installation
+
+Voraussetzungen: 
+  USB Stick mit mindestens 512 MB Kapazität. 
+  UNetbootin -- http://unetbootin.sourceforge.net/
+  ISO Datei mit Betriebssystem Image
+
+USB Stick mit FAT32 formatieren, als Partitionsname NABLA eingeben
+UNetbootin starten
+  Diskimage markieren
+  ISO Datei suchen und auswählen
+  Type = USB Drive
+  Drive = (auswählen)
+  OK bestätigen
+  Exit betätigen
+
+Jetzt die Datei syslinux.cfg editieren und durch folgende Zeilen ersetzen:
+
+# syslinux.cfg
+default usb
+label usb
+SAY Booting image ... 
+KERNEL /kernel
+APPEND quiet
+
+Zielrechner mit dem USB Stick starten, anmelden (Benutzer root, Kennwort nabla), 
+Rechner mit dem Befehl poweroff herunterfahren. 
+
+Jetzt sollte sich ein (verstecktes) Verzeichnis ".config" auf dem Stick befinden, in dem 
+die gesicherten Konfigurationsdaten abgelegt wurden. Welche Daten gesichert und 
+beim Start wiederhergestellt werden bestimmt die Variable NABLA_SYNC_DIRECTORIES 
+in der Datei nabla.conf. 
+
+etc/fstab erweitern und diese Zeile anfügen:
+
+/dev/sda2	/media/local	ntfs	defaults	0	0
+
+Damit wird das automount Script beim Start die zweite Partition der ersten 
+Festplatte in /media/local einhängen. Auf den üblichen Windows Rechnern mit 
+UEFI BIOS befinden sich dort die Benutzerdaten. Da mpd das Verzeichnis /media 
+als Musikverzeichnis benutzt, werden Musikdateien auf dieser Festplatte indiziert 
+und können abgespielt werden. 
+
+Automount Voreinstellungen. Geräte werden mit lesendem Zugriff eingehängt, 
+sofern in /etc/fstab nichts anderes steht. Sofern nichts anderes in fstab steht, 
+wird auf CIFS Pfade mit Benutzer mpd und leerem Kennwort zugegriffen. Freigaben 
+müssen entweder entsprechend konfiguriert oder Benutzer und Kennwort in fstab 
+eingetragen werden. Jeder USB Speicher wird beim Einstecken (nur lesend) in 
+/media eingehängt. 
+
+Eine Dokumentation der fstab Syntax findet sich hier: http://en.wikipedia.org/wiki/Fstab
+
+Netzwerk einrichten 
+/etc/network/interfaces
+  https://wiki.debian.org/NetworkConfiguration#Using_DHCP_to_automatically_configure_the_interface
+  https://wiki.debian.org/NetworkConfiguration#Configuring_the_interface_manually
+/etc/wpa_supplicant/wpa_supplicant.conf
+  http://w1.fi/wpa_supplicant/
+  
+Sowohl eth0 als auch wlan0 sind mit DHCP konfiguriert, wlan0 wird über WPA 
+authentisiert, die nötigen Einstellungen nimmt man in der Datei wpa_supplicant.conf 
+vor. Normalerweise ist es ausreichend, SSID, Benutzername und Kennwort in diese 
+Datei einzutragen. Wenn man statische IP Adressen benutzen möchte, ist etwas 
+mehr Aufwand nötig. 
+
+mpd einrichten
+http://www.musicpd.org/ 
+
+Sofern nur ein Audio Interface auf dem Zielrechner installiert ist, sollte mpd 
+ohne Anpassung laufen. Speziell auf Notebooks mit eingebauten Audio Lösungen 
+muss der Ausgang an die verwendete Hardware angepasst werden. 
+
+audio_output {
+	type		"alsa"
+	name		"USB 2.0"
+	device		"hw:0,0" ## change here
+	period_time	"20000"
+	buffer_time	"500000"
+	mixer_type	"none"
+	auto_resample	"no"
+	auto_channels	"no"
+	auto_format	"no"
+	dsd_usb		"yes"
+}
+
+Die möglichen Ausgabegeräte erhält man, wenn man auf der Kommandozeile 
+
+  aplay -l 
+
+eingibt. 

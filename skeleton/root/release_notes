@@ -1,0 +1,108 @@
+2017-02-24
+nabla running on Alix.2. Major changes to Buildroot configuration to accomodate hierarchical configurations (separate Nabla specific from board specific configurations) 
+
+2016-06-12
+modified Buildroot configuration to use BR2_EXTERNAL
+
+2016-04-17
+switched to Linux kernel 4.4.y
+
+2015-11-29
+nabla running on wandboard 
+
+2015-11-15
+introduced task priority settings in /etc/nabla.conf
+
+2015-09-05
+switched to Linux kernel 4.1.y
+
+2015-06-25
+integrated folve (https://github.com/hzeller/folve) --  seamlessly FIR convolving audio file fuse filesystem with gapless support 
+
+2014-12-19
+optimized realtime kernel configuration
+
+2014-09-20
+main configuration is now 64 bit, other onfigurations will be maintained but not preferred
+
+2014-08-27
+ssh configuration files were relocated to /etc/ssh
+/etc/ssh is saved to the boot device
+When booting for the first time, the configuration directory 
+and the generic configuration files are created initially
+
+2014-08-26
+perform unmute for USB based devices only
+ 
+2014-08-24
+changed kernel configuration to use modules
+added firmware for ath9k, nvidia, e1000e and iwlwifi
+
+2014-09-15
+moved more functionality into kernel modules
+all configured modules will be loaded at startup initially
+edit /etc/modules to adjust to the host hardware
+
+2014-09-20
+reconfigured to generate 64-bit operating system
+removed dropbear and configured OpenSSH as the SSH server
+fixed avahi configuration
+
+2014-10-27
+Support for J1800 SoC
+
+2014-12-28
+Automount: NABLA partition is mounted read-write, all other USB volumes read-only
+
+2015-01-19
+New kernel version 3.14.28
+
+2015-02-18
+New kernel version 3.18.7
+
+2015-03-06
+Fixed missing mpd library libid3tag. Added missing mpd dependency libcurl. 
+
+2015-04-26
+/var/lib/mdev/automount changed: gid/uid are used exclusively with vfat and ntfs partitions gesetzt. USB devices without partition table are recognized with file systems FAT16, FAT32, NTFS, ext2/3/4. 
+
+2015-07-06
+Slight changes to root file system. 
+
+2015-07-25
+Added wireless firmware for Asus UX305: 8086:095a Wireless 7265
+
+2015-09-05
+Changes in ssh configuration. Fixed Automount to prevent creation of empty folders prepended with underscore. New kernel version 4.1.5
+
+2015-09-06
+Use latest linux firmware
+
+2015-10-13
+Fixed lighttpd configuration (removed dirlisting from default config). Fixed mixer configuration in mpd.conf (digital output volume slider resetting continuously). Integrated interbench in root file system
+
+2015-11-13
+Fixed setup script; saved configuration is used only at boot, afterwrds the configuration files from root file system are used. Fixed UUID detection in automount script for ash compatibility
+
+2015-11-20
+Folve included in distribution. No automatic integration, manual start is necessary, e.g.: 
+  mkdir /tmp/music
+  folve -C /var/db/folve -p 17322 -f /media/music /tmp/music
+
+2015-11-30
+Nabla on Wandboard
+
+2016-01-13
+Implemented process real-time optimizations in startup scripts
+
+2016-01-25
+Fixed automount script, uid and gid are read from /etc/passwd and /etc/group. 
+
+2016-01-31
+Added wireless regulatory database 
+
+2016-04-17
+New kernel version 4.4.x
+
+2016-06-11
+Changes for Minix Neo Z64

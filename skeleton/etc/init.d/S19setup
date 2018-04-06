@@ -1,0 +1,336 @@
+#!/bin/sh
+#
+# setup	This script provides persistent storage to be 
+#		used with an otherwise volatile ram disk file system.
+#
+
+# assume boot device is alredy mounted r/o
+device_mounted=1
+device_readable=0
+# other global variables
+mountpoint=""
+blockdevice=""
+config_directory=""
+# the partition name
+partition_name="NABLA"
+# the default system directories to synchronize
+default_sync_directories="/etc/bruteFIR /etc/fstab /etc/mpd.conf /etc/modules.conf /etc/nabla.conf /etc/network/interfaces /etc/ssh /etc/random_seed /etc/wpa_supplicant /var/lib/mpd /var/lib/mpd/playlists"
+script=$(basename $0)
+# the name of the configuration directory on the boot device
+config_directory=".config"
+# main configuration file relative to config directory
+config_file_path="etc/nabla.conf"
+# main configuration file during operation
+system_config_file="/etc/nabla.conf"
+
+#
+# finds out if a partition is mounted writeable or read-only
+# unmounted partitions will be assumed read-only
+#
+is_partition_readable() {
+	device="$1"
+	readable=0
+	attribute=`grep $device /proc/mounts | \
+		awk '{ print $4 }' | \
+		awk 'BEGIN{ FS="," } \
+			{ for(i=0; i<$NF; i=i+1) { if ($(i+1)~"^r[ow]$") {print $(i+1);break}} }'`
+	if [ "$attribute" = "rw" ]; then 
+		readable=1
+	fi
+	echo $readable
+}
+
+#
+# extracts the mount point of a mounted partition
+#
+get_mountpoint() {
+	device="$1"
+	echo `grep $device /proc/mounts | awk '{ print $2 }'`
+}
+
+#
+# finds out if a partition is mounted 
+#
+is_partition_mounted() {
+	device="$1"
+	mounted=0
+	mountpoint=`get_mountpoint $device`
+	if [ -n "$mountpoint" ]; then 
+		mounted=1
+	fi
+	echo $mounted
+}
+
+#
+# Retrieves the partition label of a block device. 
+# If the partition has no label, the GUID is used.  
+#
+get_partition_label() {
+	device="$1"
+	label=""
+        uid=""
+        if [ -n "${device##/dev/*}" ]; then device="/dev/$device"; fi
+        for s in `blkid $device`; do
+                case $s in
+                UUID=*)
+                        uid=`expr match "$s" '.*=\"\(.*\)\"'`
+                        ;;
+                LABEL=*)
+                        label=`expr match "$s" '.*=\"\(.*\)\"'`
+                        ;;
+                esac
+        done
+        if [ -n "$label" ]; then echo "$label"; else echo "$uid"; fi
+}
+
+#
+# initially create the .config directory and a stock configuration file
+#
+create_config_file() {
+	local config_directory=$1
+	local config_file=$2
+	mkdir -p $local_config_directory || return 1
+	if [ ! -f $config_directory/$config_file ]; then
+		cat > $config_directory/$config_file <<- EOF
+		######
+		### nabla.conf - system defaults
+		######
+
+		### system preferences
+		NABLA_USE_CONVOLUTION="N"
+		NABLA_START_MUSICPLAYER="Y"
+
+		### sleep after module loading
+		NABLA_WAIT_INTERVAL=1000000
+
+		### system names
+		NABLA_PARTITION=$(partition_name)
+		NABLA_HOSTNAME="nabla"
+
+		### which directories (or files) to synchronise
+		NABLA_SYNC_DIRECTORIES="$(default_sync_directories)"
+
+		### real-time optimizations for selected processes
+		LOWER_PRIORITY_LIST=""
+		HIGHER_PRIORITY_LIST=""
+		REALTIME_PRIORITY_LIST=""
+		CPU_AFFINITY_LIST=""
+		SCHEDULER_POLICY="SCHED_FIFO"
+
+		### copy this to init.d scripts to initialize system variables
+		# [ -x /etc/nabla.conf ] && . /etc/nabla.conf
+		EOF
+	fi
+}
+
+#
+# Find partition, (re)mount it writeable, read configuration file
+# The function exports the following global variables: 
+#	blockdevice = path to partition device file
+#	mountpoint = path the partition is mounted on
+#	device_mounted = partition was mounted initially
+#	device_readable = partition was mounted r/o initially
+#	config_directory = the directory on the partition containing the config files
+#
+setup_prepare() {
+	local direction="$1"
+	local config_file=""
+	export blockdevice=""
+	# partition may not be mounted yet
+	for b in /dev/sd[a-z][0-9]; do
+		label=`get_partition_label $b`
+		if [ "$label" = "$partition_name" ]; then
+			export blockdevice=$b
+			export device_mounted=`is_partition_mounted $blockdevice`
+			export device_readable=`is_partition_readable $blockdevice`
+		fi
+	done
+	# terminate if the partition does not exist
+	if [ -z $blockdevice ]; then return 2; fi
+	echo "$script:  Found $blockdevice mt=$device_mounted rw=$device_readable"
+	if [ $device_mounted -eq 1 ]; then
+		export mountpoint=`get_mountpoint $blockdevice`
+		if [ $device_readable -eq 0 ]; then
+			# remount partition
+			mount -o remount,rw $blockdevice || return 1
+			echo "$script:  Remounted $blockdevice RW"
+		else
+			echo "$script:  $blockdevice already mounted on $mountpoint"
+		fi
+	else
+		# mount partition
+		export mountpoint=/tmp/$partition_name
+		mkdir -p $mountpoint
+		mount $blockdevice $mountpoint || return 1
+		echo "$script: mounted $blockdevice in $mountpoint"
+	fi
+	export config_directory="$mountpoint/${config_directory}"
+	# config file in root file system
+	config_file="$system_config_file"
+	# during startup the saved (if present) file is used
+	if [ $direction = "startup" ] && [ -f $config_directory/$config_file_path ]; then
+		config_file="$config_directory/$config_file_path"
+	fi
+	. $config_file
+	echo "$script:  Configuration file $config_file read"
+}
+
+#
+# backup configuration files to partition
+#
+setup_copy_shutdown() {
+	sync_directories="$NABLA_SYNC_DIRECTORIES"
+	if [ -n "$sync_directories" ]; then
+		for s in $sync_directories; do
+			# corresponding directory exists on source file system
+			if [ -d "$s" ]; then
+				echo "$script:  Start syncing directory $s"
+				# create $s on target filesystem
+				mkdir -p "${config_directory}${s}" || return 1
+				# copy (preserve symlinks, preserve file attributes)
+				cp -dp "${s}"/* "${config_directory}${s}/." > /dev/null 2>&1
+				echo "$script:  Finished syncing directory $s"
+			# corresponding file exists on source file system
+			elif [ -f "$s" ]; then
+				d=`dirname $s`
+				# create $d on target filesystem
+				mkdir -p "${config_directory}${d}" || return 1
+				# copy (preserve symlinks, preserve file attributes)
+				cp -dp "$s" "${config_directory}${s}" > /dev/null 2>&1
+				echo "$script:  Copied file $s"
+			fi
+		done
+	fi
+}
+
+#
+# restore saved configuration
+#
+setup_copy_startup() {
+	sync_directories="$NABLA_SYNC_DIRECTORIES"
+	if [ -n "$sync_directories" ]; then
+		for s in $sync_directories; do
+			# corresponding directory exists on source file system
+			if [ -d "${config_directory}${s}" ]; then
+				echo "$script:  Start importing directory $s"
+				# create $s on target filesystem
+				mkdir -p "${s}" || return 1
+				# copy (preserve symlinks, preserve file attributes)
+				cp -dp "${config_directory}${s}"/* "${s}/." > /dev/null 2>&1
+				echo "$script:  Finished importing directory $s"
+			# corresponding file exists on source file system
+			elif [ -f "${config_directory}${s}" ]; then
+				d=`dirname ${s}`
+				# create $d on target filesystem
+				mkdir -p "${d}" || return 1
+				# copy (preserve symlinks, preserve file attributes)
+				cp -dp "${config_directory}${s}" "${s}" > /dev/null 2>&1
+				echo "$script:  Copied file $s"
+			fi
+		done
+	fi
+}
+
+#
+# fixes some things that were broken by importing files
+#
+setup_postprocess() {
+	# replace all occurrences of default host name with configured name
+	if [ -n "$NABLA_HOSTNAME" ]; then
+		# replace hostname file
+		echo $NABLA_HOSTNAME > /etc/hostname
+		# set host name
+		hostname $NABLA_HOSTNAME
+		# modify hosts file
+		config="/etc/hosts"
+		sed "/^127\.0\.1\.1/ s/127\.0\.1\.1.*/127.0.1.1\t$NABLA_HOSTNAME/" < $config > ${config}_ 
+		# cleaning up
+		if [ $? -eq 0 ]; then
+			rm $config && mv ${config}_ $config
+		else
+			rm ${config}_ 
+		fi
+	fi
+	# modify avahi configuration
+	config="/etc/avahi/avahi-daemon.conf"
+	if [ -f $config ]; then
+		sed "s/host-name=.*/host-name=$(hostname)/" < $config > ${config}_ 
+		# cleaning up
+		if [ $? -eq 0 ]; then
+			rm $config && mv ${config}_ $config
+		else
+			rm ${config}_ 
+		fi
+	fi
+}
+
+#
+# Restore partition's earlier state
+# The function clears the following global variables: 
+#	blockdevice = path to partition device file
+#	mountpoint = path the partition is mounted on
+#	device_mounted = partition was mounted initially
+#	device_readable = partition was mounted r/o initially
+#	config_directory = the directory on the partition containing the config files
+#
+setup_finish() {
+	if [ $device_mounted -eq 1 ]; then
+		if [ $device_readable -eq 0 ]; then
+			# remount partition
+			mount -o remount,ro $blockdevice || return 1
+			echo "$script:  Remounted $blockdevice RO"
+		fi
+	else
+		umount $blockdevice || return 1
+		echo "$script:  unmounted $blockdevice from $mountpoint"
+		rmdir $mountpoint
+		echo "$script:  removed $mountpoint"
+	fi
+	export blockdevice=""
+	export mountpoint=""
+	export device_mounted=""
+	export device_readable=""
+	export config_directory=""
+}
+
+#
+# main function for "stop" or "sync" parameter of init script
+#
+setup_backup() {
+	setup_prepare "shutdown" || return 1
+	setup_copy_shutdown || return 1
+	setup_finish || return 1
+}
+
+#
+# main function for "start" parameter of init script
+#
+setup_restore() {
+	for i in `seq 10`; do
+		# wait for USB subsystem
+		usleep 1000000
+		setup_prepare "startup" && break
+	done
+	if [ -z $mountpoint ]; then return 1; fi
+	setup_copy_startup || return 1
+	setup_postprocess || return 1
+	setup_finish || return 1
+}
+
+#
+# processing starts here
+#
+
+umask u+w,a+r
+
+if [ "$1" = "start" ]; then
+	echo "Restoring configuration..."
+	setup_restore
+	echo "Done"
+elif [ "$1" = "stop" -o "$1" = "sync" ]; then
+	echo "Backing up configuration..."
+	setup_backup
+	echo "Done"
+else
+	echo "Usage: $0 {start|stop|sync}"
+fi

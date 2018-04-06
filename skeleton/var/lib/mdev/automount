@@ -1,0 +1,236 @@
+#!/bin/busybox ash
+#
+
+#
+# Define some global settings for debugging. To enable debugging, 
+# create a file /dev/shm/mdev.conf containing MDEV_DEBUG=[12]
+#
+MDEV_ERR=/dev/shm/mdev_err.txt
+MDEV_LOG=/dev/shm/mdev_log.txt
+MDEV_CONFIG=/dev/shm/mdev.conf
+MDEV_DEBUG=0
+[ -x $MDEV_CONFIG ] && . $MDEV_CONFIG
+
+#
+# Retrieves the partition label of a block device. 
+# If the partition has no label, the GUID is used.  
+#
+read_label() {
+	device="$1"
+	label=""
+        id=""
+	if [ `expr match "$device" '/dev/.*'` != `expr length "$device"` ]; then device="/dev/$device"; fi
+        for s in `blkid $device`; do
+                case $s in
+                UUID=*)
+                        id=`expr match "$s" '.*=\"\(.*\)\"'`
+                        ;;
+                LABEL=*)
+                        label=`expr match "$s" '.*=\"\(.*\)\"'`
+                        ;;
+                esac
+        done
+        if [ -n "$label" ]; then echo "$label"; else echo "$id"; fi
+}
+
+#
+# Unmount the device and delete the directory in ${mountdir}. 
+# First parameter is the (fully qualified) device name, second 
+# parameter the mount point
+#
+remove_action () {
+	# Unmount the device via the mount point 
+	umount ${2}
+	# Delete the mount point
+	rm -rf ${2}
+}
+
+#
+# Set the mount options for auto mounted partitions
+#
+get_options() {
+	partition_name=$1
+	filesystem_type=$2
+	options_out=""
+	mode="ro"
+	gid=$(grep audio /etc/group | awk 'BEGIN {FS=":"} {print $3}')
+	uid=$(grep mpd /etc/passwd | awk 'BEGIN {FS=":"} {print $3}')
+	dmask="0222"
+	fmask="0333"
+	# no mount options for the boot drive 
+	if [ "${partition_name}" != "NABLA" ] ; then
+		# mount partitions read only
+		options_out="$options_out,$mode"
+		if [ "${filesystem_type}" = "vfat" ] || [ "${filesystem_type}" = "ntfs" ] ; then
+			# set owner and group to mpd:audio
+			options_out="$options_out,gid=$gid,uid=$uid"
+			# set dmask and fmask
+			options_out="$options_out,dmask=$dmask,fmask=$fmask"
+		fi
+		# remove first extra ',' character
+		if [ -n "$options_out" ]; then options_out=${options_out:1}; fi
+	else
+		options_out="defaults"
+	fi
+	echo "$options_out"
+	return 0
+}
+
+#
+# Try to determine the file system type
+#
+probe_filesystem() {
+	device_name=$1
+	# check for empty device name
+	if [ -z ${device_name} ] ; then exit 1 ; fi
+	# fat filesystems have the string "FATnn   " at offset 82 into device
+	id=$(dd if=/dev/${device_name} bs=1 count=8 skip=82 2>/dev/null)
+	if [ "$id" = "FAT16   " -o  "$id" = "FAT32   " ]; then
+		echo "vfat"
+		return 0
+	fi
+	# ntfs filesystems have the string "NTFS    " at offset 3 into device
+	id=$(dd if=/dev/${device_name} bs=1 count=8 skip=3 2>/dev/null)
+	if [ "$id" = "NTFS    " ]; then
+		echo "ntfs"
+		return 0
+	fi
+	# ext2/3/4 filesystem uses 0xef53 at offset 56 into superblock
+	# this corresponds to absolute offset 1080 into partition
+	id=$(dd if=/dev/${device_name} bs=1 count=2 skip=1080 2>/dev/null | od -x | awk '{print $2}')
+	if [ "$id" = "ef53" ]; then 
+		echo "ext2"
+		return 0
+	fi
+	return 1
+}
+
+# At bootup, "mdev -s" is called.  It does not pass any environmental
+# variables other than MDEV.  S if no ACTION variable is passed, exit
+# the script.
+
+# write debug data dump to /dev/shm/mdevlog.txt
+if [ $MDEV_DEBUG -gt 1 ]; then
+	echo "" >> $MDEV_LOG
+	env >> $MDEV_LOG
+fi
+
+# Execute only if an action is passed; otherwise exit
+if [ -z ${ACTION} ] ; then exit 0 ; fi
+
+# Make mountdir a var in case the pmount default directory ever changes
+mountdir="/media"
+
+# Flag for whether or not we have a partition.  0=no, 1=yes, default no
+partition=0
+
+# File descriptors 0, 1, and 2 are closed before launching this script.
+# Many linux utilities are hard-coded to work with these file descriptors.
+# So we need to manually open them. This file descriptor block device 
+# is missing on some systems
+if [ -b /dev/fd0 -a -b /dev/fd1 ]; then
+	0 < /dev/fd0
+	1 > /dev/fd1
+fi
+
+# The redirect of stderr to a temporary logfile in /dev/shm is governed by 
+# the value of the MDEV_DEBUG flag. Values >= 1 will enable this feature
+if [ $MDEV_DEBUG -gt 0 ]; then
+	exec 3<>$MDEV_ERR # open file for rw
+	while [ ! $? ]; do read <&3; done # seek operation
+	2>&3 # redirect standard error
+fi
+
+# Check for various conditions during an "add" operation
+if [ "X${ACTION}" == "Xadd" ] ; then
+
+	# Flag for mounting if it's a regular partition
+	if [ "X${DEVTYPE}" == "Xpartition" ] ; then
+		partition=1 ;
+
+	# Further checks if DEVTYPE is disk; looking for weird setup where the
+	# entire USB device is formatted as one partition, without the standard
+	# partition table.
+	elif [ "X${DEVTYPE}" == "Xdisk" ] ; then
+
+		# check for known file systems
+		if probe_filesystem "$MDEV"; then
+			partition=1
+		fi
+
+	fi
+fi
+
+# check for various conditions during a "remove" operation
+if [ "X${ACTION}" == "Xremove" ] ; then
+
+	# Check for a disk or regular partition
+	if [ "X${DEVTYPE}" == "Xpartition" ] || [ "X${DEVTYPE}" == "Xdisk" ] ; then
+
+		# Flag for unmounting if device exists in /proc/mounts mounted somewhere
+		# under the ${mountdir} directory (currently hardcoded as "/media").  It
+		# really should be unmounted manually by the user before removal, but
+		# people don't always remember.
+		if grep "^/dev/${MDEV} ${mountdir}/" /proc/mounts 1>/dev/null ; then
+			partition=1
+		fi
+	fi
+
+	# If the user has manually unmounted a device before disconnecting it, the
+	# directory is no longer listed in /proc/mounts.  This makes things more
+	# difficult.  The script has to walk through ${mountdir} and remove all
+	# directories that don't show up in /proc/mounts
+	for dir in $( ls ${mountdir} )
+	do
+		if [ -d ${mountdir}/${dir} ]; then
+			if ! grep " ${mountdir}/${dir} " /proc/mounts 1>/dev/null ; then
+				rm -rf ${mountdir}/${dir}
+			fi
+		fi
+	done
+fi
+
+# If not flagged as a partition, bail out.
+if [ ${partition} -ne 1 ] ; then exit 0 ; fi
+
+# Also exit id device name is missing.
+if [ -z ${MDEV} ] ; then exit 0 ; fi
+
+# The "add" action.
+if [ "X${ACTION}" == "Xadd" ] ; then
+
+	# retrieve the partition name
+	mountname=$(read_label "$MDEV")
+
+	# this should not happen
+	if [ -z ${mountname} ] ; then exit 0 ; fi
+
+	# retrieve the file system type
+	filesystem_type=$(probe_filesystem "$MDEV")
+
+	# set the mount options
+	mountoptions=$(get_options "$mountname" "$filesystem_type")
+
+	# mount directory already exists and is not empty
+	while [ -d ${mountdir}/${mountname} ] && [ "$(ls -A ${mountdir}/${mountname})" ] ; do 
+		mountname="${mountname}_"; 
+	done
+
+	# Create the directory in ${mountdir}
+	mkdir -p ${mountdir}/${mountname}
+
+	# Mount the directory in ${mountdir}
+	mount -o $mountoptions /dev/${MDEV} ${mountdir}/${mountname}
+
+	# print some debug info
+	if [ $MDEV_DEBUG -gt 0 ]; then echo "mounted $MDEV as ${mountname}" >> $MDEV_LOG; fi
+
+# The "remove" action.
+elif [ "X${ACTION}" == "Xremove" ] ; then
+	# Get info from /proc/mounts, and call remove_action to unmount 
+	# the device and remove the associated directory
+	procmounts=$(grep "^/dev/${MDEV} ${mountdir}/" /proc/mounts)
+	remove_action ${procmounts}
+	# print some debug info
+	if [ $MDEV_DEBUG -gt 0 ]; then echo "unmounted $MDEV from ${mountdir}" >> $MDEV_LOG; fi
+fi

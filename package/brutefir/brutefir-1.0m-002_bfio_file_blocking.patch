@@ -1,0 +1,39 @@
+--- brutefir.orig/bfio_file.c	2013-11-29 14:55:01.000000000 +0100
++++ brutefir-1.0m/bfio_file.c	2014-02-23 10:44:36.125138768 +0100
+@@ -66,6 +66,7 @@
+ struct settings {
+     off_t skipbytes;
+     bool_t append;
++    bool_t block;
+     bool_t loop;
+     bool_t text;
+     char *path;
+@@ -124,6 +125,9 @@
+                 }
+                 GET_TOKEN(BF_LEXVAL_BOOLEAN, "expected boolean value.\n");
+                 settings->append = lexval.boolean;
++            } else if (strcmp(lexval.field, "block") == 0) {
++                GET_TOKEN(BF_LEXVAL_BOOLEAN, "expected boolean value.\n");
++                settings->block = lexval.boolean;
+             } else if (strcmp(lexval.field, "loop") == 0) {
+                 if (io == BF_OUT) {
+                     fprintf(stderr, "File I/O: Loop on output makes "
+@@ -273,12 +277,16 @@
+ 	} else {
+ 	    mode = O_TRUNC;
+ 	}
++	if (! settings->block) {
++	    mode |= O_NONBLOCK;
++	}
+ 	if ((fd = open(settings->path, O_WRONLY | O_CREAT | mode |
+-		       O_NONBLOCK | O_LARGEFILE, S_IRUSR | S_IWUSR |
++		       O_LARGEFILE, S_IRUSR | S_IWUSR |
+ 		       S_IRGRP | S_IROTH)) == -1)
+ 	{
+ 	    fprintf(stderr, "File I/O: Could not create file \"%s\" for "
+-                    "writing: %s.\n", settings->path, strerror(errno));
++                "writing: %s. Check 'append' and 'block' options.\n.",
++                settings->path, strerror(errno));
+ 	    return -1;
+ 	}
+         ws = malloc(sizeof(struct writestate));
