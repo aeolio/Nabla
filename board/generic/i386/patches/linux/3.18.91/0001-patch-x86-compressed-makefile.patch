@@ -1,0 +1,24 @@
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index 0a291cd..c1c1f83 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -22,7 +22,7 @@ targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma \
+ 	vmlinux.bin.xz vmlinux.bin.lzo vmlinux.bin.lz4
+ 
+ KBUILD_CFLAGS := -m$(BITS) -D__KERNEL__ $(LINUX_INCLUDE) -O2
+-KBUILD_CFLAGS += -fno-strict-aliasing -fPIC
++KBUILD_CFLAGS += -fno-strict-aliasing $(call cc-option, -fPIE, -fPIC)
+ KBUILD_CFLAGS += -DDISABLE_BRANCH_PROFILING
+ cflags-$(CONFIG_X86_32) := -march=i386
+ cflags-$(CONFIG_X86_64) := -mcmodel=small
+@@ -35,6 +35,9 @@ KBUILD_AFLAGS  := $(KBUILD_CFLAGS) -D__ASSEMBLY__
+ GCOV_PROFILE := n
+ 
+ LDFLAGS := -m elf_$(UTS_MACHINE)
++ifeq ($(CONFIG_X86_32),y)
++LDFLAGS += $(call ld-option, -pie) $(call ld-option, --no-dynamic-linker)
++endif
+ LDFLAGS_vmlinux := -T
+ 
+ hostprogs-y	:= mkpiggy
+

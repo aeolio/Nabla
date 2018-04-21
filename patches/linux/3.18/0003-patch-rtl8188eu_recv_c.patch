@@ -1,0 +1,10 @@
+--- linux-3.18.91-patched/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
++++ linux-3.18.91-original/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
+@@ -13,7 +13,6 @@
+  *
+  ******************************************************************************/
+ #define _RTL8188EU_RECV_C_
+-#include <linux/kmemleak.h>
+ #include <osdep_service.h>
+ #include <drv_types.h>
+ #include <recv_osdep.h>
