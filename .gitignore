@@ -1,3 +1,9 @@
 _backup
 *.sh
 *.tar.bz2
+# build log files
+buildroot*.txt
+# temporary configurations for test, remove for production
+board/*/skeleton/etc/fstab
+board/*/skeleton/etc/nabla.conf
+board/*/skeleton/etc/wpa_supplicant
