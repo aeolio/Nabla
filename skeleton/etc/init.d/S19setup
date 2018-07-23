@@ -11,6 +11,9 @@ device_readable=0
 mountpoint=""
 blockdevice=""
 config_directory=""
+# device names for block devices
+HARD_DISK=/dev/sd[a-z][0-9]
+FLASH_DISK=/dev/mmcblk[0-9]p[0-9]
 # the partition name
 partition_name="NABLA"
 # the default system directories to synchronize
@@ -137,7 +140,7 @@ setup_prepare() {
 	local config_file=""
 	export blockdevice=""
 	# partition may not be mounted yet
-	for b in /dev/sd[a-z][0-9]; do
+	for b in $HARD_DISK $FLASH_DISK; do
 		label=`get_partition_label $b`
 		if [ "$label" = "$partition_name" ]; then
 			export blockdevice=$b
