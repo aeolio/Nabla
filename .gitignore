@@ -7,3 +7,4 @@ buildroot*.txt
 board/*/skeleton/etc/fstab
 board/*/skeleton/etc/nabla.conf
 board/*/skeleton/etc/wpa_supplicant
+changes-to-buildroot/*
