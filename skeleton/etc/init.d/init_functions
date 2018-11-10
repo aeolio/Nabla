@@ -36,25 +36,60 @@ _mask() {
 	printf "0x%08X" $mask
 }
 
-# get the highest processor id in the system
-_get_last_cpu() {
+# files in /sys/devices/system/cpu/* contain comma delimited lists of 
+# numbers and ranges. Examples: "0" or "0-1" or "2,4-31,33-63" 
+_get_online_cpumask() {
+	local mask=0
+	local cpus=$(cat /sys/devices/system/cpu/online)
+	IFS=","
+	for cpu_range in $cpus; do
+		case $cpu_range in
+		#cpu range
+		[0-9]*-[0-9]*)
+			local first=${cpu_range%-[0-9]*}
+			local last=${cpu_range#[0-9]*-}
+			while [ $first -lt $last ]; do
+				mask=$(( $mask | $(_mask $first) ))
+				let first=$first+1
+			done
+			mask=$(( $mask | $(_mask $last) ))
+			;;
+		#single cpu number
+		[0-9]*)
+			mask=$(( $mask | $(_mask $cpu_range) ))
+			;;
+		esac
+	done
+	unset IFS
+	printf $mask
+}
+
+# use the highest processor id in the system for RT tasks
+_get_rt_cpuid() {
 	local cpus=$(cat /sys/devices/system/cpu/online)
 	echo ${cpus#*-}
 }
 
-# get the bit mask for the highest processor id in the system
-_get_last_cpu_mask() {
-	local id=$(_get_last_cpu)
-	echo $(_mask $id)
+# use all processor cores but the last one for non RT tasks
+_get_nrt_cpumask() {
+	local mask=1
+	local rt_id=$(_get_rt_cpuid)
+	for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
+		cpu=$(basename ${cpu})
+		id=${cpu#cpu}
+		if [ $id -ne $rt_id ]; then
+			mask=$(( $mask | $(_mask $id) ))
+		fi
+	done
+	printf $mask
 }
 
 # convert a processor id into a bit mask for this processor
-_get_next_cpu_mask() {
+_get_cpumask() {
 	local id=$1
-	local cpus=$(_get_last_cpu)
-	let cpus=$cpus+1
-	let id=$id%$cpus
-	echo $(_mask $id)
+	local mask=$(_mask $id)
+	local cpumask=$(_get_online_cpumask)
+	echo $(( $mask & $cpumask ))
 }
 
 # reads the associated IRQ number of a process

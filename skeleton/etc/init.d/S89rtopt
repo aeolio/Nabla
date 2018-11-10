@@ -11,7 +11,7 @@
 
 # Change CPU frequency scaling governor to performance
 governor="performance"
-available_cpus="/sys/devices/system/cpu/cpu?"
+available_cpus="/sys/devices/system/cpu/cpu[0-9]*"
 for cpu in $available_cpus; do
 	interface=$cpu/cpufreq
 	if $([ -d $interface ] && grep -q $governor $interface/scaling_available_governors); then
@@ -19,15 +19,15 @@ for cpu in $available_cpus; do
 	fi
 done
 
-# decrease priority
+# processes that should run with low real-time priority
 for process in $LOWER_PRIORITY_LIST; do
 	for pid in $(_get_pid $process); do chrt $(_chrt_policy) -p $LO_PRIO $pid; done
 done
-# encrease priority
+# processes that should run with medium real-time priority
 for process in $HIGHER_PRIORITY_LIST; do
 	for pid in $(_get_pid $process); do chrt $(_chrt_policy) -p $HI_PRIO $pid; done
 done
-# real-time priority
+# processes that should run with high real-time priority
 for process in $REALTIME_PRIORITY_LIST; do
 	for pid in $(_get_pid $process); do chrt $(_chrt_policy) -p $RT_PRIO $pid; done
 done
@@ -35,20 +35,26 @@ done
 # favor discarding mapped (file cache) over unmapped (process memory) pages
 echo 10 > /proc/sys/vm/swappiness
 
+# disable real-time throttling
 # OS Jitter text recommends disabling completely (sched_rt_runtime_us == -1)
-# keep rt accounting at default levels (0.95s /1.00s)
-# echo "970000" > /proc/sys/kernel/sched_rt_runtime_us # rt share of period
-# echo "1000000" > /proc/sys/kernel/sched_rt_period_us # accounting period
+# linuxrealtime.org/index.php/Improving_the_Real-Time_Properties proposes 1000000 
+# rtt default levels are (0.95s /1.00s)
+echo "1000000" > /proc/sys/kernel/sched_rt_runtime_us # rt share of period
+echo "1000000" > /proc/sys/kernel/sched_rt_period_us # accounting period
 
-# Time interval between which vm statistics are updated
+# Delay vm statistics timer.  This may be obsolete since Christoph Lameter's 
+# vm shepherd patch.  For reference see lkml.org/lkml/2013/9/4/379
 vm_statistics=/proc/sys/vm/stat_interval
-[ -f $vm_statistics ] && echo 20 > $vm_statistics
+[ -f $vm_statistics ] && echo 300 > $vm_statistics
 
-# set processor affinities
-cpu=0                                                                      
-for process in $CPU_AFFINITY_LIST; do                                     
-        for pid in $(_get_pid $process); do
-                taskset -p $(_get_next_cpu_mask $cpu) $pid
-        done                        
-        let cpu=cpu+1                  
-done             
+# change block device writeback affinity
+echo 0 > /sys/bus/workqueue/devices/writeback/numa
+echo $(_get_nrt_cpumask) > /sys/bus/workqueue/devices/writeback/cpumask
+
+# set processor affinity to partitioned cpu
+rt_id=$(_get_rt_cpuid)
+for process in $CPU_AFFINITY_LIST; do
+	for pid in $(_get_pid $process); do
+		taskset -p $(_get_cpumask $rt_id) $pid
+	done
+done
