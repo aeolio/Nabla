@@ -1,0 +1,9 @@
+config BR2_PACKAGE_ESNIPER
+	bool "esniper"
+	select BR2_PACKAGE_LIBCURL
+	select BR2_PACKAGE_LIBOPENSSL
+	select BR2_PACKAGE_CA_CERTIFICATES
+	help
+	  esniper is a simple, lightweight tool for sniping ebay auctions. 
+
+	  http://esniper.sourceforge.net/
