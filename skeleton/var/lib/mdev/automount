@@ -52,7 +52,7 @@ get_options() {
 	partition_name=$1
 	filesystem_type=$2
 	options_out=""
-	mode="ro"
+	mode="ro,noatime"
 	gid=$(grep audio /etc/group | awk 'BEGIN {FS=":"} {print $3}')
 	uid=$(grep mpd /etc/passwd | awk 'BEGIN {FS=":"} {print $3}')
 	dmask="0222"
@@ -144,21 +144,30 @@ fi
 # Check for various conditions during an "add" operation
 if [ "X${ACTION}" == "Xadd" ] ; then
 
-	# Flag for mounting if it's a regular partition
-	if [ "X${DEVTYPE}" == "Xpartition" ] ; then
+	case "$DEVTYPE" in
+
+		partition)
 		partition=1 ;
+		;;
 
-	# Further checks if DEVTYPE is disk; looking for weird setup where the
-	# entire USB device is formatted as one partition, without the standard
-	# partition table.
-	elif [ "X${DEVTYPE}" == "Xdisk" ] ; then
-
-		# check for known file systems
+		# Further checks if DEVTYPE == disk; looking for weird setup where the
+		# entire USB device is formatted as one partition, without the standard
+		# partition table.
+		disk)
 		if probe_filesystem "$MDEV"; then
 			partition=1
 		fi
+		;;
 
-	fi
+		# on armv[78] DEVTYPE is missing. Check for partition names instead. 
+		"")
+		if [ "$SUBSYSTEM" == "block" ] && [ `expr match $MDEV 'mmcblk[0-9]p[0-9]'` == 9 ]; then
+			partition=1
+		fi
+		;;
+
+	esac
+
 fi
 
 # check for various conditions during a "remove" operation
@@ -193,7 +202,7 @@ fi
 # If not flagged as a partition, bail out.
 if [ ${partition} -ne 1 ] ; then exit 0 ; fi
 
-# Also exit id device name is missing.
+# Also exit if device name is missing.
 if [ -z ${MDEV} ] ; then exit 0 ; fi
 
 # The "add" action.
