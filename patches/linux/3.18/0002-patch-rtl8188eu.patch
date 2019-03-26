@@ -28904,16 +28904,6 @@ diff -Naur linux-3.18.91/drivers/staging/rtl8188eu/os_dep/usb_intf.c linux-stabl
  
  #define USB_VENDER_ID_REALTEK		0x0bda
  
-@@ -48,9 +43,7 @@
- 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
- 	{USB_DEVICE(0x2001, 0x3310)}, /* Dlink DWA-123 REV D1 */
- 	{USB_DEVICE(0x2001, 0x3311)}, /* DLink GO-USB-N150 REV B1 */
--	{USB_DEVICE(0x2357, 0x010c)}, /* TP-Link TL-WN722N v2 */
- 	{USB_DEVICE(0x0df6, 0x0076)}, /* Sitecom N150 v2 */
--	{USB_DEVICE(USB_VENDER_ID_REALTEK, 0xffef)}, /* Rosewill RNX-N150NUB */
- 	{}	/* Terminating entry */
- };
- 
 @@ -59,20 +52,17 @@
  static struct dvobj_priv *usb_dvobj_init(struct usb_interface *usb_intf)
  {
