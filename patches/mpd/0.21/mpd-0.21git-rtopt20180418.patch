@@ -1,0 +1,741 @@
+diff --git a/Makefile.am b/Makefile.am
+index 50832a17f..8960d3289 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -189,6 +189,10 @@ libmpd_a_SOURCES += \
+ 	src/RemoteTagCacheHandler.hxx
+ endif
+ 
++if ENABLE_RTOPT
++libmpd_a_SOURCES += src/thread/RealtimeOption.hxx
++endif
++
+ if ANDROID
+ else
+ libmpd_a_SOURCES += \
+@@ -601,6 +605,11 @@ libicu_a_CPPFLAGS = $(AM_CPPFLAGS) \
+ 
+ ICU_LDADD = libicu.a $(ICU_LIBS)
+ 
++if ENABLE_RTOPT
++src_mpd_SOURCES += \
++	src/thread/RealtimeOption.cxx
++endif
++
+ # PCM library
+ 
+ libpcm_a_SOURCES = \
+diff --git a/configure.ac b/configure.ac
+index fcda38e85..5abe169e6 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -635,6 +635,12 @@ MPD_ENABLE_AUTO_PKG_LIB(id3, ID3TAG,
+ 	id3tag, id3tag, id3_file_open, [-lid3tag -lz], [],
+ 	[ID3 support using libid3tag], [libid3tag not found])
+ 
++dnl ----------------rtopt-------------
++AC_ARG_ENABLE(rtopt,
++	AS_HELP_STRING([--enable-rtopt], [enable realtime support]),,
++	[enable_rtopt=no])
++dnl ----------------rtopt-------------
++
+ dnl ---------------------------------------------------------------------------
+ dnl Autodiscovery
+ dnl ---------------------------------------------------------------------------
+@@ -871,6 +877,14 @@ fi
+ 
+ MPD_DEFINE_CONDITIONAL(enable_archive, ENABLE_ARCHIVE, [the archive API])
+ 
++dnl ---------------------------------- rtopt ---------------------------------
++
++if test x$enable_rtopt = xyes; then
++	AC_DEFINE([ENABLE_RTOPT], 1, [Define to enable realtime option support])
++fi
++
++AM_CONDITIONAL(ENABLE_RTOPT, test x$enable_rtopt = xyes)
++
+ dnl ---------------------------------------------------------------------------
+ dnl Decoder Plugins
+ dnl ---------------------------------------------------------------------------
+@@ -1501,6 +1515,7 @@ results(soxr, [libsoxr])
+ results(libmpdclient, [libmpdclient])
+ results(inotify, [inotify])
+ results(sqlite, [SQLite])
++results(rtopt, [rtopt])
+ 
+ printf '\nMetadata support:\n\t'
+ results(id3,[ID3])
+diff --git a/src/Main.cxx b/src/Main.cxx
+index 19b18f7a4..3efbd3c72 100644
+--- a/src/Main.cxx
++++ b/src/Main.cxx
+@@ -59,6 +59,10 @@
+ #include "config/ConfigError.hxx"
+ #include "util/RuntimeError.hxx"
+ 
++#ifdef ENABLE_RTOPT
++#include "thread/RealtimeOption.hxx"
++#endif
++
+ #ifdef ENABLE_DAEMON
+ #include "unix/Daemon.hxx"
+ #endif
+@@ -506,6 +510,11 @@ try {
+ 
+ 	log_init(options.verbose, options.log_stderr);
+ 
++#ifdef ENABLE_RTOPT
++        RealtimeOption::Initialize();
++        RealtimeOption::ChangeThreadPriority("main");
++#endif
++
+ 	instance = new Instance();
+ 
+ #ifdef ENABLE_NEIGHBOR_PLUGINS
+@@ -559,6 +568,9 @@ try {
+ #ifdef ENABLE_DATABASE
+ 	const bool create_db = InitDatabaseAndStorage();
+ #endif
++#ifdef ENABLE_RTOPT
++        RealtimeOption::LockMemory();
++#endif
+ 
+ 	glue_sticker_init();
+ 
+diff --git a/src/config/ConfigOption.hxx b/src/config/ConfigOption.hxx
+index 697909593..c8f9b7b48 100644
+--- a/src/config/ConfigOption.hxx
++++ b/src/config/ConfigOption.hxx
+@@ -20,6 +20,7 @@
+ #ifndef MPD_CONFIG_OPTION_HXX
+ #define MPD_CONFIG_OPTION_HXX
+ 
++#include <config.h>
+ #include "Compiler.h"
+ 
+ #if defined(_WIN32) && CLANG_OR_GCC_VERSION(4,7)
+@@ -89,6 +90,9 @@ enum class ConfigBlockOption {
+ 	RESAMPLER,
+ 	AUDIO_FILTER,
+ 	DATABASE,
++#ifdef ENABLE_RTOPT
++        REALTIME_OPTION,
++#endif
+ 	NEIGHBORS,
+ 	MAX
+ };
+diff --git a/src/config/ConfigTemplates.cxx b/src/config/ConfigTemplates.cxx
+index 683e30ccd..5211f6db8 100644
+--- a/src/config/ConfigTemplates.cxx
++++ b/src/config/ConfigTemplates.cxx
+@@ -21,6 +21,7 @@
+ #include "ConfigOption.hxx"
+ #include "util/Macros.hxx"
+ 
++#include <config.h>
+ #include <string.h>
+ 
+ const ConfigTemplate config_param_templates[] = {
+@@ -89,6 +90,9 @@ const ConfigTemplate config_block_templates[] = {
+ 	{ "resampler" },
+ 	{ "filter", true },
+ 	{ "database" },
++#ifdef ENABLE_RTOPT
++        { "realtime_option", false },
++#endif
+ 	{ "neighbors", true },
+ };
+ 
+diff --git a/src/event/Thread.cxx b/src/event/Thread.cxx
+index d67585788..81bd85982 100644
+--- a/src/event/Thread.cxx
++++ b/src/event/Thread.cxx
+@@ -45,6 +45,7 @@ EventThread::Run() noexcept
+ {
+ 	SetThreadName(realtime ? "rtio" : "io");
+ 
++#ifndef ENABLE_RTOPT
+ 	if (realtime) {
+ 		try {
+ 			SetThreadRealtime();
+@@ -53,6 +54,7 @@ EventThread::Run() noexcept
+ 				 "RTIOThread could not get realtime scheduling, continuing anyway");
+ 		}
+ 	}
++#endif
+ 
+ 	event_loop.Run();
+ }
+diff --git a/src/output/Thread.cxx b/src/output/Thread.cxx
+index fe358ce2f..94eef37ab 100644
+--- a/src/output/Thread.cxx
++++ b/src/output/Thread.cxx
+@@ -406,6 +406,7 @@ AudioOutputControl::Task() noexcept
+ {
+ 	FormatThreadName("output:%s", GetName());
+ 
++#ifndef ENABLE_RTOPT
+ 	try {
+ 		SetThreadRealtime();
+ 	} catch (...) {
+@@ -414,6 +415,7 @@ AudioOutputControl::Task() noexcept
+ 	}
+ 
+ 	SetThreadTimerSlackUS(100);
++#endif
+ 
+ 	const std::lock_guard<Mutex> lock(mutex);
+ 
+diff --git a/src/thread/Name.hxx b/src/thread/Name.hxx
+index 268985d0b..f13b893d2 100644
+--- a/src/thread/Name.hxx
++++ b/src/thread/Name.hxx
+@@ -34,6 +34,10 @@
+ #include "util/StringFormat.hxx"
+ #endif
+ 
++#ifdef ENABLE_RTOPT
++#include "RealtimeOption.hxx"
++#endif
++
+ static inline void
+ SetThreadName(const char *name) noexcept
+ {
+@@ -47,6 +51,11 @@ SetThreadName(const char *name) noexcept
+ #else
+ 	pthread_setname_np(pthread_self(), name);
+ #endif
++
++#ifdef ENABLE_RTOPT
++        RealtimeOption::ChangeThreadPriority(name);
++#endif
++
+ #elif defined(HAVE_PRCTL) && defined(PR_SET_NAME)
+ 	prctl(PR_SET_NAME, (unsigned long)name, 0, 0, 0);
+ #else
+diff --git a/src/thread/RealtimeOption.cxx b/src/thread/RealtimeOption.cxx
+new file mode 100644
+index 000000000..d9caef700
+--- /dev/null
++++ b/src/thread/RealtimeOption.cxx
+@@ -0,0 +1,383 @@
++/*
++ * Copyright (C) 2003-2010 The Music Player Daemon Project
++ * http://www.musicpd.org
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++
++
++#include "config.h"
++
++#ifdef ENABLE_RTOPT
++
++#include "system/FatalError.hxx"
++#include "Log.hxx"
++#include "util/Domain.hxx"
++
++#include "config/ConfigGlobal.hxx"
++#include "config/ConfigOption.hxx"
++
++#include "Util.hxx"
++#include "Slack.hxx"
++#include "RealtimeOption.hxx"
++
++#include <sys/resource.h>
++#include <sys/mman.h>
++
++
++#include <stdlib.h>
++#include <errno.h>
++#include <string.h>
++#include <assert.h>
++#include <sched.h>
++
++#include <string>
++#include <unordered_map>
++#include <vector>
++
++
++static constexpr Domain realtime_domain("realtimeoption");
++
++
++const std::unordered_map<std::string,int> RealtimeOption::policy_tbl = {
++        { "OTHER",   SCHED_OTHER },
++        { "FIFO" ,   SCHED_FIFO  },
++        { "RR"   ,   SCHED_RR    },
++        { "BATCH",   SCHED_BATCH },
++#ifdef SCHED_IDLE
++        { "IDLE" ,   SCHED_IDLE }
++#endif
++};
++
++
++std::unordered_map<std::string, PriorityDef*> RealtimeOption::priority_tbl = {
++        { "",   new PriorityDef("") }
++};
++
++bool RealtimeOption::enable_rtopt = false;
++bool RealtimeOption::enable_memlock = false;
++unsigned long RealtimeOption::stack_reserve = 0ul;
++unsigned long RealtimeOption::heap_reserve  = 0ul;
++
++
++static int
++strtonum(const char *str, unsigned long *ival) {
++	char *endptr = NULL;
++
++	*ival = strtoul(str, &endptr, 10);
++	return (*endptr == '\0') ? 0 : -1;
++}
++
++
++void
++RealtimeOption::SetUnlimited( const int target, const char *target_name) {
++	const rlimit unlimited = {
++	  RLIM_INFINITY,
++	  RLIM_INFINITY
++	};
++	const int res = setrlimit(target,&unlimited);
++	if ( res < 0 ) {
++	  FormatFatalError("SetUnlimied %s error %d(%s)\n",target_name,errno,strerror(errno));
++	}
++}
++
++int
++RealtimeOption::GetPolicy(const char  *name) {
++        int policy = RTOPT_DISABLE;
++        try {
++                policy = policy_tbl.at(std::string(name));
++        } catch (...) {
++        }
++        return policy;
++}
++
++std::string
++RealtimeOption::GetPolicyName(int policy) {
++        std::string name("UNDEF(" + std::to_string(policy) + ")");
++
++        for (auto &x : policy_tbl) {
++                if ( x.second == policy ) {
++                        name = x.first;
++                        break;
++                }
++        }
++        return name;
++}
++
++void
++RealtimeOption::SetOutputPriority() {
++	const ConfigBlock *param = config_get_block(ConfigBlockOption::AUDIO_OUTPUT);
++
++        while (param != nullptr) {
++		const char *name = param->GetBlockValue("name");
++                const char *pval = param->GetBlockValue("priority");
++		if ( ( name != nullptr ) && ( pval != nullptr ) ) {
++                        PriorityDef *pri = new PriorityDef(std::string("output:") + std::string(name));
++			ParsePriority(pval, pri);
++                        priority_tbl[pri->name] = pri;
++		} else {
++			FormatWarning(realtime_domain,
++				      "SetOutputPriority: Missing \"name\" configuration\n");
++		}
++		param = param->next;
++	}
++}
++
++static const char *parse_priority_msg = "ParsePriority(%d): illegal policy name = '%s'   priority = '%s'\n";
++
++void
++RealtimeOption::ParsePriority(const char *param, PriorityDef *priority) {
++
++
++        std::string paramstr(param);
++
++	int  policy_val;
++	unsigned  long priority_val;
++
++	priority->policy = RTOPT_DISABLE;
++	priority->priority = 0;
++        priority->timerslack = 0ul;
++
++
++        int pos = paramstr.find(':');
++        if ( pos < 0 ) {
++                return;
++        }
++
++	if ( (policy_val = GetPolicy(paramstr.substr(0,pos).c_str()))  == RTOPT_DISABLE ) {
++                FormatWarning(realtime_domain,
++                              parse_priority_msg,
++                              __LINE__,priority->name.c_str(),param);
++		return;
++	}
++
++	if ( strtonum(paramstr.substr(pos+1).c_str(), &priority_val) != 0 ) {
++                FormatWarning(realtime_domain,
++                              parse_priority_msg,
++                              __LINE__,priority->name.c_str(),param);
++		return;
++	}
++
++        if ( PriorityDef::isRealTime(policy_val) ) {
++                if ( isPriority(priority_val) ) {
++                        priority->policy = policy_val;
++                        priority->priority = priority_val;
++                } else {
++                        FormatWarning(realtime_domain,
++                                      parse_priority_msg,
++                                      __LINE__,priority->name.c_str(),param);
++                        return;
++                }
++        } else {
++
++               /*  OTHER, BATCH, IDLE   */
++                priority->policy = policy_val;
++                priority->timerslack = priority_val;
++        }
++}
++
++
++void
++RealtimeOption::SetParameter(void) {
++
++        enable_rtopt = false;
++
++	const ConfigBlock *param = config_get_block(ConfigBlockOption::REALTIME_OPTION);
++
++	if ( param == NULL ) {
++		return;
++	}
++	enable_rtopt = true;
++
++        for ( BlockParam  val : param->block_params ) {
++
++
++                if ( val.name.compare("memlock") == 0 ) {
++                        enable_memlock = param->GetBlockValue("memlock",false);
++                } else if ( val.name.compare("stack_reserve") == 0 ) {
++                        stack_reserve = param->GetBlockValue("stack_reserve",0u) * 1024;
++                } else if ( val.name.compare("heap_reserve") == 0 ) {
++                        heap_reserve = param->GetBlockValue("heap_reserve",0u) * 1024;
++                } else {
++                        PriorityDef *pdef = SetThreadPriority(param,val.name);
++                        if ( pdef != nullptr ) {
++                                priority_tbl[pdef->name] = pdef;
++                        }
++                }
++        }
++}
++
++
++PriorityDef *
++RealtimeOption::SetThreadPriority(const ConfigBlock *param,std::string name) {
++
++        const char *paramstr = param->GetBlockValue(name.c_str());
++        if ( paramstr == nullptr ) {
++                return nullptr;
++        }
++
++        auto idx = name.find("_priority");
++        if ( idx == std::string::npos ) {
++                return nullptr;
++        }
++
++        PriorityDef *pri = new PriorityDef(name.substr(0,idx));
++        ParsePriority(paramstr,pri);
++        return pri;
++}
++
++const PriorityDef *
++RealtimeOption::GetPriorityParam(const char *key) {
++        PriorityDef *pdef = nullptr;
++
++        try {
++                pdef = priority_tbl[std::string(key)];
++        } catch (...) {
++        }
++
++        return pdef;
++}
++
++void
++RealtimeOption::ResetLimit() {
++	SetUnlimited(RLIMIT_MEMLOCK,"memlock");
++	SetUnlimited(RLIMIT_RTPRIO, "rtprio");
++}
++
++void
++RealtimeOption::ChangePriority(const PriorityDef *priority) {
++	sched_param param = { priority->priority };
++
++        if ( priority->policy == SCHED_IDLE ) {
++                SetThreadIdlePriority();
++        } else {
++                int res = sched_setscheduler(0,priority->policy,&param);
++                if ( res < 0 ) {
++                        FormatWarning(realtime_domain,
++                                      "ChangePriority: sched_setscheduler error errno = %s(%d)\n",
++                                      strerror(errno),errno);
++                }
++        }
++}
++
++void
++RealtimeOption::PrintPriorityTbl() {
++
++        FormatDebug(realtime_domain,
++                    "enable_rtopt: %d  enable_memlock: %d   stack_reserve: %ld  heap_reserve: %ld\n",
++                    enable_rtopt,enable_memlock,stack_reserve,heap_reserve);
++
++        for ( auto &x : priority_tbl ) {
++                FormatDebug(realtime_domain,
++                            "thread name: '%s'  policy: %s  priority: %d  timerslack: %ld\n",
++                            x.second->name.c_str(),
++                            GetPolicyName(x.second->policy).c_str(),
++                            x.second->priority,
++                            x.second->timerslack);
++        }
++}
++
++/**
++ *
++ */
++void RealtimeOption::Initialize() {
++	SetParameter();
++	if ( !isEnableRt() ) {
++		return;
++	}
++        SetOutputPriority();
++	ResetLimit();
++        PrintPriorityTbl();
++}
++
++
++void RealtimeOption::LockMemory() {
++	void *ptr = NULL;
++
++	if ( !isEnableRt() ) {
++		FormatDebug(realtime_domain,
++			    "LockMemory: realtime_option disabled");
++		return;
++	}
++
++	if ( stack_reserve != (size_t)0 ) {
++		FormatDebug(realtime_domain,
++			 "LockMemory: stack_reserve %ld",stack_reserve);
++		bzero(alloca(stack_reserve), stack_reserve);
++	}
++
++	if ( heap_reserve != (size_t)0 ) {
++		FormatDebug(realtime_domain,
++			 "LockMemory: heap_reserve %ld",heap_reserve);
++		ptr = malloc(heap_reserve);
++		if ( ptr != NULL ) {
++			bzero(ptr, heap_reserve);
++			free(ptr);
++		} else {
++			FormatFatalError("LockMemory: heap allocate error reserved size = %d",
++					 heap_reserve);
++		}
++	}
++
++	if ( !isEnableMemLock() ) {
++		FormatDebug(realtime_domain,
++			 "LockMemory: memlock disabled");
++		return;
++	}
++
++        FormatDebug(realtime_domain,"LockMemory: mlockall");
++	int stat = mlockall(MCL_CURRENT);
++	if ( stat < 0 ) {
++		FormatFatalError("LockMemory: mlockall error errno = %d(%s)\n",
++				 errno,strerror(errno));
++	}
++}
++
++/**
++ *
++ */
++void RealtimeOption::ChangeThreadPriority(const char *name) {
++	if ( !isEnableRt() ) {
++		return;
++	}
++
++	const PriorityDef *pdef = GetPriorityParam(name);
++	if ( pdef == nullptr ) {
++		FormatDebug(realtime_domain,
++			 "ChangeThreadPriority: name not found name = '%s'\n",name);
++		return;
++	}
++
++	if ( !pdef->IsEnable() ) {
++		return;
++	}
++
++	FormatDebug(realtime_domain,
++		 "ChangeThreadPriority: name %s   policy %s(%d)  priority %d\n",
++                    pdef->name.c_str(), GetPolicyName(pdef->policy).c_str(),pdef->policy, pdef->priority);
++
++	ChangePriority(pdef);
++        unsigned long ts = pdef->getTimerSlack();
++        if (ts != 0ul ) {
++                FormatDebug(realtime_domain,
++                            "SetThreadTimerSlackNS: name %s   policy %s(%d)  timerslack %ld\n",
++                            pdef->name.c_str(),
++                            GetPolicyName(pdef->policy).c_str(),pdef->policy, pdef->timerslack);
++                SetThreadTimerSlackNS(ts);
++        }
++}
++
++#endif /* ENABLE_RTOPT */
+diff --git a/src/thread/RealtimeOption.hxx b/src/thread/RealtimeOption.hxx
+new file mode 100644
+index 000000000..9e8fb7b82
+--- /dev/null
++++ b/src/thread/RealtimeOption.hxx
+@@ -0,0 +1,131 @@
++/*
++ * Copyright (C) 2003-2010 The Music Player Daemon Project
++ * http://www.musicpd.org
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++//
++// mpd.conf
++//
++// realtime_option {
++//     main_priority        "POLICY:PRIORITY"
++//     io_priority          "POLICY:PRIORITY"
++//     decorder_priority    "POLICY:PRIORITY"
++//     player_priority      "POLICY:PRIORITY"
++//     update_priority      "POLICY:PRIORITY"
++//
++//     memlock              "yes" or "no"
++//     stackreserve	       "1024"
++//     heapreserve	       "10240"
++//
++//   }
++//
++//  POLICY  "OTHER" | "FIFO" | "RR" | "BATCH" | "IDLE"
++//  PRIORITY
++//            OTHER,BATCH,IDLE   TIMERSLACK(ns)
++//            FIFO, RR           1 - 99
++//
++//   audio_output {
++//       ....
++//       ....
++//     priority              "POLICY:PRIORITY"
++//     timerslack            unsigned long(default value = 100)
++//   }
++//
++
++#ifndef REALTIMEOPTION_HXX_
++#define REALTIMEOPTION_HXX_
++
++#ifdef ENABLE_RTOPT
++
++#include "config/Block.hxx"
++
++#include <string>
++#include <unordered_map>
++
++#define RTOPT_DISABLE (-1)
++
++struct PriorityDef {
++        std::string      name;
++        int		 policy;
++        int		 priority;
++        unsigned long    timerslack;
++
++        PriorityDef(std::string _name)
++        //                :name(new std::string(_name)),
++                :name(_name),
++                 policy(RTOPT_DISABLE),
++                 priority(0),
++                 timerslack(0u) {}
++
++        inline bool IsEnable() const noexcept {
++                return policy != RTOPT_DISABLE;
++        }
++
++        inline bool isRealTime() const noexcept {
++                return isRealTime(policy);
++        }
++
++        inline unsigned long getTimerSlack() const noexcept {
++                return isRealTime() ? 0ul : timerslack;
++        }
++
++        static bool isRealTime(int p) {
++                return (p == SCHED_FIFO) || (p == SCHED_RR);
++        }
++};
++
++
++struct RealtimeOption {
++public:
++        static void Initialize();
++        static void LockMemory();
++        static void ChangeThreadPriority(const char *name);
++
++private:
++
++        static bool enable_rtopt;
++        static bool enable_memlock;
++        static unsigned long stack_reserve;
++        static unsigned long heap_reserve;
++
++        static const std::unordered_map<std::string,int> policy_tbl;
++        static std::unordered_map<std::string, PriorityDef*> priority_tbl;
++
++
++        static bool isEnableRt() { return enable_rtopt; };
++        static bool isEnableMemLock() { return enable_memlock; };
++
++        static bool isPriority(int priority) {
++                return ( priority >= 1) && ( priority <= 99 );
++        }
++
++        static void SetUnlimited( const int target, const char *target_name);
++        static int GetPolicy(const char *name);
++        static std::string GetPolicyName(int policy);
++        static void SetOutputPriority();
++        static void ParsePriority(const char *param, PriorityDef *priority);
++        static void SetParameter(void);
++        static PriorityDef *SetThreadPriority(const ConfigBlock *param,std::string name);
++        static const PriorityDef *GetPriorityParam(const char *key);
++        static void ResetLimit();
++        static void ChangePriority(const PriorityDef *priority);
++        static void PrintPriorityTbl();
++};
++
++#endif /* ENABLE_RTOPT */
++
++#endif /* REALTIMEOPTION_HXX_ */

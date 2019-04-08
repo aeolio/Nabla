@@ -5,4 +5,4 @@
 ################################################################################
 
 # Yan's realtime patch
-MPD_CONF_OPTS += --enable-rtopt
+MPD_CONF_OPTS += -Drtopt=true
