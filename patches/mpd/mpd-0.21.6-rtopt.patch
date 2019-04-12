@@ -34,6 +34,17 @@ diff -Naur a/meson_options.txt b/meson_options.txt
 +
 +option('rtopt', type: 'boolean', value: false, description: 'Yan\'s RT patch')
 
+diff -Naur a/src/Log.hxx b/src/Log.hxx
+--- a/src/Log.hxx
++++ b/src/Log.hxx
+@@ -22,6 +22,7 @@
+ 
+ #include "LogLevel.hxx"
+ #include "util/Compiler.h"
++#include "util/Domain.hxx"
+ 
+ #include <exception>
+ 
 diff -Naur a/src/Main.cxx b/src/Main.cxx
 --- a/src/Main.cxx	2019-03-17 23:52:13.000000000 +0100
 +++ b/src/Main.cxx	2019-04-07 13:04:02.571646729 +0200
@@ -60,14 +71,13 @@ diff -Naur a/src/Main.cxx b/src/Main.cxx
  	instance = new Instance();
  	AtScopeExit() {
  		delete instance;
-@@ -503,6 +512,9 @@
- 	spl_global_init(raw_config);
+@@ -504,6 +513,9 @@
  #ifdef ENABLE_ARCHIVE
  	const ScopeArchivePluginsInit archive_plugins_init;
-+#endif
+ #endif
 +#ifdef ENABLE_RTOPT
 +        RealtimeOption::LockMemory();
- #endif
++#endif
  
  	pcm_convert_global_init(raw_config);
 
@@ -180,7 +190,7 @@ diff -Naur a/src/thread/Name.hxx b/src/thread/Name.hxx
 diff -Naur a/src/thread/RealtimeOption.cxx b/src/thread/RealtimeOption.cxx
 --- a/src/thread/RealtimeOption.cxx	1970-01-01 01:00:00.000000000 +0100
 +++ b/src/thread/RealtimeOption.cxx	2019-04-08 07:15:19.861343195 +0200
-@@ -0,0 +1,383 @@
+@@ -0,0 +1,405 @@
 +/*
 + * Copyright (C) 2003-2010 The Music Player Daemon Project
 + * http://www.musicpd.org
@@ -228,6 +238,7 @@ diff -Naur a/src/thread/RealtimeOption.cxx b/src/thread/RealtimeOption.cxx
 +#include <sched.h>
 +
 +#include <string>
++#include <algorithm>
 +#include <unordered_map>
 +#include <vector>
 +
@@ -256,6 +267,15 @@ diff -Naur a/src/thread/RealtimeOption.cxx b/src/thread/RealtimeOption.cxx
 +unsigned long RealtimeOption::heap_reserve  = 0ul;
 +
 +
++// trim from end (in place)
++static inline std::string &
++rtrim(std::string &s) {
++	s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
++		return !std::isspace(ch);
++	}).base(), s.end());
++	return s;
++}
++
 +static int
 +strtonum(const char *str, unsigned long *ival) {
 +	char *endptr = NULL;
@@ -263,7 +283,6 @@ diff -Naur a/src/thread/RealtimeOption.cxx b/src/thread/RealtimeOption.cxx
 +	*ival = strtoul(str, &endptr, 10);
 +	return (*endptr == '\0') ? 0 : -1;
 +}
-+
 +
 +void
 +RealtimeOption::SetUnlimited( const int target, const char *target_name) {
@@ -308,7 +327,10 @@ diff -Naur a/src/thread/RealtimeOption.cxx b/src/thread/RealtimeOption.cxx
 +			const char *name = param->GetBlockValue("name");
 +			const char *pval = param->GetBlockValue("priority");
 +			if ( ( name != nullptr ) && ( pval != nullptr ) ) {
-+				PriorityDef *pri = new PriorityDef(std::string("output:") + std::string(name));
++				FormatDebug(realtime_domain, "Found output block %s (%s)", name, pval);
++				std::string blockName = std::string(name);
++				std::string threadName = std::string("output:") + blockName.substr(0,9);
++				PriorityDef *pri = new PriorityDef(rtrim(threadName));
 +				ParsePriority(pval, pri);
 +				priority_tbl[pri->name] = pri;
 +			} else {
@@ -387,7 +409,6 @@ diff -Naur a/src/thread/RealtimeOption.cxx b/src/thread/RealtimeOption.cxx
 +
 +        for ( BlockParam  val : param->block_params ) {
 +
-+
 +                if ( val.name.compare("memlock") == 0 ) {
 +                        enable_memlock = param->GetBlockValue("memlock",false);
 +                } else if ( val.name.compare("stack_reserve") == 0 ) {
@@ -423,15 +444,25 @@ diff -Naur a/src/thread/RealtimeOption.cxx b/src/thread/RealtimeOption.cxx
 +}
 +
 +const PriorityDef *
-+RealtimeOption::GetPriorityParam(const char *key) {
-+        PriorityDef *pdef = nullptr;
++RealtimeOption::GetPriorityParam(const char *_key) {
++	PriorityDef *pdef = nullptr;
 +
-+        try {
-+                pdef = priority_tbl[std::string(key)];
-+        } catch (...) {
-+        }
++	try {
++		auto key = std::string(_key);
++		auto pos = key.find(':');
++		pdef = priority_tbl[key];
++		/* 
++		 * try to find the generic definition for decoder threads; these 
++		 * contain the first seven characters of the audio_output name 
++		 */
++		if (pdef == nullptr && pos > 0) {
++			key = key.substr(0, pos);
++			pdef = priority_tbl[key];
++		}
++	} catch (...) {
++	}
 +
-+        return pdef;
++	return pdef;
 +}
 +
 +void
@@ -533,6 +564,7 @@ diff -Naur a/src/thread/RealtimeOption.cxx b/src/thread/RealtimeOption.cxx
 + *
 + */
 +void RealtimeOption::ChangeThreadPriority(const char *name) {
++
 +	if ( !isEnableRt() ) {
 +		return;
 +	}
@@ -540,7 +572,7 @@ diff -Naur a/src/thread/RealtimeOption.cxx b/src/thread/RealtimeOption.cxx
 +	const PriorityDef *pdef = GetPriorityParam(name);
 +	if ( pdef == nullptr ) {
 +		FormatDebug(realtime_domain,
-+			 "ChangeThreadPriority: name not found name = '%s'\n",name);
++			 "ChangeThreadPriority: name '%s' not found in table\n", name);
 +		return;
 +	}
 +
@@ -549,7 +581,7 @@ diff -Naur a/src/thread/RealtimeOption.cxx b/src/thread/RealtimeOption.cxx
 +	}
 +
 +	FormatDebug(realtime_domain,
-+		 "ChangeThreadPriority: name %s   policy %s(%d)  priority %d\n",
++		 "ChangeThreadPriority: name %s  policy %s(%d)  priority %d\n",
 +                    pdef->name.c_str(), GetPolicyName(pdef->policy).c_str(),pdef->policy, pdef->priority);
 +
 +	ChangePriority(pdef);
