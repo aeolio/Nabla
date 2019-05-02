@@ -1,0 +1,19 @@
+config BR2_PACKAGE_RK_FIRMWARE
+	bool "rk-firmware"
+	depends on BR2_arm || BR2_aarch64
+	help
+	  Rockchip Firmware for Radxa boards
+
+	  Pre-compiled binaries of the bootloader and trusted firmware
+
+	  https://github.com/radxa/rkbin
+
+if BR2_PACKAGE_RK_FIRMWARE
+
+config BR2_PACKAGE_RK_FIRMWARE_CHIP
+	string "Chip name"
+	default ""
+	help
+	  Specify the name of the SoC here. 
+
+endif

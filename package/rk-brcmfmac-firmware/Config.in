@@ -1,0 +1,12 @@
+config BR2_PACKAGE_RK_BRCMFMAC_FIRMWARE
+	bool "rk-brcmfmac-firmware"
+	depends on BR2_arm || BR2_aarch64
+	depends on !BR2_PACKAGE_LINUX_FIRMWARE_BRCM_BCM43XXX
+	help
+	  Broadcom BCM43456 wifi and bluetooth module firmware 
+	  and NVRAM data. 
+
+	  https://github.com/reMarkable/brcmfmac-firmware
+
+comment "rk-brcmfmac-firmware conflicts with linux-firmware Broadcom BRCM bcm43xx"
+	depends on BR2_PACKAGE_LINUX_FIRMWARE_BRCM_BCM43XXX
