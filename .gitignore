@@ -1,5 +1,9 @@
 _backup
-*.sh
+make_all.sh
+backup_config.sh
+patch_drivers.sh
+update_config.sh
+*.backup
 *.tar.bz2
 # build log files
 buildroot*.txt
