@@ -4,12 +4,14 @@
 #
 ################################################################################
 
+target = $(findstring rockpi4,$(BR2_DEFCONFIG))
+
 # Compiling older releases of kernel sources with GCC 8 results in warnings that are treated 
 # as errors. To be able to build the standard kernel for RockPi4 without modification, some 
 # of these new compiler directives have to be removed. 
 # Use for Radxa Rock Pi 4 vendor tree only
+ifeq ($(target),rockpi4)
 ifeq ($(BR2_TOOLCHAIN_GCC_AT_LEAST_8),y)
-ifeq ($(BR2_LINUX_KERNEL_DEFCONFIG),"rockchip_linux")
 LINUX_MAKE_ENV += KCFLAGS='-Wno-packed-not-aligned \
  	-Wno-attribute-alias \
 	-Wno-stringop-truncation \
