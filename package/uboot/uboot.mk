@@ -1,12 +1,18 @@
 ################################################################################
 #
-# additional uboot configurations for Rockchips
+# additional uboot configurations for Rockchip
 #
 ################################################################################
 
-# Rockchips firmware has been selected
-ifeq ($(BR2_PACKAGE_RK_FIRMWARE),y)
+target = $(findstring rockpi4,$(BR2_DEFCONFIG))
 
+# Rockchip board has been selected
+ifeq ($(target),rockpi4)
+
+# provides necessary binaries for image creation
+UBOOT_DEPENDENCIES += rk-firmware
+
+# create boot images
 define UBOOT_BUILD_RK3399
 	$(HOST_DIR)/bin/loaderimage --pack --uboot $(@D)/u-boot-dtb.bin $(@D)/uboot.img 0x200000 --size 1024 1
 	sed -e 's|uboot.img|$(@D)/uboot.img|' \
@@ -16,6 +22,7 @@ define UBOOT_BUILD_RK3399
 	$(HOST_DIR)/bin/firmwareMerger -P $(@D)/spi.ini $(@D)
 endef
 
+# install boot images
 define UBOOT_INSTALL_IMAGE_RK3399
 	$(INSTALL) -D -m 0644 $(@D)/uboot.img $(BINARIES_DIR)/u-boot/uboot.img
 	$(INSTALL) -D -m 0644 $(@D)/Firmware.img $(BINARIES_DIR)/u-boot/spi/uboot-trust-spi.img
