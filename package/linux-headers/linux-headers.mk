@@ -4,4 +4,4 @@
 #
 ################################################################################
 
-LINUX_HEADERS_EXCLUDES = configs Documentation firmware samples *.bmp *.S Kconfig*
+LINUX_HEADERS_EXCLUDES = configs firmware samples *.bmp
