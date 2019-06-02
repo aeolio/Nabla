@@ -4,4 +4,4 @@
 #
 ################################################################################
 
-LINUX_HEADERS_EXCLUDES = configs firmware samples *.bmp
+LINUX_HEADERS_EXCLUDES = configs samples *.bmp
