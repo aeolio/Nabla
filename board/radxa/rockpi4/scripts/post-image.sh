@@ -1,10 +1,11 @@
 #!/bin/bash
 
-set -eu # treat warnings as errors
+set -u # unbound variables
 
 BOARD_DIR="$(dirname $0)"
-BOARD_NAME="$(basename ${BASE_DIR})"
+BOARD_NAME="$(basename ${BOARD_DIR})"
 DTB_NAME="$(basename $(awk -F '=' '/BR2_LINUX_KERNEL_INTREE_DTS_NAME/ {print $2}' ${BR2_CONFIG} | tr -d \").dtb)"
+BUILD_ROOTFS=$(grep -c BR2_TARGET_ROOTFS_EXT2=y ${BR2_CONFIG})
 
 ###
 ### partition sizes. copied from
@@ -27,12 +28,18 @@ ATF_START=$(expr ${LOADER2_START} + ${LOADER2_SIZE})
 BOOT_START=$(expr ${ATF_START} + ${ATF_SIZE})
 ROOTFS_START=$(expr ${BOOT_START} + ${BOOT_SIZE})
 
+#image names
+BOOT_IMAGE_NAME=boot.img
+CONFIG_IMAGE_NAME=nabla.img
+ROOT_FS_NAME=rootfs.ext4
+SYSTEM_IMAGE_NAME=system.img
+
 ###
 ### build boot file system
 ###
 
 generate_boot_image() {
-	BOOT_IMAGE=${BINARIES_DIR}/boot.img
+	BOOT_IMAGE=${BINARIES_DIR}/$1
 	rm -rf ${BOOT_IMAGE}
 
 	echo -e "\e[36m Generate boot image : ${BOOT_IMAGE} start \e[0m"
@@ -55,7 +62,7 @@ generate_boot_image() {
 ###
 
 generate_config_image() {
-	NABLA_IMAGE=${BINARIES_DIR}/nabla.img
+	NABLA_IMAGE=${BINARIES_DIR}/$1
 	rm -rf ${NABLA_IMAGE}
 
 	echo -e "\e[36m Generate NABLA image : ${NABLA_IMAGE} start \e[0m"
@@ -73,8 +80,8 @@ generate_config_image() {
 ###
 
 generate_system_image() {
-	ROOTFS_IMAGE=${BINARIES_DIR}/rootfs.ext4
-	SYSTEM_IMAGE=${BINARIES_DIR}/system.img
+	ROOTFS_IMAGE=${BINARIES_DIR}/$2
+	SYSTEM_IMAGE=${BINARIES_DIR}/$1
 	rm -rf ${SYSTEM_IMAGE}
 
 	echo -e "\e[36m Generate system image : ${SYSTEM_IMAGE} start \e[0m"
@@ -121,7 +128,7 @@ EOF
 	dd if=${BINARIES_DIR}/u-boot/trust.img of=${SYSTEM_IMAGE} seek=${ATF_START} conv=notrunc
 
 	# burn boot image
-	dd if=${BINARIES_DIR}/boot.img of=${SYSTEM_IMAGE} conv=notrunc seek=${BOOT_START}
+	dd if=${BINARIES_DIR}/${BOOT_IMAGE_NAME} of=${SYSTEM_IMAGE} conv=notrunc seek=${BOOT_START}
 
 	# burn rootfs image
 	if [ -f ${ROOTFS_IMAGE} ]; then
@@ -145,8 +152,15 @@ do
 	esac
 done
 
-generate_boot_image || exit $?;
-generate_config_image || exit $?;
-generate_system_image || exit $?;
+# which payload to use in generating system image
+if [ $BUILD_ROOTFS eq 1 ]; then
+	payload=${ROOT_FS_NAME}
+else
+	payload=${CONFIG_IMAGE_NAME}
+fi
+
+generate_boot_image ${BOOT_IMAGE_NAME} || exit $?;
+generate_config_image ${CONFIG_IMAGE_NAME} || exit $?;
+generate_system_image ${SYSTEM_IMAGE_NAME} ${payload} || exit $?;
 
 exit 0
