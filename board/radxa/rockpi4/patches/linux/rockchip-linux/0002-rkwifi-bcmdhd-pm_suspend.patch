@@ -1,0 +1,35 @@
+--- a/drivers/net/wireless/rockchip_wlan/rkwifi/bcmdhd/bcmsdh_sdmmc_linux.c
++++ b/drivers/net/wireless/rockchip_wlan/rkwifi/bcmdhd/bcmsdh_sdmmc_linux.c
+@@ -232,7 +232,7 @@
+ 
+ MODULE_DEVICE_TABLE(sdio, bcmsdh_sdmmc_ids);
+ 
+-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 39)) && defined(CONFIG_PM)
++#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 39)) && defined(CONFIG_PM_SLEEP)
+ static int bcmsdh_sdmmc_suspend(struct device *pdev)
+ {
+ 	int err;
+@@ -295,7 +295,7 @@
+ 	.suspend	= bcmsdh_sdmmc_suspend,
+ 	.resume		= bcmsdh_sdmmc_resume,
+ };
+-#endif  /* (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 39)) && defined(CONFIG_PM) */
++#endif  /* (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 39)) && defined(CONFIG_PM_SLEEP) */
+ 
+ #if defined(BCMLXSDMMC)
+ static struct semaphore *notify_semaphore = NULL;
+@@ -342,11 +342,11 @@
+ 	.remove		= bcmsdh_sdmmc_remove,
+ 	.name		= "bcmsdh_sdmmc",
+ 	.id_table	= bcmsdh_sdmmc_ids,
+-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 39)) && defined(CONFIG_PM)
++#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 39)) && defined(CONFIG_PM_SLEEP)
+ 	.drv = {
+ 	.pm	= &bcmsdh_sdmmc_pm_ops,
+ 	},
+-#endif /* (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 39)) && defined(CONFIG_PM) */
++#endif /* (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 39)) && defined(CONFIG_PM_SLEEP) */
+ 	};
+ 
+ struct sdos_info {
+
