@@ -1,5 +1,15 @@
+--- a/arch/arm64/boot/dts/rockchip/Makefile	2019-01-26 10:21:45.000000000 +0100
++++ b/arch/arm64/boot/dts/rockchip/Makefile2019-06-09 06:35:54.342333984 +0200
+@@ -100,6 +100,7 @@
+ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399pro-evb-v10.dtb
+ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399pro-evb-v11.dtb
+ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399pro-npu-evb-v10.dtb
++dtb-$(CONFIG_ARCH_ROCKCHIP) += rockpi-4b-linux.dtb
+ 
+ always		:= $(dtb-y)
+ subdir-y	:= $(dts-dirs)
 --- /dev/null	2019-05-31 08:41:05.124000000 +0200
-+++ linux-custom/arch/arm64/boot/dts/rockchip/rockpi-4b-linux.dts	2019-06-02 07:06:40.908328880 +0200
++++ b/arch/arm64/boot/dts/rockchip/rockpi-4b-linux.dts	2019-06-02 07:06:40.908328880 +0200
 @@ -0,0 +1,1127 @@
 +/*
 + * Copyright (c) 2016 Fuzhou Rockchip Electronics Co., Ltd
