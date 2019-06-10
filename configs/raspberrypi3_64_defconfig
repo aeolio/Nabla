@@ -17,8 +17,8 @@ BR2_ROOTFS_POST_IMAGE_SCRIPT="board/raspberrypi3-64/post-image.sh"
 BR2_ROOTFS_POST_SCRIPT_ARGS="--aarch64 --genimage-cfg=$(BR2_EXTERNAL_NABLA_PATH)/board/raspberrypi/scripts/genimage.cfg"
 BR2_LINUX_KERNEL=y
 BR2_LINUX_KERNEL_CUSTOM_TARBALL=y
-BR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION="$(call github,raspberrypi,linux,404fa4287aedbfba0daf3b1b792608405adf5f87)/linux-404fa4287aedbfba0daf3b1b792608405adf5f87.tar.gz"
-BR2_LINUX_KERNEL_PATCH="$(BR2_EXTERNAL_NABLA_PATH)/board/raspberrypi/patches"
+BR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION="$(call github,raspberrypi,linux,rpi-4.14.y)/rpi-4.14.y.tar.gz"
+BR2_LINUX_KERNEL_PATCH="$(BR2_EXTERNAL_NABLA_PATH)/board/raspberrypi/patches/linux/rpi-4.14.y"
 BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
 BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="$(BR2_EXTERNAL_NABLA_PATH)/board/raspberrypi/configs/bcm2710_64_defconfig"
 BR2_LINUX_KERNEL_DTS_SUPPORT=y
