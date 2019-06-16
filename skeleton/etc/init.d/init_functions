@@ -7,6 +7,9 @@ LO_PRIO=1
 HI_PRIO=50
 RT_PRIO=90
 
+# the name of the configuration directory on the boot device
+config_directory=".config"
+
 # translate scheduler policy string into a chrt flag
 # needs SCHEDULER_POLICY to be set in nabla.conf
 _chrt_policy() {

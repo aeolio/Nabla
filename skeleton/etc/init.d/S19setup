@@ -4,13 +4,15 @@
 #		used with an otherwise volatile ram disk file system.
 #
 
+### functions that are used in more than one init script
+[ -x /etc/init.d/init_functions ] && . /etc/init.d/init_functions
+
 # assume boot device is alredy mounted r/o
 device_mounted=1
 device_readable=0
 # other global variables
 mountpoint=""
 blockdevice=""
-config_directory=""
 # device names for block devices
 HARD_DISK=/dev/sd[a-z][0-9]
 FLASH_DISK=/dev/mmcblk[0-9]p[0-9]
@@ -19,8 +21,6 @@ partition_name="NABLA"
 # the default system directories to synchronize
 default_sync_directories="/etc/bruteFIR /etc/fstab /etc/mpd.conf /etc/modules.conf /etc/nabla.conf /etc/network/interfaces /etc/ssh /etc/random_seed /etc/wpa_supplicant /var/lib/mpd /var/lib/mpd/playlists"
 script=$(basename $0)
-# the name of the configuration directory on the boot device
-config_directory=".config"
 # main configuration file relative to config directory
 config_file_path="etc/nabla.conf"
 # main configuration file during operation
