@@ -1,0 +1,76 @@
+#! /bin/sh
+#
+# urandom	This script saves the random seed between reboots.
+#		It is called from the boot, halt and reboot scripts.
+#
+# Version:	@(#)urandom  1.33  22-Jun-1998  miquels@cistron.nl
+#
+
+[ -c /dev/urandom ] || exit 0
+
+random_seed=/etc/random-seed
+poolfile=/proc/sys/kernel/random/poolsize
+
+[ -r $poolfile ] && bits=`cat $poolfile` || bits=4096
+bytes=$(expr ${bits} / 8)
+
+# Carry a random seed from start-up to start-up
+# Load and then save the whole entropy pool
+seed_entropy() {
+	if [ -f ${random_seed} ]; then
+		cat ${random_seed} >/dev/urandom
+	else
+		touch ${random_seed}
+	fi
+	chmod 600 ${random_seed}
+	umask 077
+	dd if=/dev/urandom of=${random_seed} count=1 bs=${bytes} \
+		>/dev/null 2>&1 || return 1
+	umask 022
+	return 0
+}
+
+# Carry a random seed from shut-down to start-up
+# Save the whole entropy pool
+save_entropy() {
+	echo "Saving random seed..."
+	touch $random_seed
+	chmod 600 $random_seed
+	dd if=/dev/urandom of=${random_seed} count=1 bs=${bytes}
+		>/dev/null 2>&1 || return 1
+	return 0
+}
+
+# check for read only file system
+if ! touch ${random_seed} 2>/dev/null
+then
+	echo "read-only file system detected...done"
+	exit
+fi
+
+case "$1" in
+	start)
+		[ "$VERBOSE" != "no" ] && printf "Initializing random number generator... "
+		seed_entropy
+		if [ $? ]; then
+			rc="done."
+		else
+			rc="failed."
+		fi
+		[ "$VERBOSE" != "no" ] && echo ${rc}
+		;;
+	stop)
+		[ "$VERBOSE" != "no" ] && printf "Saving random seed... "
+		save_entropy
+		if [ $? ]; then
+			rc="done."
+		else
+			rc="failed."
+		fi
+		[ "$VERBOSE" != "no" ] && echo "done."
+		;;
+	*)
+		echo "Usage: S20urandom {start|stop}" >&2
+		exit 1
+		;;
+esac
