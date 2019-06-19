@@ -10,6 +10,13 @@ GENIMAGE_TMP="${BUILD_DIR}/genimage.tmp"
 for arg in "$@"
 do
 	case "${arg}" in
+		--add-config-dir)
+		if [ ! -d "${BINARIES_DIR}/.config" ]; then
+			echo "Creating config directory for image."
+			mkdir -p ${BINARIES_DIR}/.config
+		fi
+		;;
+
 		--add-syslinux-cfg)
 		if [ ! -f "${BINARIES_DIR}/syslinux.cfg" ]; then
 			echo "Creating syslinux.cfg file for image."
