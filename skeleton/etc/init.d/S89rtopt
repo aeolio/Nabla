@@ -14,13 +14,6 @@ if [ "$1" = "stop" ];  then
 	exit 0;
 fi
 
-# Run any scripts in .config/root directory on boot device
-mount_directory=/media
-home_overlay=${mount_directory}/${NABLA_PARTITION}/${config_directory}/root
-for s in ${home_overlay}/*.sh;  do
-	source $s
-done
-
 # Change CPU frequency scaling governor to performance
 governor="performance"
 available_cpus="/sys/devices/system/cpu/cpu[0-9]*"
