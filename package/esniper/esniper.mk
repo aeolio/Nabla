@@ -7,7 +7,7 @@
 ESNIPER_VERSION = 2-35-0
 ESNIPER_SOURCE = esniper-$(ESNIPER_VERSION).tgz
 ESNIPER_SITE = https://sourceforge.net/projects/esniper/files/esniper/2.35.0
-ESNIPER_DEPENDENCIES = libcurl libopenssl ca-certificates
+ESNIPER_DEPENDENCIES = libcurl openssl ca-certificates
 ESNIPER_LICENSE = GPLv2+
 ESNIPER_LICENSE_FILES = COPYING
 ESNIPER_INSTALL_STAGING = NO
