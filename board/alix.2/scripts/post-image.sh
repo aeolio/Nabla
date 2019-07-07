@@ -21,13 +21,15 @@ do
 		if [ ! -f "${BINARIES_DIR}/syslinux.cfg" ]; then
 			echo "Creating syslinux.cfg file for image."
 			cat << __EOF__ >> "${BINARIES_DIR}/syslinux.cfg"
+SERIAL 0 38400
+
 DEFAULT nabla
-PROMPT 0
+TIMEOUT 10
+SAY Booting Nabla music player ... 
 
 LABEL nabla
-  SAY Booting Nabla music player ...
-  KERNEL /boot/bzImage
-  APPEND isolcpus=1 quiet
+KERNEL /boot/bzImage
+APPEND  console=ttyS0,38400n8
 __EOF__
 		fi
 		;;

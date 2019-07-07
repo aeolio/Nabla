@@ -32,7 +32,7 @@ ROOTFS_START=$(expr ${BOOT_START} + ${BOOT_SIZE})
 BOOT_IMAGE_NAME=boot.img
 CONFIG_IMAGE_NAME=nabla.img
 ROOT_FS_NAME=rootfs.ext4
-SYSTEM_IMAGE_NAME=system.img
+SYSTEM_IMAGE_NAME=sdcard.img
 
 ###
 ### build boot file system
