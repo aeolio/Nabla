@@ -5,6 +5,8 @@
 ################################################################################
 
 target = $(findstring rockpi4,$(BR2_DEFCONFIG))
+linux_version = $(BR2_LINUX_KERNEL_VERSION)
+linux_branch = $(patsubst %.%,%,$(linux_version))
 
 # Compiling older releases of kernel sources with GCC 8 results in warnings that are treated 
 # as errors. To be able to build the standard kernel for RockPi4 without modification, some 
@@ -21,6 +23,20 @@ LINUX_MAKE_ENV += KCFLAGS='-Wno-packed-not-aligned \
 	-Wno-unused-function'
 endif
 endif
+
+# if patch directory exists, symbolic link should also be present
+define LINUX_PATCH_ASSURANCE
+	patch_dirs=$(BR2_GLOBAL_PATCH_DIR); \
+	linux_version=$(BR2_LINUX_KERNEL_VERSION); \
+	linux_branch=$${linux_version%.*}; \
+	for p in $${patch_dirs}; do \
+		if [ -d "$$p/linux/$${linux_branch}" ] && [ ! -h "$$p/linux/$${linux_version}" ]; then \
+			echo "patch directory link missing"; \
+			exit -1; \
+		fi \
+	done
+endef
+LINUX_PRE_PATCH_HOOKS += LINUX_PATCH_ASSURANCE
 
 ifeq ($(BR2_LINUX_KERNEL_DTB_OVERLAY_SUPPORT),y)
 define LINUX_INSTALL_OVERLAYS
