@@ -58,8 +58,8 @@ echo $(_get_nrt_cpumask) > /sys/bus/workqueue/devices/writeback/cpumask
 
 # change timer frequency, this patch originated from 
 # https://linuxmusicians.com/viewtopic.php?t=15378
-echo 2048 > /sys/class/rtc/rtc0/max_user_freq
-echo 2048 > /proc/sys/dev/hpet/max-user-freq
+[ -d /sys/class/rtc/rtc0 ] && echo 2048 > /sys/class/rtc/rtc0/max_user_freq
+[ -d /proc/sys/dev/hpet ] && echo 2048 > /proc/sys/dev/hpet/max-user-freq
 
 # set processor affinity to partitioned cpu
 rt_id=$(_get_rt_cpuid)
