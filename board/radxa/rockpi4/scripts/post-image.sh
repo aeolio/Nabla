@@ -153,7 +153,7 @@ do
 done
 
 # which payload to use in generating system image
-if [ $BUILD_ROOTFS eq 1 ]; then
+if [ $BUILD_ROOTFS -eq 1 ]; then
 	payload=${ROOT_FS_NAME}
 else
 	payload=${CONFIG_IMAGE_NAME}
