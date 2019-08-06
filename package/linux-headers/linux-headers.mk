@@ -4,9 +4,11 @@
 #
 ################################################################################
 
-# RT patch for Linux 4.14 contains also changes in sample code
-ifeq ($(BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_4_14),y)
+# RT patch for newer Linux versions contains also changes in sample code
 LINUX_HEADERS_EXCLUDES = configs *.bmp
-else
-LINUX_HEADERS_EXCLUDES = configs samples *.bmp
+ifeq ($(BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_4_4),y)
+LINUX_HEADERS_EXCLUDES += samples
+endif
+ifeq ($(BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_3_18),y)
+LINUX_HEADERS_EXCLUDES += samples
 endif
