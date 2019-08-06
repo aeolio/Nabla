@@ -87,7 +87,7 @@ generate_system_image() {
 	echo -e "\e[36m Generate system image : ${SYSTEM_IMAGE} start \e[0m"
 
 	# last dd rootfs will extend gpt image to fit the size,
-	# but this will overrite the backup table of GPT
+	# but this will override the backup table of GPT
 	# will cause corruption error for GPT
 	IMG_ROOTFS_SIZE=$(stat -L --format="%s" ${ROOTFS_IMAGE})
 	GPTIMG_MIN_SIZE=$(expr $IMG_ROOTFS_SIZE + \( ${LOADER1_SIZE} + ${RESERVED1_SIZE} + ${RESERVED2_SIZE} + ${LOADER2_SIZE} + ${ATF_SIZE} + ${BOOT_SIZE} + 35 \) \* 512)
