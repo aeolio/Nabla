@@ -1,0 +1,18 @@
+--- a/crypto/rand/rand_unix.c
++++ b/crypto/rand/rand_unix.c
+@@ -362,6 +362,7 @@
+ } random_devices[OSSL_NELEM(random_device_paths)];
+ static int keep_random_devices_open = 1;
+ 
++#undef DEVRANDOM_WAIT
+ #   if defined(__linux) && defined(DEVRANDOM_WAIT)
+ static void *shm_addr;
+ 
+@@ -575,6 +576,7 @@
+ #  else
+     size_t entropy_available;
+ 
++#undef OPENSSL_RAND_SEED_GETRANDOM
+ #   if defined(OPENSSL_RAND_SEED_GETRANDOM)
+     {
+         size_t bytes_needed;
