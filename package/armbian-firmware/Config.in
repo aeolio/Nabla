@@ -1,0 +1,11 @@
+# firmware files for RockChip /Radxa wiFi and Bluetooth
+# this configuration snippet should go into buildroot package armbian-firmware
+
+if BR2_PACKAGE_ARMBIAN_FIRMWARE
+
+config BR2_PACKAGE_ARMBIAN_FIRMWARE_AP6256
+	bool "AP6256 WiFi/BT"
+	help
+	  Firmware files for AP6256 WiFi/BT used in Radxa Rock Pi 4B.
+
+endif
