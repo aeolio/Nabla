@@ -1,6 +1,6 @@
 menu "Firmware"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/rk-brcmfmac-firmware/Config.in"
+	source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
 endmenu
 
 menu "Private packages"
