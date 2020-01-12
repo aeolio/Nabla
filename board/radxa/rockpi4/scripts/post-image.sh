@@ -17,7 +17,7 @@ RESERVED1_SIZE=128
 RESERVED2_SIZE=8192
 LOADER2_SIZE=8192
 ATF_SIZE=8192
-BOOT_SIZE=1048576 # <- check if this may be decreased
+BOOT_SIZE=229376 # total image size is 128 MB
 
 SYSTEM_START=0
 LOADER1_START=64
@@ -96,10 +96,10 @@ generate_system_image() {
 	dd if=/dev/zero of=${SYSTEM_IMAGE} bs=1M count=0 seek=$GPT_IMAGE_SIZE
 
 	parted -s ${SYSTEM_IMAGE} mklabel gpt
-	parted -s ${SYSTEM_IMAGE} unit s mkpart loader1 ${LOADER1_START} $(expr ${RESERVED1_START} - 1)
+	parted -s ${SYSTEM_IMAGE} unit s mkpart IDBlock ${LOADER1_START} $(expr ${RESERVED1_START} - 1)
 	# parted -s ${SYSTEM_IMAGE} unit s mkpart reserved1 ${RESERVED1_START} $(expr ${RESERVED2_START} - 1)
 	# parted -s ${SYSTEM_IMAGE} unit s mkpart reserved2 ${RESERVED2_START} $(expr ${LOADER2_START} - 1)
-	parted -s ${SYSTEM_IMAGE} unit s mkpart loader2 ${LOADER2_START} $(expr ${ATF_START} - 1)
+	parted -s ${SYSTEM_IMAGE} unit s mkpart uboot ${LOADER2_START} $(expr ${ATF_START} - 1)
 	parted -s ${SYSTEM_IMAGE} unit s mkpart trust ${ATF_START} $(expr ${BOOT_START} - 1)
 	parted -s ${SYSTEM_IMAGE} unit s mkpart boot ${BOOT_START} $(expr ${ROOTFS_START} - 1)
 	parted -s ${SYSTEM_IMAGE} set 4 boot on
