@@ -14,7 +14,7 @@ RK_FIRMWARE_INSTALL_TARGET = NO
 RK_FIRMWARE_DEPENDENCIES = host-rk-firmware host-uboot-tools
 
 # initialization files names contain the SoC name
-RK_FIRMWARE_CHIP_NAME = RK3399
+RK_FIRMWARE_CHIP_NAME = $(BR2_PACKAGE_RK_FIRMWARE_CHIP_NAME)
 
 # get the correct firmware names from these files
 # loader images for [IDB, SPI] and trusted firmware

@@ -9,11 +9,13 @@ config BR2_PACKAGE_RK_FIRMWARE
 
 	  https://github.com/radxa/rkbin
 
-config BR2_PACKAGE_RK_FIRMWARE_CHIP
+config BR2_PACKAGE_RK_FIRMWARE_CHIP_NAME
 	string "Chip name"
 	default ""
 	depends on BR2_PACKAGE_RK_FIRMWARE
 	help
-	  Specify the name of the SoC here. 
+	  Specify the name of the SoC here. This string is used in selecting corresponding 
+	  configurations from the package directories RKBOOT and RKTRUST, and must 
+	  be UPPERCASE. 
 
-	  Radxa Rock Pi 4 uses rk3399 by Rockchip. 
+	  Radxa Rock Pi 4 uses RK3399. 
