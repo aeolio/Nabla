@@ -4,8 +4,12 @@
 #
 ################################################################################
 
+### Radxa Version
 RK_FIRMWARE_VERSION = ce80f14c683d1eb5d1b2af0360512480848ff6f9
 RK_FIRMWARE_SITE = $(call github,radxa,rkbin,$(RK_FIRMWARE_VERSION))
+### Rockchip Version does not boot
+# RK_FIRMWARE_VERSION = ea2c27b84de35b975af0025afb2ddd1ca7114f32
+# RK_FIRMWARE_SITE = $(call github,rockchip-linux,rkbin,$(RK_FIRMWARE_VERSION))
 RK_FIRMWARE_LICENSE = PROPRIETARY
 RK_FIRMWARE_LICENSE_FILES = 
 RK_FIRMWARE_INSTALL_IMAGES = YES
@@ -54,17 +58,20 @@ define RK_FIRMWARE_BUILD_CMDS
 	cat $(@D)/$(RK_FIRMWARE_IDBLDR) >> $(@D)/idbloader.img
 	$(MKIMAGE) -n rk3399 -T rkspi -d $(@D)/$(RK_FIRMWARE_DDRFW) $(@D)/idbloader-spi.img
 	cat $(@D)/$(RK_FIRMWARE_SPILDR) >> $(@D)/idbloader-spi.img
-	sed -e 's|PATH=tools/rk_tools|PATH=$(@D)|g' $(RK_FIRMWARE_TRUST_INI) | \
-		sed -e 's|PATH=trust.img|PATH=$(@D)/trust.img|' > $(@D)/trust.ini
+	# first remove leading extra path (radxa only), then convert to absolute path
+	sed -e 's|PATH=tools/rk_tools/|PATH=|' $(RK_FIRMWARE_TRUST_INI) | \
+		sed -e 's|PATH=|PATH=$(@D)/|' > $(@D)/trust.ini
 	$(@D)/tools/trust_merger --size 1024 1 $(@D)/trust.ini
 endef
 
 define RK_FIRMWARE_INSTALL_IMAGES_CMDS
+	# loader images, not used afterwards
 	$(INSTALL) -D -m 0644 $(@D)/idbloader.img $(BINARIES_DIR)/u-boot/idbloader.img
 	$(INSTALL) -D -m 0644 $(@D)/idbloader-spi.img $(BINARIES_DIR)/u-boot/spi/idbloader-spi.img
-	# next two are needed later for U-Boot build
+	# loader image is built by U-Boot from the individual files
 	$(INSTALL) -D -m 0644 $(@D)/$(RK_FIRMWARE_DDRFW) $(BINARIES_DIR)/firmware/$(RK_FIRMWARE_DDRFW)
 	$(INSTALL) -D -m 0644 $(@D)/$(RK_FIRMWARE_SPILDR) $(BINARIES_DIR)/firmware/$(RK_FIRMWARE_SPILDR)
+	# trusted firmware
 	$(INSTALL) -D -m 0644 $(@D)/trust.img $(BINARIES_DIR)/u-boot/trust.img
 endef
 
