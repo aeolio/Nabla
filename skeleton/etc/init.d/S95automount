@@ -13,6 +13,7 @@ parse_options() {
 	username="mpd"
 	password=""
 	mode="ro"
+	version="3.1.1"
 	gid=$(grep audio /etc/group | awk 'BEGIN {FS=":"} {print $3}')
 	uid=$(grep mpd /etc/passwd | awk 'BEGIN {FS=":"} {print $3}')
 	dmask="0222"
@@ -35,6 +36,9 @@ parse_options() {
 		password=*)
 			password=$opt
 			;;
+		vers=*)
+			version=$opt
+			;;
 		*)
 			options_out="$options_out,$opt"
 			;;
@@ -53,6 +57,8 @@ parse_options() {
 		elif [ -n $username ]; then
 			options_out="$options_out,username=$username"
 		fi
+		# add smb version
+		options_out="$options_out,vers=$version"
 	elif [ $type = "vfat" ] || [ $type = "ntfs" ] ; then
 		# set owner and group
 		options_out="$options_out,gid=$gid,uid=$uid"
