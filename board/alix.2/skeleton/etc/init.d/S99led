@@ -21,8 +21,8 @@ stop() {
 }
 
 modprobe leds_gpio
-modprobe ledtrig_gpio
 modprobe ledtrig_heartbeat
+modprobe ledtrig_netdev
 modprobe ledtrig_timer
 
 case "$1" in

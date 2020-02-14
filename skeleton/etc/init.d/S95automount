@@ -6,6 +6,18 @@
 definition_file="/etc/fstab"
 mount_file="/proc/mounts"
 
+### expects two variables
+###	option_string 
+###	option_name
+### returns option_string
+append_option() {
+	eval "echo ${1},${2}=\${$2}"
+}
+
+### expects two variables
+###	option_string 
+###	filesystem_type
+### returns option_string
 parse_options() {
 	options_in=$1
 	type=$2
@@ -13,7 +25,7 @@ parse_options() {
 	username="mpd"
 	password=""
 	mode="ro"
-	version="3.1.1"
+	vers="3.1.1"
 	gid=$(grep audio /etc/group | awk 'BEGIN {FS=":"} {print $3}')
 	uid=$(grep mpd /etc/passwd | awk 'BEGIN {FS=":"} {print $3}')
 	dmask="0222"
@@ -21,23 +33,23 @@ parse_options() {
 	for opt in ${options_in//,/ }
 	do
 		case $opt in
-		r[ow])
-			mode=$opt
-			;;
 		gid=*)
-			gid=$opt
+			gid=${opt##*=}
 			;;
 		uid=*)
-			uid=$opt
+			uid=${opt##*=}
 			;;
 		username=*)
-			username=$opt
+			username=${opt##*=}
 			;;
 		password=*)
-			password=$opt
+			password=${opt##*=}
 			;;
 		vers=*)
-			version=$opt
+			vers=${opt##*=}
+			;;
+		r[ow])
+			mode=$opt
 			;;
 		*)
 			options_out="$options_out,$opt"
@@ -49,25 +61,29 @@ parse_options() {
 	# these options should only be relevant for CIFS shares
 	if [ $type = "cifs" ]; then
 		# add group and user id
-		options_out="$options_out,gid=$gid,uid=$uid"
+		options_out=`append_option ${options_out} gid`
+		options_out=`append_option ${options_out} uid`
 		# user name and password were supplied
 		if [ -n "$username" -a -n "$password" ]; then
-			options_out="$options_out,$username,$password"
+			options_out=`append_option ${options_out} username`
+			options_out=`append_option ${options_out} password`
 		# otherwise just append user name
-		elif [ -n $username ]; then
-			options_out="$options_out,username=$username"
+		elif [ -n "$username" ]; then
+			options_out=`append_option ${options_out} username`
 		fi
 		# add smb version
-		options_out="$options_out,vers=$version"
+		options_out=`append_option ${options_out} vers`
 	elif [ $type = "vfat" ] || [ $type = "ntfs" ] ; then
 		# set owner and group
-		options_out="$options_out,gid=$gid,uid=$uid"
+		options_out=`append_option ${options_out} gid`
+		options_out=`append_option ${options_out} uid`
 		# set dmask and fmask
-		options_out="$options_out,dmask=$dmask,fmask=$fmask"
+		options_out=`append_option ${options_out} dmask`
+		options_out=`append_option ${options_out} fmask`
 	fi
 	# first character will be an extra ','
 	if [ -n "$options_out" ]; then options_out=${options_out:1}; fi
-	echo "$options_out"
+	echo ${options_out}
 	return 0
 }
 
