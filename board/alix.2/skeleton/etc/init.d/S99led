@@ -9,6 +9,8 @@
 start() {
 	echo heartbeat > /sys/class/leds/alix\:1/trigger
 	echo netdev > /sys/class/leds/alix\:2/trigger
+	echo wlan0 > /sys/class/leds/alix\:2/device_name
+	echo 1 > /sys/class/leds/alix\:2/tx
 	echo timer > /sys/class/leds/alix\:3/trigger
 	echo 500  > /sys/class/leds/alix\:3/delay_on
 	echo 1500  > /sys/class/leds/alix\:3/delay_off
