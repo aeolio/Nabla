@@ -4,14 +4,14 @@
 #
 ################################################################################
 
-BRUTEFIR_VERSION = 1.0m
+BRUTEFIR_VERSION = 1.0o
 BRUTEFIR_SOURCE = brutefir-$(BRUTEFIR_VERSION).tar.gz
-BRUTEFIR_SITE = http://www.ludd.luth.se/~torger/files
+BRUTEFIR_SITE = https://www.torger.se/anders/files
 BRUTEFIR_LICENSE = GPLv2+
 BRUTEFIR_LICENSE_FILES = COPYING
 BRUTEFIR_INSTALL_STAGING = NO
 BRUTEFIR_INSTALL_TARGET = YES
-BRUTEFIR_DEPENDENCIES = fftw fftwf
+BRUTEFIR_DEPENDENCIES = fftw-single fftw-double
 
 BRUTEFIR_MAKE_ENV += " DESTDIR=$STAGING_DIR"
 BRUTEFIR_MAKE_ENV += " FFTW_PATH=$STAGING_DIR/usr"

@@ -3,6 +3,7 @@ config BR2_PACKAGE_BRUTEFIR
 	select BR2_PACKAGE_FFTW_SINGLE
 	select BR2_PACKAGE_FFTW_DOUBLE
 	help
-	  Software convolution engine for applying long FIR filters to multichannel audio.
+	  BruteFIR is a software convolution engine, a program for applying long 
+	  FIR filters to multi-channel digital audio, either offline or in realtime.
 
-	  http://www.ludd.luth.se/~torger/brutefir.html
+	  https://www.torger.se/anders/brutefir.html

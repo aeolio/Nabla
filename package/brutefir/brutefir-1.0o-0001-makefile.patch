@@ -1,6 +1,6 @@
---- brutefir-1.0m/Makefile.orig	2013-11-29 14:55:01.000000000 +0100
-+++ brutefir-1.0m/Makefile	2014-02-22 16:25:08.965208694 +0100
-@@ -4,8 +4,8 @@
+--- brutefir.orig/Makefile
++++ brutefir-1.0o/Makefile
+@@ -9,8 +9,8 @@
  
  ###################################
  # Where to find libraries, and their header files.
@@ -11,3 +11,15 @@
  ifdef FFTW_PATH
  LIBPATHS	+= -L$(FFTW_PATH)/lib
  INCLUDE		+= -I$(FFTW_PATH)/include
+@@ -90,8 +90,9 @@
+ ifeq ($(UNAME),Linux)
+ LIB_TARGETS	+= alsa.bfio
+ endif
+-LIB_TARGETS	+= oss.bfio
+-LIB_TARGETS	+= jack.bfio
++# OSS and Jack are not used
++# LIB_TARGETS	+= oss.bfio
++# LIB_TARGETS	+= jack.bfio
+ endif
+ 
+ # FreeBSD
