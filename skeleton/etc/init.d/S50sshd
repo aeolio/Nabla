@@ -47,7 +47,7 @@ start() {
 	generate_missing_keys
 	restore_permissions
 	echo -n "Starting sshd: "
-	/usr/sbin/sshd
+	/usr/sbin/sshd -E /var/log/sshd.log
 	touch /var/lock/sshd
 	echo "OK"
 }
