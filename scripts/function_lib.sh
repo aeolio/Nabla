@@ -54,4 +54,20 @@ add_mountpoint() {
 	fi 
 } 
 
-
+### dereference firmware file names using WHENCE file from firmware directory
+### Usage:  copy_firmware <relative path> <source directory> <target directory>
+# $1 = filename relative to firmware directory 
+# $2 = source firmware directory 
+# $3 = target firmware directory 
+copy_firmware() {
+	# installation target 
+	fw_dest=`awk -v f=$1 '/Link:/ { if ($2 == f) {print $4} }' $2/WHENCE`
+	# if installation target is link, copy target file first, then create link 
+	if [ -n "$fw_dest" ]; then
+		cp -f $2/${fw_dest} $3/${fw_dest} || exit 1
+		ln -frs $3/${fw_dest} $3/$1 || exit 1
+	# otherwise plain file copy
+	else
+		cp -f $2/$1 $3/$1 || exit 1
+	fi
+}

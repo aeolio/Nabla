@@ -13,6 +13,7 @@ fi
 if [ $(grep -c "BR2_PACKAGE_LINUX_FIRMWARE=y" $BR2_CONFIG) -gt 0 ]; then
 	_SOURCE_DIR=$(ls -dt $BUILD_DIR/linux-firmware-* | awk '{ print $1; exit }')
 	_TARGET_DIR="$TARGET_DIR/lib/firmware"
+	FW_PKG_LIST=""
 
 	### define firmware packages
 	# Realtek firmware
@@ -20,7 +21,7 @@ if [ $(grep -c "BR2_PACKAGE_LINUX_FIRMWARE=y" $BR2_CONFIG) -gt 0 ]; then
 	# Ralink firmware
 	FW_PKG_LIST="$FW_PKG_LIST rt2561.bin rt2561s.bin rt2661.bin rt2860.bin rt2870.bin rt3070.bin rt3071.bin rt3090.bin rt3290.bin rt73.bin"
 	# Intel wireless firmware
-	FW_PKG_LIST="$FW_PKG_LIST iwlwifi-6000g2a-6.ucode iwlwifi-6000g2b-6.ucode iwlwifi-7265-13.ucode iwlwifi-7265D-13.ucode"
+	FW_PKG_LIST="$FW_PKG_LIST iwlwifi-6000g2a-6.ucode iwlwifi-6000g2b-6.ucode iwlwifi-7265-17.ucode iwlwifi-7265D-29.ucode"
 	# Intel graphic driver for Minix Neo
 	FW_PKG_LIST="$FW_PKG_LIST i915"
 	# Ralink Mediatek MT7601U 802.11bgn USB
@@ -32,15 +33,14 @@ if [ $(grep -c "BR2_PACKAGE_LINUX_FIRMWARE=y" $BR2_CONFIG) -gt 0 ]; then
 		for fw_pkg in $FW_PKG_LIST; do
 			# entry corresponds to a file
 			if [ -f ${_SOURCE_DIR}/$fw_pkg ]; then
-				cp -rf ${_SOURCE_DIR}/$fw_pkg ${_TARGET_DIR} || exit 2
+				cp -f ${_SOURCE_DIR}/$fw_pkg ${_TARGET_DIR} || exit 2
 			# entry corresponds to a directory
 			elif [ -d ${_SOURCE_DIR}/$fw_pkg ]; then
 				mkdir -p ${_TARGET_DIR}/$fw_pkg || exit 3
 				cp -rf ${_SOURCE_DIR}/$fw_pkg/* ${_TARGET_DIR}/$fw_pkg || exit 4
-			# entry is neither a file nor a directory
+			# entry is not present, use information from WHENCE
 			else
-				echo "$fw_pkg not contained in firmware package"
-				exit 5
+				copy_firmware ${fw_pkg} ${_SOURCE_DIR} ${_TARGET_DIR} || exit 5
 			fi
 		done
 	fi
