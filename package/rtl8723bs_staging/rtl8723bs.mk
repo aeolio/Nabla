@@ -1,10 +1,10 @@
 ################################################################################
 #
-# rtl8723bs
+# rtl8723bs -- Realtek SDIO Wi-Fi driver, mainlined with kernel 4.12.y
 #
 ################################################################################
 
-RTL8723BS_VERSION = master
+RTL8723BS_VERSION = db2c4f61d48fe3b47c167c8bcd722ce83c24aca5
 RTL8723BS_SITE = https://github.com/hadess/rtl8723bs
 RTL8723BS_SITE_METHOD = git
 RTL8723BS_INSTALL_STAGING = YES

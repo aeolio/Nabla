@@ -1,8 +1,11 @@
 ################################################################################
 #
-# Broadcom Wifi and Bluetooth firmware for Radxa Rock Pi 4
+# Firmware for arm devices
 #
 ################################################################################
+
+# use latest version
+ARMBIAN_FIRMWARE_VERSION = 1214f6c0811bb810cffaa5e6df4d4d1426bb56bd
 
 ifeq ($(BR2_PACKAGE_ARMBIAN_FIRMWARE_AP6256),y)
 
