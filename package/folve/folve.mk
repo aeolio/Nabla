@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-FOLVE_VERSION = master
+FOLVE_VERSION = 84b92b49c8e64aaa6370753c3900f90eb6fef998
 FOLVE_SITE = https://github.com/hzeller/folve
 FOLVE_SITE_METHOD = git
 FOLVE_INSTALL_STAGING = YES

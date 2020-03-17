@@ -1,0 +1,64 @@
+--- /tmp/Makefile
++++ /home/iago/intel64/build/zita-convolver-4.0.3/source/Makefile
+@@ -20,10 +20,15 @@
+ 
+ # Modify as required.
+ #
+-SUFFIX := $(shell uname -m | sed -e 's/^unknown/$//' -e 's/^i.86/$//' -e 's/^x86_64/$/64/')
+-PREFIX ?= /usr/local
++SUFFIX := `$(CXX) -dumpmachine | sed -n -e 's/^unknown-.*//' -e 's/^i.86-.*//' -e 's/^x86_64-.*/64/p'`
++PREFIX ?= /usr
+ INCDIR ?= $(PREFIX)/include
+ LIBDIR ?= $(PREFIX)/lib$(SUFFIX)
++
++ifdef FFTW_PATH
++LIBPATH += -L$(FFTW_PATH)/lib
++INCPATH += -I$(FFTW_PATH)/include
++endif
+ 
+ 
+ MAJVERS = 4
+@@ -31,12 +36,10 @@
+ VERSION = $(MAJVERS).$(MINVERS)
+ 
+ 
+-CPPFLAGS += -I. -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS
+-CPPFLAGS += -DENABLE_VECTOR_MODE 
+-CXXFLAGS += -fPIC -Wall -ffast-math -funroll-loops -O2
+-CXXFLAGS += -march=native
+-LDLFAGS += 
+-LDLIBS +=
++INCPATH += -I.
++_PFLAGS = -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DENABLE_VECTOR_MODE 
++_CFLAGS = -pthread -fPIC -Wall -ffast-math -funroll-loops -O3
++_LFLAGS = -shared -Wl,-soname,$(ZITA-CONVOLVER_MAJ)
+ 
+ 
+ ZITA-CONVOLVER_SO = libzita-convolver.so
+@@ -47,8 +50,12 @@
+ ZITA-CONVOLVER_H = zita-convolver.h 
+ 
+ 
++%.o:	%.cc
++	$(CXX) $(_PFLAGS) $(CPPFLAGS) $(_CFLAGS) $(CXXFLAGS) $(INCPATH) -c $<
++
++
+ $(ZITA-CONVOLVER_MIN):	$(ZITA-CONVOLVER_O)
+-	$(CXX) -shared $(LDFLAGS) -Wl,-soname,$(ZITA-CONVOLVER_MAJ) -o $(ZITA-CONVOLVER_MIN) $(ZITA-CONVOLVER_O) $(ZITA-CONVOLVER_DEP)
++	$(CXX) $(_LFLAGS) $(LDFLAGS) $(LIBPATH) -o $(ZITA-CONVOLVER_MIN) $(ZITA-CONVOLVER_O) $(ZITA-CONVOLVER_DEP)
+ 
+ 
+ install:	$(ZITA-CONVOLVER_MIN)
+@@ -58,10 +65,11 @@
+ 	install -m 755 $(ZITA-CONVOLVER_MIN) $(DESTDIR)$(LIBDIR)
+ 	ldconfig
+ 	ln -sf $(ZITA-CONVOLVER_MIN) $(DESTDIR)$(LIBDIR)/$(ZITA-CONVOLVER_SO)
++	ln -sf $(ZITA-CONVOLVER_MIN) $(DESTDIR)$(LIBDIR)/$(ZITA-CONVOLVER_MAJ)
+ 
+ uninstall:
+ 	rm -rf $(DESTDIR)$(INCDIR)/$(ZITA-CONVOLVER_H)
+ 	rm -rf $(DESTDIR)$(LIBDIR)/libzita-convolver*
+ 
+ clean:
+-	/bin/rm -f *~ *.o *.a *.d *.so.*
++	$(RM) -f *~ *.o *.a *.d *.so.*
