@@ -6,7 +6,7 @@ update_config.sh
 *.backup
 *.tar.bz2
 # build log files
-buildroot*.txt
+board/*/*.txt
 # temporary configurations for test, remove for production
 board/*/skeleton/etc/fstab
 board/*/skeleton/etc/nabla.conf
