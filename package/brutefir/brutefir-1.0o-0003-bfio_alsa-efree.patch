@@ -1,15 +1,16 @@
---- brutefir.orig/bfio_alsa.c	2013-11-29 14:55:01.000000000 +0100
-+++ brutefir-1.0m/bfio_alsa.c	2014-02-23 10:44:36.213139553 +0100
-@@ -446,7 +446,7 @@
+--- brutefir.orig/bfio_alsa.c
++++ brutefir-1.0o/bfio_alsa.c
+@@ -446,7 +446,8 @@
  	memcpy(fd2as[pollfd.fd].channel_selection, channel_selection,
  	       used_channels * sizeof(int));
      }
 -    efree(settings->device);
-+    // efree(settings->device);
++    if (settings->device != NULL)
++        efree(settings->device);
      efree(settings);
      return pollfd.fd;
  }
-@@ -595,6 +595,15 @@
+@@ -595,6 +596,15 @@
      const uint8_t *ptr;
      int n, i, err;
  
@@ -25,7 +26,7 @@
      if (as->isinterleaved) {
  	i = as->sample_size * as->open_channels;
  	if ((n = snd_pcm_writei(as->handle, &((const uint8_t *)buf)[offset],
-@@ -614,15 +623,6 @@
+@@ -614,15 +624,6 @@
              goto bfio_write_error;
          }
      }

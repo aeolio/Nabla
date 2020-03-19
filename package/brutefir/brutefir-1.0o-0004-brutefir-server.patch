@@ -1,5 +1,5 @@
---- brutefir.orig/brutefir.c	2013-11-29 14:55:01.000000000 +0100
-+++ brutefir-1.0m/brutefir.c	2014-02-23 10:44:36.301140338 +0100
+--- brutefir.orig/brutefir.c
++++ brutefir-1.0m/brutefir.c
 @@ -62,7 +62,7 @@
      
      emalloc_set_exit_function(bf_exit, BF_EXIT_NO_MEMORY);
