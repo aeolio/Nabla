@@ -31,6 +31,14 @@ dtparam=spi=on
 EOF
 fi
 
+### create missing nvram file for Raspberry Pi 4
+_TARGET_DIR="${TARGET_DIR}/lib/firmware"
+src_file=brcm/brcmfmac43455-sdio.txt
+dst_file=brcm/brcmfmac43455-sdio.raspberrypi,4-model-b.txt
+if [ -f ${_TARGET_DIR}/${src_file} ] && ! [ -l ${_TARGET_DIR}/${dst_file} ]; then
+	ln -rs ${_TARGET_DIR}/${src_file} ${_TARGET_DIR}/${dst_file}
+fi
+
 ### copy basic configuration files
 config_dir=${BINARIES_DIR}/.config/etc
 config_src=~/nabla/config/etc
