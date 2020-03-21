@@ -4,7 +4,7 @@
 if BR2_PACKAGE_ARMBIAN_FIRMWARE
 
 config BR2_PACKAGE_ARMBIAN_FIRMWARE_AP6256
-	bool "AP6256 WiFi/BT"
+	bool "AP6256 BT/WiFi"
 	help
 	  Firmware files for AP6256 WiFi/BT used in Radxa Rock Pi 4B.
 
