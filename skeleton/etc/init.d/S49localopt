@@ -10,6 +10,9 @@
 ### initialize system variables
 [ -f /etc/nabla.conf ] && . /etc/nabla.conf
 
+### some optimizations should be run regardless of feature enabling
+[ -e /usr/bin/ntpdate ] && ntpdate -bs 3.de.pool.ntp.org
+
 ### check if feature is enabled
 [ "$NABLA_LOCAL_OPTIMIZATION" != "Y" ] && exit 0
 
