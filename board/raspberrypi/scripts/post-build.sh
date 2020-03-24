@@ -24,7 +24,7 @@ fi
 if ! grep -q 'device tree' "${CONFIG_FILE}"; then
 	cat  >> "${CONFIG_FILE}" << EOF
 
-#device tree
+# device tree
 dtparam=i2c_arm=on
 dtparam=i2s=on
 dtparam=spi=on
