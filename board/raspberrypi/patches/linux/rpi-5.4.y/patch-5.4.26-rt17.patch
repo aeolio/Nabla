@@ -2065,7 +2065,7 @@ index 5c0a1e17219b7..b28cd3acd6743 100644
  #ifdef CONFIG_PPC64
  	OFFSET(DCACHEL1BLOCKSIZE, ppc64_caches, l1d.block_size);
 diff --git a/arch/powerpc/kernel/entry_32.S b/arch/powerpc/kernel/entry_32.S
-index 13f699256258e..172dfb567c25c 100644
+index 13f699256258e..ab609d63d6443 100644
 --- a/arch/powerpc/kernel/entry_32.S
 +++ b/arch/powerpc/kernel/entry_32.S
 @@ -401,7 +401,9 @@ _GLOBAL(DoSyscall)
@@ -2100,13 +2100,13 @@ index 13f699256258e..172dfb567c25c 100644
  1:	stw	r6,RESULT(r1)	/* Save result */
  	stw	r3,GPR3(r1)	/* Update return value */
 -2:	andi.	r0,r9,(_TIF_PERSYSCALL_MASK)
-+2:	andi.	r0,r9,(_TIF_PERSYSCALL_MASK)@h
++2:	andis.	r0,r9,(_TIF_PERSYSCALL_MASK)@h
  	beq	4f
  
  	/* Clear per-syscall TIF flags if any are set.  */
  
 -	li	r11,_TIF_PERSYSCALL_MASK
-+	li	r11,_TIF_PERSYSCALL_MASK@h
++	lis	r11,(_TIF_PERSYSCALL_MASK)@h
  	addi	r12,r2,TI_FLAGS
  3:	lwarx	r8,0,r12
  	andc	r8,r8,r11
@@ -2265,7 +2265,7 @@ index add67498c126b..201ddd5d3f156 100644
  irq_hw_number_t virq_to_hw(unsigned int virq)
  {
 diff --git a/arch/powerpc/kernel/misc_32.S b/arch/powerpc/kernel/misc_32.S
-index 82df4b09e79f4..4af2ef8783619 100644
+index f4e4a1926a7a5..36bd3e7f381e1 100644
 --- a/arch/powerpc/kernel/misc_32.S
 +++ b/arch/powerpc/kernel/misc_32.S
 @@ -37,6 +37,7 @@
@@ -2285,7 +2285,7 @@ index 82df4b09e79f4..4af2ef8783619 100644
  /*
   * void call_do_irq(struct pt_regs *regs, void *sp);
 diff --git a/arch/powerpc/kernel/misc_64.S b/arch/powerpc/kernel/misc_64.S
-index 9bc0aa9aeb654..9bce8e23f33eb 100644
+index ff20c253f2737..bba77ded09311 100644
 --- a/arch/powerpc/kernel/misc_64.S
 +++ b/arch/powerpc/kernel/misc_64.S
 @@ -27,6 +27,7 @@
@@ -4338,10 +4338,10 @@ index d58ce664da843..1b2e9f19c98df 100644
  
  void proc_fork_connector(struct task_struct *task)
 diff --git a/drivers/dma-buf/dma-buf.c b/drivers/dma-buf/dma-buf.c
-index 433d91d710e4e..03d216e3dc548 100644
+index 0fb0358f00736..0abd906478953 100644
 --- a/drivers/dma-buf/dma-buf.c
 +++ b/drivers/dma-buf/dma-buf.c
-@@ -214,7 +214,7 @@ static __poll_t dma_buf_poll(struct file *file, poll_table *poll)
+@@ -215,7 +215,7 @@ static __poll_t dma_buf_poll(struct file *file, poll_table *poll)
  		return 0;
  
  retry:
@@ -4350,7 +4350,7 @@ index 433d91d710e4e..03d216e3dc548 100644
  	rcu_read_lock();
  
  	fobj = rcu_dereference(resv->fence);
-@@ -223,7 +223,7 @@ static __poll_t dma_buf_poll(struct file *file, poll_table *poll)
+@@ -224,7 +224,7 @@ static __poll_t dma_buf_poll(struct file *file, poll_table *poll)
  	else
  		shared_count = 0;
  	fence_excl = rcu_dereference(resv->fence_excl);
@@ -4359,7 +4359,7 @@ index 433d91d710e4e..03d216e3dc548 100644
  		rcu_read_unlock();
  		goto retry;
  	}
-@@ -1189,12 +1189,12 @@ static int dma_buf_debug_show(struct seq_file *s, void *unused)
+@@ -1190,12 +1190,12 @@ static int dma_buf_debug_show(struct seq_file *s, void *unused)
  
  		robj = buf_obj->resv;
  		while (true) {
@@ -4520,7 +4520,7 @@ index 709002515550c..b0c0d4fe0b331 100644
  		}
  	}
 diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
-index 34d41f67b54d1..2ee32b046f260 100644
+index ad8a4bc074fbf..db8f8618b01a6 100644
 --- a/drivers/firmware/efi/efi.c
 +++ b/drivers/firmware/efi/efi.c
 @@ -68,7 +68,7 @@ struct mm_struct efi_mm = {
@@ -4829,7 +4829,7 @@ index 37e3dd3c1a9dc..9a482fb0f4afa 100644
  	spin_unlock_irqrestore(&dev_priv->uncore.lock, irqflags);
  
 diff --git a/drivers/gpu/drm/i915/i915_request.c b/drivers/gpu/drm/i915/i915_request.c
-index 1c5506822dc72..cf10246fb01ad 100644
+index 0d39038898d4e..ecfe88b5853b0 100644
 --- a/drivers/gpu/drm/i915/i915_request.c
 +++ b/drivers/gpu/drm/i915/i915_request.c
 @@ -205,14 +205,14 @@ static void remove_from_engine(struct i915_request *rq)
@@ -6148,10 +6148,10 @@ index 6420ae581a802..0f4f41ed9ffa5 100644
  
  static int __init
 diff --git a/drivers/usb/gadget/function/f_fs.c b/drivers/usb/gadget/function/f_fs.c
-index ced2581cf99fe..534542865742c 100644
+index a9a711e046148..445252a7a3176 100644
 --- a/drivers/usb/gadget/function/f_fs.c
 +++ b/drivers/usb/gadget/function/f_fs.c
-@@ -1717,7 +1717,7 @@ static void ffs_data_put(struct ffs_data *ffs)
+@@ -1718,7 +1718,7 @@ static void ffs_data_put(struct ffs_data *ffs)
  		pr_info("%s(): freeing\n", __func__);
  		ffs_data_clear(ffs);
  		BUG_ON(waitqueue_active(&ffs->ev.waitq) ||
@@ -7898,10 +7898,10 @@ index 430e219e3abaf..5708205542bf8 100644
  				   struct cgroup_subsys_state *css);
  
 diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 3ba3e6da13a6f..affa3798c9f52 100644
+index 57577075d2049..e393b8a1e857e 100644
 --- a/include/linux/cgroup.h
 +++ b/include/linux/cgroup.h
-@@ -750,9 +750,6 @@ static inline void cgroup_path_from_kernfs_id(const union kernfs_node_id *id,
+@@ -751,9 +751,6 @@ static inline void cgroup_path_from_kernfs_id(const union kernfs_node_id *id,
   */
  void cgroup_rstat_updated(struct cgroup *cgrp, int cpu);
  void cgroup_rstat_flush(struct cgroup *cgrp);
@@ -8184,18 +8184,6 @@ index 8b5330dd5ac09..c1583357e9cd4 100644
  	preempt_disable();
  	part->nr_sects = size;
  	preempt_enable();
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 61f2f6ff94673..6ce61770ef343 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -580,6 +580,7 @@ extern void page_frag_free(void *addr);
- void page_alloc_init(void);
- void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp);
- void drain_all_pages(struct zone *zone);
-+void drain_cpu_pages(unsigned int cpu, struct zone *zone);
- void drain_local_pages(struct zone *zone);
- 
- void page_alloc_init_late(void);
 diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
 index da0af631ded5b..8d7bb3c0ff061 100644
 --- a/include/linux/hardirq.h
@@ -11643,23 +11631,6 @@ index f9a0c6189852e..27d32887103dd 100644
  };
  
  int stop_one_cpu(unsigned int cpu, cpu_stop_fn_t fn, void *arg);
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index cd97d2c8840cc..5030ab13db060 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -197,6 +197,12 @@ struct platform_s2idle_ops {
- 	void (*end)(void);
- };
- 
-+#if defined(CONFIG_SUSPEND) || defined(CONFIG_HIBERNATION)
-+extern bool pm_in_action;
-+#else
-+# define pm_in_action false
-+#endif
-+
- #ifdef CONFIG_SUSPEND
- extern suspend_state_t mem_sleep_current;
- extern suspend_state_t mem_sleep_default;
 diff --git a/include/linux/swait.h b/include/linux/swait.h
 index 73e06e9986d4b..21ae66cd41d30 100644
 --- a/include/linux/swait.h
@@ -11693,6 +11664,26 @@ index 73e06e9986d4b..21ae66cd41d30 100644
 +	} while (0)
 +
  #endif /* _LINUX_SWAIT_H */
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 063c0c1e112bd..1ddf6a825468e 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -12,6 +12,7 @@
+ #include <linux/fs.h>
+ #include <linux/atomic.h>
+ #include <linux/page-flags.h>
++#include <linux/locallock.h>
+ #include <asm/page.h>
+ 
+ struct notifier_block;
+@@ -328,6 +329,7 @@ extern unsigned long nr_free_pagecache_pages(void);
+ 
+ 
+ /* linux/mm/swap.c */
++DECLARE_LOCAL_IRQ_LOCK(swapvec_lock);
+ extern void lru_cache_add(struct page *);
+ extern void lru_cache_add_anon(struct page *page);
+ extern void lru_cache_add_file(struct page *page);
 diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
 index e93e249a4e9bf..c88b9cecc78aa 100644
 --- a/include/linux/thread_info.h
@@ -12698,7 +12689,7 @@ index b2817d0929b39..f3430d776a017 100644
  
  	if ((is_tracing_prog_type(prog->type) ||
 diff --git a/kernel/cgroup/cgroup.c b/kernel/cgroup/cgroup.c
-index 595c52d59f310..ac9ec8fc92675 100644
+index 7c9e97553a000..9b729d55a9f4a 100644
 --- a/kernel/cgroup/cgroup.c
 +++ b/kernel/cgroup/cgroup.c
 @@ -1957,7 +1957,6 @@ static void init_cgroup_housekeeping(struct cgroup *cgrp)
@@ -12709,7 +12700,7 @@ index 595c52d59f310..ac9ec8fc92675 100644
  	prev_cputime_init(&cgrp->prev_cputime);
  
  	for_each_subsys(ss, ssid)
-@@ -5014,12 +5013,6 @@ static void css_release_work_fn(struct work_struct *work)
+@@ -5027,12 +5026,6 @@ static void css_release_work_fn(struct work_struct *work)
  	list_del_rcu(&css->sibling);
  
  	if (ss) {
@@ -12722,7 +12713,7 @@ index 595c52d59f310..ac9ec8fc92675 100644
  		cgroup_idr_replace(&ss->css_idr, NULL, css->id);
  		if (ss->css_released)
  			ss->css_released(css);
-@@ -5081,7 +5074,6 @@ static void init_and_link_css(struct cgroup_subsys_state *css,
+@@ -5094,7 +5087,6 @@ static void init_and_link_css(struct cgroup_subsys_state *css,
  	css->id = -1;
  	INIT_LIST_HEAD(&css->sibling);
  	INIT_LIST_HEAD(&css->children);
@@ -12730,7 +12721,7 @@ index 595c52d59f310..ac9ec8fc92675 100644
  	css->serial_nr = css_serial_nr_next++;
  	atomic_set(&css->online_cnt, 0);
  
-@@ -5090,9 +5082,6 @@ static void init_and_link_css(struct cgroup_subsys_state *css,
+@@ -5103,9 +5095,6 @@ static void init_and_link_css(struct cgroup_subsys_state *css,
  		css_get(css->parent);
  	}
  
@@ -12740,7 +12731,7 @@ index 595c52d59f310..ac9ec8fc92675 100644
  	BUG_ON(cgroup_css(cgrp, ss));
  }
  
-@@ -5194,7 +5183,6 @@ static struct cgroup_subsys_state *css_create(struct cgroup *cgrp,
+@@ -5207,7 +5196,6 @@ static struct cgroup_subsys_state *css_create(struct cgroup *cgrp,
  err_list_del:
  	list_del_rcu(&css->sibling);
  err_free_css:
@@ -16727,67 +16718,6 @@ index f470a038b05bd..cf00fca838174 100644
  		oops_id++;
  
  	return 0;
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 3c0a5a8170b02..c8713bbc44810 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -689,6 +689,10 @@ static int load_image_and_restore(void)
- 	return error;
- }
- 
-+#ifndef CONFIG_SUSPEND
-+bool pm_in_action;
-+#endif
-+
- /**
-  * hibernate - Carry out system hibernation, including saving the image.
-  */
-@@ -702,6 +706,8 @@ int hibernate(void)
- 		return -EPERM;
- 	}
- 
-+	pm_in_action = true;
-+
- 	lock_system_sleep();
- 	/* The snapshot device should not be opened while we're running */
- 	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
-@@ -778,6 +784,7 @@ int hibernate(void)
- 	atomic_inc(&snapshot_device_available);
-  Unlock:
- 	unlock_system_sleep();
-+	pm_in_action = false;
- 	pr_info("hibernation exit\n");
- 
- 	return error;
-diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-index 27f149f5d4a9f..a9a6ada0c8e47 100644
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -595,6 +595,8 @@ static int enter_state(suspend_state_t state)
- 	return error;
- }
- 
-+bool pm_in_action;
-+
- /**
-  * pm_suspend - Externally visible function for suspending the system.
-  * @state: System sleep state to enter.
-@@ -609,6 +611,7 @@ int pm_suspend(suspend_state_t state)
- 	if (state <= PM_SUSPEND_ON || state >= PM_SUSPEND_MAX)
- 		return -EINVAL;
- 
-+	pm_in_action = true;
- 	pr_info("suspend entry (%s)\n", mem_sleep_labels[state]);
- 	error = enter_state(state);
- 	if (error) {
-@@ -618,6 +621,7 @@ int pm_suspend(suspend_state_t state)
- 		suspend_stats.success++;
- 	}
- 	pr_info("suspend exit\n");
-+	pm_in_action = false;
- 	return error;
- }
- EXPORT_SYMBOL(pm_suspend);
 diff --git a/kernel/printk/Makefile b/kernel/printk/Makefile
 index 4d052fc6bcde7..7b219d824c0fb 100644
 --- a/kernel/printk/Makefile
@@ -21178,41 +21108,6 @@ index 2410db5e9a353..f60443e0b7430 100644
  
  /*
   * When doing wakeups, attempt to limit superfluous scans of the LLC domain.
-diff --git a/kernel/sched/isolation.c b/kernel/sched/isolation.c
-index 9fcb2a695a412..a1f9c3f66304c 100644
---- a/kernel/sched/isolation.c
-+++ b/kernel/sched/isolation.c
-@@ -8,6 +8,7 @@
-  *
-  */
- #include "sched.h"
-+#include "../../mm/internal.h"
- 
- DEFINE_STATIC_KEY_FALSE(housekeeping_overridden);
- EXPORT_SYMBOL_GPL(housekeeping_overridden);
-@@ -139,10 +140,21 @@ static int __init housekeeping_setup(char *str, enum hk_flags flags)
- static int __init housekeeping_nohz_full_setup(char *str)
- {
- 	unsigned int flags;
-+	int ret;
- 
- 	flags = HK_FLAG_TICK | HK_FLAG_WQ | HK_FLAG_TIMER | HK_FLAG_RCU | HK_FLAG_MISC;
- 
--	return housekeeping_setup(str, flags);
-+	ret = housekeeping_setup(str, flags);
-+
-+	/*
-+	 * Protect struct pagevec with a lock instead using preemption disable;
-+	 * with lock protection, remote handling of events instead of queue
-+	 * work on remote cpu is default behavior.
-+	 */
-+	if (ret)
-+		static_branch_enable(&use_pvec_lock);
-+
-+	return ret;
- }
- __setup("nohz_full=", housekeeping_nohz_full_setup);
- 
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
 index e5e2605778c97..49f97e1154535 100644
 --- a/kernel/sched/sched.h
@@ -21253,17 +21148,16 @@ index e5e2605778c97..49f97e1154535 100644
  extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime);
  
 diff --git a/kernel/sched/swait.c b/kernel/sched/swait.c
-index e83a3f8449f65..c58068d2ee06c 100644
+index e83a3f8449f65..c56c315524ae6 100644
 --- a/kernel/sched/swait.c
 +++ b/kernel/sched/swait.c
-@@ -32,6 +32,25 @@ void swake_up_locked(struct swait_queue_head *q)
+@@ -32,6 +32,20 @@ void swake_up_locked(struct swait_queue_head *q)
  }
  EXPORT_SYMBOL(swake_up_locked);
  
 +void swake_up_all_locked(struct swait_queue_head *q)
 +{
 +	struct swait_queue *curr;
-+	int wakes = 0;
 +
 +	while (!list_empty(&q->task_list)) {
 +
@@ -21271,18 +21165,14 @@ index e83a3f8449f65..c58068d2ee06c 100644
 +					task_list);
 +		wake_up_process(curr->task);
 +		list_del_init(&curr->task_list);
-+		wakes++;
 +	}
-+	if (pm_in_action)
-+		return;
-+	WARN(wakes > 2, "complete_all() with %d waiters\n", wakes);
 +}
 +EXPORT_SYMBOL(swake_up_all_locked);
 +
  void swake_up_one(struct swait_queue_head *q)
  {
  	unsigned long flags;
-@@ -51,6 +70,7 @@ void swake_up_all(struct swait_queue_head *q)
+@@ -51,6 +65,7 @@ void swake_up_all(struct swait_queue_head *q)
  	struct swait_queue *curr;
  	LIST_HEAD(tmp);
  
@@ -21290,7 +21180,7 @@ index e83a3f8449f65..c58068d2ee06c 100644
  	raw_spin_lock_irq(&q->lock);
  	list_splice_init(&q->task_list, &tmp);
  	while (!list_empty(&tmp)) {
-@@ -69,7 +89,7 @@ void swake_up_all(struct swait_queue_head *q)
+@@ -69,7 +84,7 @@ void swake_up_all(struct swait_queue_head *q)
  }
  EXPORT_SYMBOL(swake_up_all);
  
@@ -21377,10 +21267,10 @@ index bcd46f547db39..4abd7c02269d2 100644
  {
  	struct sigqueue *q = NULL;
  	struct user_struct *user;
-@@ -426,7 +444,10 @@ __sigqueue_alloc(int sig, struct task_struct *t, gfp_t flags, int override_rlimi
- 	if (override_rlimit ||
- 	    atomic_read(&user->sigpending) <=
- 			task_rlimit(t, RLIMIT_SIGPENDING)) {
+@@ -431,7 +449,10 @@ __sigqueue_do_alloc(int sig, struct task_struct *t, gfp_t flags, int override_rlimi
+ 	rcu_read_unlock();
+ 
+ 	if (override_rlimit || likely(sigpending <= task_rlimit(t, RLIMIT_SIGPENDING))) {
 -		q = kmem_cache_alloc(sigqueue_cachep, flags);
 +		if (!fromslab)
 +			q = get_task_cache(t);
@@ -21389,7 +21279,7 @@ index bcd46f547db39..4abd7c02269d2 100644
  	} else {
  		print_dropped_signal(sig);
  	}
-@@ -443,6 +464,13 @@ __sigqueue_alloc(int sig, struct task_struct *t, gfp_t flags, int override_rlimi
+@@ -448,6 +469,13 @@ __sigqueue_alloc(int sig, struct task_struct *t, gfp_t flags, int override_rlimi
  	return q;
  }
  
@@ -21403,7 +21293,7 @@ index bcd46f547db39..4abd7c02269d2 100644
  static void __sigqueue_free(struct sigqueue *q)
  {
  	if (q->flags & SIGQUEUE_PREALLOC)
-@@ -452,6 +480,21 @@ static void __sigqueue_free(struct sigqueue *q)
+@@ -457,6 +485,21 @@ static void __sigqueue_free(struct sigqueue *q)
  	kmem_cache_free(sigqueue_cachep, q);
  }
  
@@ -21425,7 +21315,7 @@ index bcd46f547db39..4abd7c02269d2 100644
  void flush_sigqueue(struct sigpending *queue)
  {
  	struct sigqueue *q;
-@@ -464,6 +507,21 @@ void flush_sigqueue(struct sigpending *queue)
+@@ -467,6 +510,21 @@ void flush_sigqueue(struct sigpending *queue)
  	}
  }
  
@@ -21447,7 +21337,7 @@ index bcd46f547db39..4abd7c02269d2 100644
  /*
   * Flush all pending signals for this kthread.
   */
-@@ -588,7 +646,7 @@ static void collect_signal(int sig, struct sigpending *list, kernel_siginfo_t *i
+@@ -593,7 +651,7 @@ static void collect_signal(int sig, struct sigpending *list, kernel_siginfo_t *i
  			(info->si_code == SI_TIMER) &&
  			(info->si_sys_private);
  
@@ -21456,7 +21346,7 @@ index bcd46f547db39..4abd7c02269d2 100644
  	} else {
  		/*
  		 * Ok, it wasn't in the queue.  This must be
-@@ -625,6 +683,8 @@ int dequeue_signal(struct task_struct *tsk, sigset_t *mask, kernel_siginfo_t *in
+@@ -629,6 +687,8 @@ int dequeue_signal(struct task_struct *tsk, sigset_t *mask, kernel_siginfo_t *in
  	bool resched_timer = false;
  	int signr;
  
@@ -21465,7 +21355,7 @@ index bcd46f547db39..4abd7c02269d2 100644
  	/* We only dequeue private signals from ourselves, we don't let
  	 * signalfd steal them
  	 */
-@@ -1308,6 +1368,34 @@ force_sig_info_to_task(struct kernel_siginfo *info, struct task_struct *t)
+@@ -1313,6 +1373,34 @@ force_sig_info_to_task(struct kernel_siginfo *info, struct task_struct *t)
  	struct k_sigaction *action;
  	int sig = info->si_signo;
  
@@ -21500,7 +21390,7 @@ index bcd46f547db39..4abd7c02269d2 100644
  	spin_lock_irqsave(&t->sighand->siglock, flags);
  	action = &t->sighand->action[sig-1];
  	ignored = action->sa.sa_handler == SIG_IGN;
-@@ -1805,7 +1893,8 @@ EXPORT_SYMBOL(kill_pid);
+@@ -1810,7 +1898,8 @@ EXPORT_SYMBOL(kill_pid);
   */
  struct sigqueue *sigqueue_alloc(void)
  {
@@ -21510,7 +21400,7 @@ index bcd46f547db39..4abd7c02269d2 100644
  
  	if (q)
  		q->flags |= SIGQUEUE_PREALLOC;
-@@ -2197,16 +2286,8 @@ static void ptrace_stop(int exit_code, int why, int clear_code, kernel_siginfo_t
+@@ -2202,16 +2291,8 @@ static void ptrace_stop(int exit_code, int why, int clear_code, kernel_siginfo_t
  		if (gstop_done && ptrace_reparented(current))
  			do_notify_parent_cldstop(current, false, why);
  
@@ -22481,6 +22371,41 @@ index 42d512fcfda2e..327300eb27704 100644
  };
  
  const struct k_clock clock_process = {
+diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
+index dbd69052eaa66..a5538dd76a819 100644
+--- a/kernel/time/sched_clock.c
++++ b/kernel/time/sched_clock.c
+@@ -207,7 +207,8 @@ sched_clock_register(u64 (*read)(void), int bits, unsigned long rate)
+ 
+ 	if (sched_clock_timer.function != NULL) {
+ 		/* update timeout for clock wrap */
+-		hrtimer_start(&sched_clock_timer, cd.wrap_kt, HRTIMER_MODE_REL);
++		hrtimer_start(&sched_clock_timer, cd.wrap_kt,
++			      HRTIMER_MODE_REL_HARD);
+ 	}
+ 
+ 	r = rate;
+@@ -251,9 +252,9 @@ void __init generic_sched_clock_init(void)
+ 	 * Start the timer to keep sched_clock() properly updated and
+ 	 * sets the initial epoch.
+ 	 */
+-	hrtimer_init(&sched_clock_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	hrtimer_init(&sched_clock_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL_HARD);
+ 	sched_clock_timer.function = sched_clock_poll;
+-	hrtimer_start(&sched_clock_timer, cd.wrap_kt, HRTIMER_MODE_REL);
++	hrtimer_start(&sched_clock_timer, cd.wrap_kt, HRTIMER_MODE_REL_HARD);
+ }
+ 
+ /*
+@@ -290,7 +291,7 @@ void sched_clock_resume(void)
+ 	struct clock_read_data *rd = &cd.read_data[0];
+ 
+ 	rd->epoch_cyc = cd.actual_read_sched_clock();
+-	hrtimer_start(&sched_clock_timer, cd.wrap_kt, HRTIMER_MODE_REL);
++	hrtimer_start(&sched_clock_timer, cd.wrap_kt, HRTIMER_MODE_REL_HARD);
+ 	rd->read_sched_clock = cd.actual_read_sched_clock;
+ }
+ 
 diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
 index 59225b484e4ee..885cc1a862695 100644
 --- a/kernel/time/tick-common.c
@@ -22910,7 +22835,7 @@ index 862b460ab97a8..53144d0562522 100644
  EXPORT_SYMBOL(on_each_cpu_cond);
  
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index e9c63b79e03f4..d4fda9c3118fb 100644
+index 1a0c224af6fb3..26341e8101ee7 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
 @@ -50,6 +50,7 @@
@@ -23066,7 +22991,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
   */
  static void insert_work(struct pool_workqueue *pwq, struct work_struct *work,
  			struct list_head *head, unsigned int extra_flags)
-@@ -1435,7 +1436,7 @@ static void __queue_work(int cpu, struct workqueue_struct *wq,
+@@ -1437,7 +1438,7 @@ static void __queue_work(int cpu, struct workqueue_struct *wq,
  	if (last_pool && last_pool != pwq->pool) {
  		struct worker *worker;
  
@@ -23075,7 +23000,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  		worker = find_worker_executing_work(last_pool, work);
  
-@@ -1443,11 +1444,11 @@ static void __queue_work(int cpu, struct workqueue_struct *wq,
+@@ -1445,11 +1446,11 @@ static void __queue_work(int cpu, struct workqueue_struct *wq,
  			pwq = worker->current_pwq;
  		} else {
  			/* meh... not running there, queue here */
@@ -23090,7 +23015,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  	}
  
  	/*
-@@ -1460,7 +1461,7 @@ static void __queue_work(int cpu, struct workqueue_struct *wq,
+@@ -1462,7 +1463,7 @@ static void __queue_work(int cpu, struct workqueue_struct *wq,
  	 */
  	if (unlikely(!pwq->refcnt)) {
  		if (wq->flags & WQ_UNBOUND) {
@@ -23099,7 +23024,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  			cpu_relax();
  			goto retry;
  		}
-@@ -1492,7 +1493,7 @@ static void __queue_work(int cpu, struct workqueue_struct *wq,
+@@ -1494,7 +1495,7 @@ static void __queue_work(int cpu, struct workqueue_struct *wq,
  	insert_work(pwq, work, worklist, work_flags);
  
  out:
@@ -23108,7 +23033,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  	rcu_read_unlock();
  }
  
-@@ -1612,9 +1613,11 @@ EXPORT_SYMBOL_GPL(queue_work_node);
+@@ -1614,9 +1615,11 @@ EXPORT_SYMBOL_GPL(queue_work_node);
  void delayed_work_timer_fn(struct timer_list *t)
  {
  	struct delayed_work *dwork = from_timer(dwork, t, timer);
@@ -23121,7 +23046,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  }
  EXPORT_SYMBOL(delayed_work_timer_fn);
  
-@@ -1761,7 +1764,7 @@ EXPORT_SYMBOL(queue_rcu_work);
+@@ -1763,7 +1766,7 @@ EXPORT_SYMBOL(queue_rcu_work);
   * necessary.
   *
   * LOCKING:
@@ -23130,7 +23055,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
   */
  static void worker_enter_idle(struct worker *worker)
  {
-@@ -1801,7 +1804,7 @@ static void worker_enter_idle(struct worker *worker)
+@@ -1803,7 +1806,7 @@ static void worker_enter_idle(struct worker *worker)
   * @worker is leaving idle state.  Update stats.
   *
   * LOCKING:
@@ -23139,7 +23064,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
   */
  static void worker_leave_idle(struct worker *worker)
  {
-@@ -1939,11 +1942,11 @@ static struct worker *create_worker(struct worker_pool *pool)
+@@ -1941,11 +1944,11 @@ static struct worker *create_worker(struct worker_pool *pool)
  	worker_attach_to_pool(worker, pool);
  
  	/* start the newly created worker */
@@ -23153,7 +23078,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  	return worker;
  
-@@ -1962,7 +1965,7 @@ static struct worker *create_worker(struct worker_pool *pool)
+@@ -1964,7 +1967,7 @@ static struct worker *create_worker(struct worker_pool *pool)
   * be idle.
   *
   * CONTEXT:
@@ -23162,7 +23087,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
   */
  static void destroy_worker(struct worker *worker)
  {
-@@ -1988,7 +1991,7 @@ static void idle_worker_timeout(struct timer_list *t)
+@@ -1990,7 +1993,7 @@ static void idle_worker_timeout(struct timer_list *t)
  {
  	struct worker_pool *pool = from_timer(pool, t, idle_timer);
  
@@ -23171,7 +23096,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  	while (too_many_workers(pool)) {
  		struct worker *worker;
-@@ -2006,7 +2009,7 @@ static void idle_worker_timeout(struct timer_list *t)
+@@ -2008,7 +2011,7 @@ static void idle_worker_timeout(struct timer_list *t)
  		destroy_worker(worker);
  	}
  
@@ -23180,7 +23105,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  }
  
  static void send_mayday(struct work_struct *work)
-@@ -2037,8 +2040,8 @@ static void pool_mayday_timeout(struct timer_list *t)
+@@ -2039,8 +2042,8 @@ static void pool_mayday_timeout(struct timer_list *t)
  	struct worker_pool *pool = from_timer(pool, t, mayday_timer);
  	struct work_struct *work;
  
@@ -23191,7 +23116,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  	if (need_to_create_worker(pool)) {
  		/*
-@@ -2051,8 +2054,8 @@ static void pool_mayday_timeout(struct timer_list *t)
+@@ -2053,8 +2056,8 @@ static void pool_mayday_timeout(struct timer_list *t)
  			send_mayday(work);
  	}
  
@@ -23202,7 +23127,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  	mod_timer(&pool->mayday_timer, jiffies + MAYDAY_INTERVAL);
  }
-@@ -2071,7 +2074,7 @@ static void pool_mayday_timeout(struct timer_list *t)
+@@ -2073,7 +2076,7 @@ static void pool_mayday_timeout(struct timer_list *t)
   * may_start_working() %true.
   *
   * LOCKING:
@@ -23211,7 +23136,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
   * multiple times.  Does GFP_KERNEL allocations.  Called only from
   * manager.
   */
-@@ -2080,7 +2083,7 @@ __releases(&pool->lock)
+@@ -2082,7 +2085,7 @@ __releases(&pool->lock)
  __acquires(&pool->lock)
  {
  restart:
@@ -23220,7 +23145,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  	/* if we don't make progress in MAYDAY_INITIAL_TIMEOUT, call for help */
  	mod_timer(&pool->mayday_timer, jiffies + MAYDAY_INITIAL_TIMEOUT);
-@@ -2096,7 +2099,7 @@ __acquires(&pool->lock)
+@@ -2098,7 +2101,7 @@ __acquires(&pool->lock)
  	}
  
  	del_timer_sync(&pool->mayday_timer);
@@ -23229,7 +23154,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  	/*
  	 * This is necessary even after a new worker was just successfully
  	 * created as @pool->lock was dropped and the new worker might have
-@@ -2119,7 +2122,7 @@ __acquires(&pool->lock)
+@@ -2121,7 +2124,7 @@ __acquires(&pool->lock)
   * and may_start_working() is true.
   *
   * CONTEXT:
@@ -23238,7 +23163,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
   * multiple times.  Does GFP_KERNEL allocations.
   *
   * Return:
-@@ -2142,7 +2145,7 @@ static bool manage_workers(struct worker *worker)
+@@ -2144,7 +2147,7 @@ static bool manage_workers(struct worker *worker)
  
  	pool->manager = NULL;
  	pool->flags &= ~POOL_MANAGER_ACTIVE;
@@ -23247,7 +23172,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  	return true;
  }
  
-@@ -2158,7 +2161,7 @@ static bool manage_workers(struct worker *worker)
+@@ -2160,7 +2163,7 @@ static bool manage_workers(struct worker *worker)
   * call this function to process a work.
   *
   * CONTEXT:
@@ -23256,7 +23181,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
   */
  static void process_one_work(struct worker *worker, struct work_struct *work)
  __releases(&pool->lock)
-@@ -2240,7 +2243,7 @@ __acquires(&pool->lock)
+@@ -2242,7 +2245,7 @@ __acquires(&pool->lock)
  	 */
  	set_work_pool_and_clear_pending(work, pool->id);
  
@@ -23265,7 +23190,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  	lock_map_acquire(&pwq->wq->lockdep_map);
  	lock_map_acquire(&lockdep_map);
-@@ -2286,7 +2289,7 @@ __acquires(&pool->lock)
+@@ -2288,7 +2291,7 @@ __acquires(&pool->lock)
  	}
  
  	/*
@@ -23274,7 +23199,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  	 * kernels, where a requeueing work item waiting for something to
  	 * happen could deadlock with stop_machine as such work item could
  	 * indefinitely requeue itself while all other CPUs are trapped in
-@@ -2295,7 +2298,7 @@ __acquires(&pool->lock)
+@@ -2297,7 +2300,7 @@ __acquires(&pool->lock)
  	 */
  	cond_resched();
  
@@ -23283,7 +23208,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  	/* clear cpu intensive status */
  	if (unlikely(cpu_intensive))
-@@ -2321,7 +2324,7 @@ __acquires(&pool->lock)
+@@ -2323,7 +2326,7 @@ __acquires(&pool->lock)
   * fetches a work from the top and executes it.
   *
   * CONTEXT:
@@ -23292,7 +23217,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
   * multiple times.
   */
  static void process_scheduled_works(struct worker *worker)
-@@ -2363,11 +2366,11 @@ static int worker_thread(void *__worker)
+@@ -2365,11 +2368,11 @@ static int worker_thread(void *__worker)
  	/* tell the scheduler that this is a workqueue worker */
  	set_pf_worker(true);
  woke_up:
@@ -23306,7 +23231,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  		WARN_ON_ONCE(!list_empty(&worker->entry));
  		set_pf_worker(false);
  
-@@ -2433,7 +2436,7 @@ static int worker_thread(void *__worker)
+@@ -2435,7 +2438,7 @@ static int worker_thread(void *__worker)
  	 */
  	worker_enter_idle(worker);
  	__set_current_state(TASK_IDLE);
@@ -23315,7 +23240,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  	schedule();
  	goto woke_up;
  }
-@@ -2487,7 +2490,7 @@ static int rescuer_thread(void *__rescuer)
+@@ -2489,7 +2492,7 @@ static int rescuer_thread(void *__rescuer)
  	should_stop = kthread_should_stop();
  
  	/* see whether any pwq is asking for help */
@@ -23324,7 +23249,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  	while (!list_empty(&wq->maydays)) {
  		struct pool_workqueue *pwq = list_first_entry(&wq->maydays,
-@@ -2499,11 +2502,11 @@ static int rescuer_thread(void *__rescuer)
+@@ -2501,11 +2504,11 @@ static int rescuer_thread(void *__rescuer)
  		__set_current_state(TASK_RUNNING);
  		list_del_init(&pwq->mayday_node);
  
@@ -23338,7 +23263,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  		/*
  		 * Slurp in all works issued via this workqueue and
-@@ -2532,7 +2535,7 @@ static int rescuer_thread(void *__rescuer)
+@@ -2534,7 +2537,7 @@ static int rescuer_thread(void *__rescuer)
  			 * incur MAYDAY_INTERVAL delay inbetween.
  			 */
  			if (need_to_create_worker(pool)) {
@@ -23347,7 +23272,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  				/*
  				 * Queue iff we aren't racing destruction
  				 * and somebody else hasn't queued it already.
-@@ -2541,7 +2544,7 @@ static int rescuer_thread(void *__rescuer)
+@@ -2543,7 +2546,7 @@ static int rescuer_thread(void *__rescuer)
  					get_pwq(pwq);
  					list_add_tail(&pwq->mayday_node, &wq->maydays);
  				}
@@ -23356,7 +23281,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  			}
  		}
  
-@@ -2559,14 +2562,14 @@ static int rescuer_thread(void *__rescuer)
+@@ -2561,14 +2564,14 @@ static int rescuer_thread(void *__rescuer)
  		if (need_more_worker(pool))
  			wake_up_worker(pool);
  
@@ -23374,7 +23299,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  	if (should_stop) {
  		__set_current_state(TASK_RUNNING);
-@@ -2646,7 +2649,7 @@ static void wq_barrier_func(struct work_struct *work)
+@@ -2648,7 +2651,7 @@ static void wq_barrier_func(struct work_struct *work)
   * underneath us, so we can't reliably determine pwq from @target.
   *
   * CONTEXT:
@@ -23383,7 +23308,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
   */
  static void insert_wq_barrier(struct pool_workqueue *pwq,
  			      struct wq_barrier *barr,
-@@ -2733,7 +2736,7 @@ static bool flush_workqueue_prep_pwqs(struct workqueue_struct *wq,
+@@ -2735,7 +2738,7 @@ static bool flush_workqueue_prep_pwqs(struct workqueue_struct *wq,
  	for_each_pwq(pwq, wq) {
  		struct worker_pool *pool = pwq->pool;
  
@@ -23392,7 +23317,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  		if (flush_color >= 0) {
  			WARN_ON_ONCE(pwq->flush_color != -1);
-@@ -2750,7 +2753,7 @@ static bool flush_workqueue_prep_pwqs(struct workqueue_struct *wq,
+@@ -2752,7 +2755,7 @@ static bool flush_workqueue_prep_pwqs(struct workqueue_struct *wq,
  			pwq->work_color = work_color;
  		}
  
@@ -23401,7 +23326,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  	}
  
  	if (flush_color >= 0 && atomic_dec_and_test(&wq->nr_pwqs_to_flush))
-@@ -2950,9 +2953,9 @@ void drain_workqueue(struct workqueue_struct *wq)
+@@ -2952,9 +2955,9 @@ void drain_workqueue(struct workqueue_struct *wq)
  	for_each_pwq(pwq, wq) {
  		bool drained;
  
@@ -23413,7 +23338,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  		if (drained)
  			continue;
-@@ -2988,7 +2991,7 @@ static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
+@@ -2990,7 +2993,7 @@ static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
  		return false;
  	}
  
@@ -23422,7 +23347,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  	/* see the comment in try_to_grab_pending() with the same code */
  	pwq = get_work_pwq(work);
  	if (pwq) {
-@@ -3004,7 +3007,7 @@ static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
+@@ -3006,7 +3009,7 @@ static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
  	check_flush_dependency(pwq->wq, work);
  
  	insert_wq_barrier(pwq, barr, work, worker);
@@ -23431,7 +23356,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  	/*
  	 * Force a lock recursion deadlock when using flush_work() inside a
-@@ -3023,7 +3026,7 @@ static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
+@@ -3025,7 +3028,7 @@ static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
  	rcu_read_unlock();
  	return true;
  already_gone:
@@ -23440,7 +23365,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  	rcu_read_unlock();
  	return false;
  }
-@@ -3416,7 +3419,7 @@ static bool wqattrs_equal(const struct workqueue_attrs *a,
+@@ -3418,7 +3421,7 @@ static bool wqattrs_equal(const struct workqueue_attrs *a,
   */
  static int init_worker_pool(struct worker_pool *pool)
  {
@@ -23449,7 +23374,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  	pool->id = -1;
  	pool->cpu = -1;
  	pool->node = NUMA_NO_NODE;
-@@ -3542,15 +3545,15 @@ static void put_unbound_pool(struct worker_pool *pool)
+@@ -3544,15 +3547,15 @@ static void put_unbound_pool(struct worker_pool *pool)
  	 * @pool's workers from blocking on attach_mutex.  We're the last
  	 * manager and @pool gets freed with the flag set.
  	 */
@@ -23468,7 +23393,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  	mutex_lock(&wq_pool_attach_mutex);
  	if (!list_empty(&pool->workers))
-@@ -3706,7 +3709,7 @@ static void pwq_adjust_max_active(struct pool_workqueue *pwq)
+@@ -3708,7 +3711,7 @@ static void pwq_adjust_max_active(struct pool_workqueue *pwq)
  		return;
  
  	/* this function can be called during early boot w/ irq disabled */
@@ -23477,7 +23402,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  	/*
  	 * During [un]freezing, the caller is responsible for ensuring that
-@@ -3729,7 +3732,7 @@ static void pwq_adjust_max_active(struct pool_workqueue *pwq)
+@@ -3731,7 +3734,7 @@ static void pwq_adjust_max_active(struct pool_workqueue *pwq)
  		pwq->max_active = 0;
  	}
  
@@ -23486,7 +23411,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  }
  
  /* initialize newly alloced @pwq which is associated with @wq and @pool */
-@@ -4131,9 +4134,9 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
+@@ -4133,9 +4136,9 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
  
  use_dfl_pwq:
  	mutex_lock(&wq->mutex);
@@ -23498,7 +23423,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  	old_pwq = numa_pwq_tbl_install(wq, node, wq->dfl_pwq);
  out_unlock:
  	mutex_unlock(&wq->mutex);
-@@ -4346,9 +4349,9 @@ void destroy_workqueue(struct workqueue_struct *wq)
+@@ -4348,9 +4351,9 @@ void destroy_workqueue(struct workqueue_struct *wq)
  		struct worker *rescuer = wq->rescuer;
  
  		/* this prevents new queueing */
@@ -23510,7 +23435,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  		/* rescuer will empty maydays list before exiting */
  		kthread_stop(rescuer->task);
-@@ -4544,10 +4547,10 @@ unsigned int work_busy(struct work_struct *work)
+@@ -4546,10 +4549,10 @@ unsigned int work_busy(struct work_struct *work)
  	rcu_read_lock();
  	pool = get_work_pool(work);
  	if (pool) {
@@ -23523,7 +23448,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  	}
  	rcu_read_unlock();
  
-@@ -4754,10 +4757,10 @@ void show_workqueue_state(void)
+@@ -4756,10 +4759,10 @@ void show_workqueue_state(void)
  		pr_info("workqueue %s: flags=0x%x\n", wq->name, wq->flags);
  
  		for_each_pwq(pwq, wq) {
@@ -23536,7 +23461,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  			/*
  			 * We could be printing a lot from atomic context, e.g.
  			 * sysrq-t -> show_workqueue_state(). Avoid triggering
-@@ -4771,7 +4774,7 @@ void show_workqueue_state(void)
+@@ -4773,7 +4776,7 @@ void show_workqueue_state(void)
  		struct worker *worker;
  		bool first = true;
  
@@ -23545,7 +23470,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  		if (pool->nr_workers == pool->nr_idle)
  			goto next_pool;
  
-@@ -4790,7 +4793,7 @@ void show_workqueue_state(void)
+@@ -4792,7 +4795,7 @@ void show_workqueue_state(void)
  		}
  		pr_cont("\n");
  	next_pool:
@@ -23554,7 +23479,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  		/*
  		 * We could be printing a lot from atomic context, e.g.
  		 * sysrq-t -> show_workqueue_state(). Avoid triggering
-@@ -4820,7 +4823,7 @@ void wq_worker_comm(char *buf, size_t size, struct task_struct *task)
+@@ -4822,7 +4825,7 @@ void wq_worker_comm(char *buf, size_t size, struct task_struct *task)
  		struct worker_pool *pool = worker->pool;
  
  		if (pool) {
@@ -23563,7 +23488,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  			/*
  			 * ->desc tracks information (wq name or
  			 * set_worker_desc()) for the latest execution.  If
-@@ -4834,7 +4837,7 @@ void wq_worker_comm(char *buf, size_t size, struct task_struct *task)
+@@ -4836,7 +4839,7 @@ void wq_worker_comm(char *buf, size_t size, struct task_struct *task)
  					scnprintf(buf + off, size - off, "-%s",
  						  worker->desc);
  			}
@@ -23572,7 +23497,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  		}
  	}
  
-@@ -4865,7 +4868,7 @@ static void unbind_workers(int cpu)
+@@ -4867,7 +4870,7 @@ static void unbind_workers(int cpu)
  
  	for_each_cpu_worker_pool(pool, cpu) {
  		mutex_lock(&wq_pool_attach_mutex);
@@ -23581,7 +23506,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  		/*
  		 * We've blocked all attach/detach operations. Make all workers
-@@ -4879,7 +4882,7 @@ static void unbind_workers(int cpu)
+@@ -4881,7 +4884,7 @@ static void unbind_workers(int cpu)
  
  		pool->flags |= POOL_DISASSOCIATED;
  
@@ -23590,7 +23515,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  		mutex_unlock(&wq_pool_attach_mutex);
  
  		/*
-@@ -4905,9 +4908,9 @@ static void unbind_workers(int cpu)
+@@ -4907,9 +4910,9 @@ static void unbind_workers(int cpu)
  		 * worker blocking could lead to lengthy stalls.  Kick off
  		 * unbound chain execution of currently pending work items.
  		 */
@@ -23602,7 +23527,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  	}
  }
  
-@@ -4934,7 +4937,7 @@ static void rebind_workers(struct worker_pool *pool)
+@@ -4936,7 +4939,7 @@ static void rebind_workers(struct worker_pool *pool)
  		WARN_ON_ONCE(set_cpus_allowed_ptr(worker->task,
  						  pool->attrs->cpumask) < 0);
  
@@ -23611,7 +23536,7 @@ index e9c63b79e03f4..d4fda9c3118fb 100644
  
  	pool->flags &= ~POOL_DISASSOCIATED;
  
-@@ -4973,7 +4976,7 @@ static void rebind_workers(struct worker_pool *pool)
+@@ -4975,7 +4978,7 @@ static void rebind_workers(struct worker_pool *pool)
  		WRITE_ONCE(worker->flags, worker_flags);
  	}
  
@@ -24661,11 +24586,11 @@ index 5ef3eccee27cb..07b37fea141d9 100644
  	do_div(*duration, runs);
 diff --git a/localversion-rt b/localversion-rt
 new file mode 100644
-index 0000000000000..18777ec0c27d4
+index 0000000000000..1e584b47c987e
 --- /dev/null
 +++ b/localversion-rt
 @@ -0,0 +1 @@
-+-rt15
++-rt17
 diff --git a/mm/Kconfig b/mm/Kconfig
 index a5dae9a7eb510..c0e7f024d8bf7 100644
 --- a/mm/Kconfig
@@ -24680,7 +24605,7 @@ index a5dae9a7eb510..c0e7f024d8bf7 100644
  	select XARRAY_MULTI
  	help
 diff --git a/mm/compaction.c b/mm/compaction.c
-index 672d3c78c6abf..03c9e335fa8b0 100644
+index 672d3c78c6abf..83cc3d1e5df7b 100644
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
 @@ -1590,7 +1590,11 @@ typedef enum {
@@ -24695,24 +24620,18 @@ index 672d3c78c6abf..03c9e335fa8b0 100644
  
  static inline void
  update_fast_start_pfn(struct compact_control *cc, unsigned long pfn)
-@@ -2240,10 +2244,16 @@ compact_zone(struct compact_control *cc, struct capture_control *capc)
+@@ -2240,10 +2244,12 @@ compact_zone(struct compact_control *cc, struct capture_control *capc)
  				block_start_pfn(cc->migrate_pfn, cc->order);
  
  			if (last_migrated_pfn < current_block_start) {
 -				cpu = get_cpu();
--				lru_add_drain_cpu(cpu);
--				drain_local_pages(cc->zone);
++				cpu = get_cpu_light();
++				local_lock_irq(swapvec_lock);
+ 				lru_add_drain_cpu(cpu);
++				local_unlock_irq(swapvec_lock);
+ 				drain_local_pages(cc->zone);
 -				put_cpu();
-+				if (static_branch_likely(&use_pvec_lock)) {
-+					cpu = raw_smp_processor_id();
-+					lru_add_drain_cpu(cpu);
-+					drain_cpu_pages(cpu, cc->zone);
-+				} else {
-+					cpu = get_cpu();
-+					lru_add_drain_cpu(cpu);
-+					drain_local_pages(cc->zone);
-+					put_cpu();
-+				}
++				put_cpu_light();
  				/* No more flushing until we migrate again */
  				last_migrated_pfn = 0;
  			}
@@ -24742,23 +24661,6 @@ index 107b10f9878ef..c7d81eaf48f77 100644
  unsigned int nr_free_highpages (void)
  {
  	struct zone *zone;
-diff --git a/mm/internal.h b/mm/internal.h
-index 7dd7fbb577a9a..874741f333cf8 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -32,6 +32,12 @@
- /* Do not use these with a slab allocator */
- #define GFP_SLAB_BUG_MASK (__GFP_DMA32|__GFP_HIGHMEM|~__GFP_BITS_MASK)
- 
-+#ifdef CONFIG_PREEMPT_RT
-+extern struct static_key_true use_pvec_lock;
-+#else
-+extern struct static_key_false use_pvec_lock;
-+#endif
-+
- void page_writeback_init(void);
- 
- vm_fault_t do_swap_page(struct vm_fault *vmf);
 diff --git a/mm/kmemleak.c b/mm/kmemleak.c
 index 2446076633631..3a4259eeb5a0e 100644
 --- a/mm/kmemleak.c
@@ -25140,7 +25042,7 @@ index 2446076633631..3a4259eeb5a0e 100644
  	rcu_read_unlock();
  
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ae9044bc9f807..7d20e27c5a23a 100644
+index 23c99c6778d3a..cf94aff50cdff 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
 @@ -63,6 +63,7 @@
@@ -25237,7 +25139,7 @@ index ae9044bc9f807..7d20e27c5a23a 100644
  }
  
  DEFINE_STATIC_KEY_FALSE(memcg_sockets_enabled_key);
-@@ -6971,6 +6974,7 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
+@@ -6961,6 +6964,7 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
  	struct mem_cgroup *memcg, *swap_memcg;
  	unsigned int nr_entries;
  	unsigned short oldid;
@@ -25245,7 +25147,7 @@ index ae9044bc9f807..7d20e27c5a23a 100644
  
  	VM_BUG_ON_PAGE(PageLRU(page), page);
  	VM_BUG_ON_PAGE(page_count(page), page);
-@@ -7016,10 +7020,14 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
+@@ -7006,10 +7010,14 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
  	 * important here to have the interrupts disabled because it is the
  	 * only synchronisation we have for updating the per-CPU variables.
  	 */
@@ -25274,7 +25176,7 @@ index cb7c940cf800c..88727ab10c260 100644
  		spinlock_t *ptl = pte_lockptr(mm, pmd);
  		spin_lock(ptl);
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index d387ca74cb5a7..b9bbc72c073e1 100644
+index d387ca74cb5a7..7df9930628c2b 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
 @@ -61,6 +61,7 @@
@@ -25473,62 +25375,19 @@ index d387ca74cb5a7..b9bbc72c073e1 100644
  }
  
  /*
-@@ -2836,6 +2883,14 @@ static void drain_pages(unsigned int cpu)
- 	}
+@@ -2865,9 +2912,9 @@ static void drain_local_pages_wq(struct work_struct *work)
+ 	 * cpu which is allright but we also have to make sure to not move to
+ 	 * a different one.
+ 	 */
+-	preempt_disable();
++	migrate_disable();
+ 	drain_local_pages(drain->zone);
+-	preempt_enable();
++	migrate_enable();
  }
  
-+void drain_cpu_pages(unsigned int cpu, struct zone *zone)
-+{
-+	if (zone)
-+		drain_pages_zone(cpu, zone);
-+	else
-+		drain_pages(cpu);
-+}
-+
  /*
-  * Spill all of this CPU's per-cpu pages back into the buddy allocator.
-  *
-@@ -2846,10 +2901,7 @@ void drain_local_pages(struct zone *zone)
- {
- 	int cpu = smp_processor_id();
- 
--	if (zone)
--		drain_pages_zone(cpu, zone);
--	else
--		drain_pages(cpu);
-+	drain_cpu_pages(cpu, zone);
- }
- 
- static void drain_local_pages_wq(struct work_struct *work)
-@@ -2936,15 +2988,20 @@ void drain_all_pages(struct zone *zone)
- 			cpumask_clear_cpu(cpu, &cpus_with_pcps);
- 	}
- 
--	for_each_cpu(cpu, &cpus_with_pcps) {
--		struct pcpu_drain *drain = per_cpu_ptr(&pcpu_drain, cpu);
-+	if (static_branch_likely(&use_pvec_lock)) {
-+		for_each_cpu(cpu, &cpus_with_pcps)
-+			drain_cpu_pages(cpu, zone);
-+	} else {
-+		for_each_cpu(cpu, &cpus_with_pcps) {
-+			struct pcpu_drain *drain = per_cpu_ptr(&pcpu_drain, cpu);
- 
--		drain->zone = zone;
--		INIT_WORK(&drain->work, drain_local_pages_wq);
--		queue_work_on(cpu, mm_percpu_wq, &drain->work);
-+			drain->zone = zone;
-+			INIT_WORK(&drain->work, drain_local_pages_wq);
-+			queue_work_on(cpu, mm_percpu_wq, &drain->work);
-+		}
-+		for_each_cpu(cpu, &cpus_with_pcps)
-+			flush_work(&per_cpu_ptr(&pcpu_drain, cpu)->work);
- 	}
--	for_each_cpu(cpu, &cpus_with_pcps)
--		flush_work(&per_cpu_ptr(&pcpu_drain, cpu)->work);
- 
- 	mutex_unlock(&pcpu_drain_mutex);
- }
-@@ -3016,7 +3073,8 @@ static bool free_unref_page_prepare(struct page *page, unsigned long pfn)
+@@ -3016,7 +3063,8 @@ static bool free_unref_page_prepare(struct page *page, unsigned long pfn)
  	return true;
  }
  
@@ -25538,7 +25397,7 @@ index d387ca74cb5a7..b9bbc72c073e1 100644
  {
  	struct zone *zone = page_zone(page);
  	struct per_cpu_pages *pcp;
-@@ -3045,7 +3103,8 @@ static void free_unref_page_commit(struct page *page, unsigned long pfn)
+@@ -3045,7 +3093,8 @@ static void free_unref_page_commit(struct page *page, unsigned long pfn)
  	pcp->count++;
  	if (pcp->count >= pcp->high) {
  		unsigned long batch = READ_ONCE(pcp->batch);
@@ -25548,7 +25407,7 @@ index d387ca74cb5a7..b9bbc72c073e1 100644
  	}
  }
  
-@@ -3056,13 +3115,17 @@ void free_unref_page(struct page *page)
+@@ -3056,13 +3105,17 @@ void free_unref_page(struct page *page)
  {
  	unsigned long flags;
  	unsigned long pfn = page_to_pfn(page);
@@ -25569,7 +25428,7 @@ index d387ca74cb5a7..b9bbc72c073e1 100644
  }
  
  /*
-@@ -3073,6 +3136,11 @@ void free_unref_page_list(struct list_head *list)
+@@ -3073,6 +3126,11 @@ void free_unref_page_list(struct list_head *list)
  	struct page *page, *next;
  	unsigned long flags, pfn;
  	int batch_count = 0;
@@ -25581,7 +25440,7 @@ index d387ca74cb5a7..b9bbc72c073e1 100644
  
  	/* Prepare pages for freeing */
  	list_for_each_entry_safe(page, next, list, lru) {
-@@ -3082,25 +3150,42 @@ void free_unref_page_list(struct list_head *list)
+@@ -3082,25 +3140,42 @@ void free_unref_page_list(struct list_head *list)
  		set_page_private(page, pfn);
  	}
  
@@ -25629,7 +25488,7 @@ index d387ca74cb5a7..b9bbc72c073e1 100644
  }
  
  /*
-@@ -3235,7 +3320,7 @@ static struct page *rmqueue_pcplist(struct zone *preferred_zone,
+@@ -3235,7 +3310,7 @@ static struct page *rmqueue_pcplist(struct zone *preferred_zone,
  	struct page *page;
  	unsigned long flags;
  
@@ -25638,7 +25497,7 @@ index d387ca74cb5a7..b9bbc72c073e1 100644
  	pcp = &this_cpu_ptr(zone->pageset)->pcp;
  	list = &pcp->lists[migratetype];
  	page = __rmqueue_pcplist(zone,  migratetype, alloc_flags, pcp, list);
-@@ -3243,7 +3328,7 @@ static struct page *rmqueue_pcplist(struct zone *preferred_zone,
+@@ -3243,7 +3318,7 @@ static struct page *rmqueue_pcplist(struct zone *preferred_zone,
  		__count_zid_vm_events(PGALLOC, page_zonenum(page), 1);
  		zone_statistics(preferred_zone, zone);
  	}
@@ -25647,7 +25506,7 @@ index d387ca74cb5a7..b9bbc72c073e1 100644
  	return page;
  }
  
-@@ -3270,7 +3355,7 @@ struct page *rmqueue(struct zone *preferred_zone,
+@@ -3270,7 +3345,7 @@ struct page *rmqueue(struct zone *preferred_zone,
  	 * allocate greater than order-1 page units with __GFP_NOFAIL.
  	 */
  	WARN_ON_ONCE((gfp_flags & __GFP_NOFAIL) && (order > 1));
@@ -25656,7 +25515,7 @@ index d387ca74cb5a7..b9bbc72c073e1 100644
  
  	do {
  		page = NULL;
-@@ -3290,7 +3375,7 @@ struct page *rmqueue(struct zone *preferred_zone,
+@@ -3290,7 +3365,7 @@ struct page *rmqueue(struct zone *preferred_zone,
  
  	__count_zid_vm_events(PGALLOC, page_zonenum(page), 1 << order);
  	zone_statistics(preferred_zone, zone);
@@ -25665,7 +25524,7 @@ index d387ca74cb5a7..b9bbc72c073e1 100644
  
  out:
  	/* Separate test+clear to avoid unnecessary atomics */
-@@ -3303,7 +3388,7 @@ struct page *rmqueue(struct zone *preferred_zone,
+@@ -3303,7 +3378,7 @@ struct page *rmqueue(struct zone *preferred_zone,
  	return page;
  
  failed:
@@ -25674,7 +25533,18 @@ index d387ca74cb5a7..b9bbc72c073e1 100644
  	return NULL;
  }
  
-@@ -8537,7 +8622,7 @@ void zone_pcp_reset(struct zone *zone)
+@@ -7601,8 +7676,9 @@ void __init free_area_init(unsigned long *zones_size)
+ 
+ static int page_alloc_cpu_dead(unsigned int cpu)
+ {
+-
++	local_lock_irq_on(swapvec_lock, cpu);
+ 	lru_add_drain_cpu(cpu);
++	local_unlock_irq_on(swapvec_lock, cpu);
+ 	drain_pages(cpu);
+ 
+ 	/*
+@@ -8537,7 +8613,7 @@ void zone_pcp_reset(struct zone *zone)
  	struct per_cpu_pageset *pset;
  
  	/* avoid races with drain_pages()  */
@@ -25683,7 +25553,7 @@ index d387ca74cb5a7..b9bbc72c073e1 100644
  	if (zone->pageset != &boot_pageset) {
  		for_each_online_cpu(cpu) {
  			pset = per_cpu_ptr(zone->pageset, cpu);
-@@ -8546,7 +8631,7 @@ void zone_pcp_reset(struct zone *zone)
+@@ -8546,7 +8622,7 @@ void zone_pcp_reset(struct zone *zone)
  		free_percpu(zone->pageset);
  		zone->pageset = &boot_pageset;
  	}
@@ -26584,333 +26454,135 @@ index 20d72cb20515c..7b2773c45e1ff 100644
  
  	for (i = 0; i < t.count; i++) {
 diff --git a/mm/swap.c b/mm/swap.c
-index 38c3fa4308e21..98accaf51fce8 100644
+index 38c3fa4308e21..cdb4f1fa3a483 100644
 --- a/mm/swap.c
 +++ b/mm/swap.c
-@@ -44,15 +44,112 @@
- /* How many pages do we try to swap or page in/out together? */
- int page_cluster;
+@@ -33,6 +33,7 @@
+ #include <linux/memcontrol.h>
+ #include <linux/gfp.h>
+ #include <linux/uio.h>
++#include <linux/locallock.h>
+ #include <linux/hugetlb.h>
+ #include <linux/page_idle.h>
  
--static DEFINE_PER_CPU(struct pagevec, lru_add_pvec);
--static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
--static DEFINE_PER_CPU(struct pagevec, lru_deactivate_file_pvecs);
--static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
--static DEFINE_PER_CPU(struct pagevec, lru_lazyfree_pvecs);
--#ifdef CONFIG_SMP
--static DEFINE_PER_CPU(struct pagevec, activate_page_pvecs);
-+#ifdef CONFIG_PREEMPT_RT
-+DEFINE_STATIC_KEY_TRUE(use_pvec_lock);
-+#else
-+DEFINE_STATIC_KEY_FALSE(use_pvec_lock);
+@@ -52,6 +53,8 @@ static DEFINE_PER_CPU(struct pagevec, lru_lazyfree_pvecs);
+ #ifdef CONFIG_SMP
+ static DEFINE_PER_CPU(struct pagevec, activate_page_pvecs);
  #endif
++static DEFINE_LOCAL_IRQ_LOCK(rotate_lock);
++DEFINE_LOCAL_IRQ_LOCK(swapvec_lock);
  
-+struct swap_pagevec {
-+	spinlock_t	lock;
-+	struct pagevec	pvec;
-+};
-+
-+#define DEFINE_PER_CPU_PAGEVEC(lvar)				\
-+	DEFINE_PER_CPU(struct swap_pagevec, lvar) = {		\
-+		.lock = __SPIN_LOCK_UNLOCKED((lvar).lock) }
-+
-+static DEFINE_PER_CPU_PAGEVEC(lru_add_pvec);
-+static DEFINE_PER_CPU_PAGEVEC(lru_rotate_pvecs);
-+static DEFINE_PER_CPU_PAGEVEC(lru_deactivate_file_pvecs);
-+static DEFINE_PER_CPU_PAGEVEC(lru_deactivate_pvecs);
-+static DEFINE_PER_CPU_PAGEVEC(lru_lazyfree_pvecs);
-+#ifdef CONFIG_SMP
-+static DEFINE_PER_CPU_PAGEVEC(activate_page_pvecs);
-+#endif
-+
-+static inline
-+struct swap_pagevec *lock_swap_pvec(struct swap_pagevec __percpu *p)
-+{
-+	struct swap_pagevec *swpvec;
-+
-+	if (static_branch_likely(&use_pvec_lock)) {
-+		swpvec = raw_cpu_ptr(p);
-+
-+		spin_lock(&swpvec->lock);
-+	} else {
-+		swpvec = &get_cpu_var(*p);
-+	}
-+	return swpvec;
-+}
-+
-+static inline struct swap_pagevec *
-+lock_swap_pvec_cpu(struct swap_pagevec __percpu *p, int cpu)
-+{
-+	struct swap_pagevec *swpvec = per_cpu_ptr(p, cpu);
-+
-+	if (static_branch_likely(&use_pvec_lock))
-+		spin_lock(&swpvec->lock);
-+
-+	return swpvec;
-+}
-+
-+static inline struct swap_pagevec *
-+lock_swap_pvec_irqsave(struct swap_pagevec __percpu *p, unsigned long *flags)
-+{
-+	struct swap_pagevec *swpvec;
-+
-+	if (static_branch_likely(&use_pvec_lock)) {
-+		swpvec = raw_cpu_ptr(p);
-+
-+		spin_lock_irqsave(&swpvec->lock, (*flags));
-+	} else {
-+		local_irq_save(*flags);
-+
-+		swpvec = this_cpu_ptr(p);
-+	}
-+	return swpvec;
-+}
-+
-+static inline struct swap_pagevec *
-+lock_swap_pvec_cpu_irqsave(struct swap_pagevec __percpu *p, int cpu,
-+			   unsigned long *flags)
-+{
-+	struct swap_pagevec *swpvec = per_cpu_ptr(p, cpu);
-+
-+	if (static_branch_likely(&use_pvec_lock))
-+		spin_lock_irqsave(&swpvec->lock, *flags);
-+	else
-+		local_irq_save(*flags);
-+
-+	return swpvec;
-+}
-+
-+static inline void unlock_swap_pvec(struct swap_pagevec *swpvec,
-+				    struct swap_pagevec __percpu *p)
-+{
-+	if (static_branch_likely(&use_pvec_lock))
-+		spin_unlock(&swpvec->lock);
-+	else
-+		put_cpu_var(*p);
-+
-+}
-+
-+static inline void unlock_swap_pvec_cpu(struct swap_pagevec *swpvec)
-+{
-+	if (static_branch_likely(&use_pvec_lock))
-+		spin_unlock(&swpvec->lock);
-+}
-+
-+static inline void
-+unlock_swap_pvec_irqrestore(struct swap_pagevec *swpvec, unsigned long flags)
-+{
-+	if (static_branch_likely(&use_pvec_lock))
-+		spin_unlock_irqrestore(&swpvec->lock, flags);
-+	else
-+		local_irq_restore(flags);
-+}
-+
  /*
   * This path almost never happens for VM activity - pages are normally
-  * freed via pagevecs.  But it gets used by networking.
-@@ -250,15 +347,17 @@ void rotate_reclaimable_page(struct page *page)
- {
- 	if (!PageLocked(page) && !PageDirty(page) &&
- 	    !PageUnevictable(page) && PageLRU(page)) {
-+		struct swap_pagevec *swpvec;
- 		struct pagevec *pvec;
+@@ -254,11 +257,11 @@ void rotate_reclaimable_page(struct page *page)
  		unsigned long flags;
  
  		get_page(page);
 -		local_irq_save(flags);
--		pvec = this_cpu_ptr(&lru_rotate_pvecs);
-+
-+		swpvec = lock_swap_pvec_irqsave(&lru_rotate_pvecs, &flags);
-+		pvec = &swpvec->pvec;
++		local_lock_irqsave(rotate_lock, flags);
+ 		pvec = this_cpu_ptr(&lru_rotate_pvecs);
  		if (!pagevec_add(pvec, page) || PageCompound(page))
  			pagevec_move_tail(pvec);
 -		local_irq_restore(flags);
-+		unlock_swap_pvec_irqrestore(swpvec, flags);
++		local_unlock_irqrestore(rotate_lock, flags);
  	}
  }
  
-@@ -293,27 +392,32 @@ static void __activate_page(struct page *page, struct lruvec *lruvec,
- #ifdef CONFIG_SMP
- static void activate_page_drain(int cpu)
- {
--	struct pagevec *pvec = &per_cpu(activate_page_pvecs, cpu);
-+	struct swap_pagevec *swpvec = lock_swap_pvec_cpu(&activate_page_pvecs, cpu);
-+	struct pagevec *pvec = &swpvec->pvec;
- 
- 	if (pagevec_count(pvec))
- 		pagevec_lru_move_fn(pvec, __activate_page, NULL);
-+	unlock_swap_pvec_cpu(swpvec);
- }
- 
- static bool need_activate_page_drain(int cpu)
- {
--	return pagevec_count(&per_cpu(activate_page_pvecs, cpu)) != 0;
-+	return pagevec_count(per_cpu_ptr(&activate_page_pvecs.pvec, cpu)) != 0;
- }
- 
- void activate_page(struct page *page)
+@@ -308,12 +311,13 @@ void activate_page(struct page *page)
  {
  	page = compound_head(page);
  	if (PageLRU(page) && !PageActive(page) && !PageUnevictable(page)) {
 -		struct pagevec *pvec = &get_cpu_var(activate_page_pvecs);
-+		struct swap_pagevec *swpvec;
-+		struct pagevec *pvec;
++		struct pagevec *pvec = &get_locked_var(swapvec_lock,
++						       activate_page_pvecs);
  
  		get_page(page);
-+		swpvec = lock_swap_pvec(&activate_page_pvecs);
-+		pvec = &swpvec->pvec;
  		if (!pagevec_add(pvec, page) || PageCompound(page))
  			pagevec_lru_move_fn(pvec, __activate_page, NULL);
 -		put_cpu_var(activate_page_pvecs);
-+		unlock_swap_pvec(swpvec, &activate_page_pvecs);
++		put_locked_var(swapvec_lock, activate_page_pvecs);
  	}
  }
  
-@@ -335,7 +439,8 @@ void activate_page(struct page *page)
+@@ -335,7 +339,7 @@ void activate_page(struct page *page)
  
  static void __lru_cache_activate_page(struct page *page)
  {
 -	struct pagevec *pvec = &get_cpu_var(lru_add_pvec);
-+	struct swap_pagevec *swpvec = lock_swap_pvec(&lru_add_pvec);
-+	struct pagevec *pvec = &swpvec->pvec;
++	struct pagevec *pvec = &get_locked_var(swapvec_lock, lru_add_pvec);
  	int i;
  
  	/*
-@@ -357,7 +462,7 @@ static void __lru_cache_activate_page(struct page *page)
+@@ -357,7 +361,7 @@ static void __lru_cache_activate_page(struct page *page)
  		}
  	}
  
 -	put_cpu_var(lru_add_pvec);
-+	unlock_swap_pvec(swpvec, &lru_add_pvec);
++	put_locked_var(swapvec_lock, lru_add_pvec);
  }
  
  /*
-@@ -399,12 +504,13 @@ EXPORT_SYMBOL(mark_page_accessed);
+@@ -399,12 +403,12 @@ EXPORT_SYMBOL(mark_page_accessed);
  
  static void __lru_cache_add(struct page *page)
  {
 -	struct pagevec *pvec = &get_cpu_var(lru_add_pvec);
-+	struct swap_pagevec *swpvec = lock_swap_pvec(&lru_add_pvec);
-+	struct pagevec *pvec = &swpvec->pvec;
++	struct pagevec *pvec = &get_locked_var(swapvec_lock, lru_add_pvec);
  
  	get_page(page);
  	if (!pagevec_add(pvec, page) || PageCompound(page))
  		__pagevec_lru_add(pvec);
 -	put_cpu_var(lru_add_pvec);
-+	unlock_swap_pvec(swpvec, &lru_add_pvec);
++	put_locked_var(swapvec_lock, lru_add_pvec);
  }
  
  /**
-@@ -588,32 +694,40 @@ static void lru_lazyfree_fn(struct page *page, struct lruvec *lruvec,
-  */
- void lru_add_drain_cpu(int cpu)
- {
--	struct pagevec *pvec = &per_cpu(lru_add_pvec, cpu);
-+	struct swap_pagevec *swpvec = lock_swap_pvec_cpu(&lru_add_pvec, cpu);
-+	struct pagevec *pvec = &swpvec->pvec;
-+	unsigned long flags;
- 
- 	if (pagevec_count(pvec))
- 		__pagevec_lru_add(pvec);
-+	unlock_swap_pvec_cpu(swpvec);
- 
--	pvec = &per_cpu(lru_rotate_pvecs, cpu);
-+	swpvec = lock_swap_pvec_cpu_irqsave(&lru_rotate_pvecs, cpu, &flags);
-+	pvec = &swpvec->pvec;
- 	if (pagevec_count(pvec)) {
--		unsigned long flags;
+@@ -598,9 +602,15 @@ void lru_add_drain_cpu(int cpu)
+ 		unsigned long flags;
  
  		/* No harm done if a racing interrupt already did this */
 -		local_irq_save(flags);
++#ifdef CONFIG_PREEMPT_RT
++		local_lock_irqsave_on(rotate_lock, flags, cpu);
  		pagevec_move_tail(pvec);
 -		local_irq_restore(flags);
++		local_unlock_irqrestore_on(rotate_lock, flags, cpu);
++#else
++		local_lock_irqsave(rotate_lock, flags);
++		pagevec_move_tail(pvec);
++		local_unlock_irqrestore(rotate_lock, flags);
++#endif
  	}
-+	unlock_swap_pvec_irqrestore(swpvec, flags);
  
--	pvec = &per_cpu(lru_deactivate_file_pvecs, cpu);
-+	swpvec = lock_swap_pvec_cpu(&lru_deactivate_file_pvecs, cpu);
-+	pvec = &swpvec->pvec;
- 	if (pagevec_count(pvec))
- 		pagevec_lru_move_fn(pvec, lru_deactivate_file_fn, NULL);
-+	unlock_swap_pvec_cpu(swpvec);
- 
--	pvec = &per_cpu(lru_deactivate_pvecs, cpu);
-+	swpvec = lock_swap_pvec_cpu(&lru_deactivate_pvecs, cpu);
-+	pvec = &swpvec->pvec;
- 	if (pagevec_count(pvec))
- 		pagevec_lru_move_fn(pvec, lru_deactivate_fn, NULL);
-+	unlock_swap_pvec_cpu(swpvec);
- 
--	pvec = &per_cpu(lru_lazyfree_pvecs, cpu);
-+	swpvec = lock_swap_pvec_cpu(&lru_lazyfree_pvecs, cpu);
-+	pvec = &swpvec->pvec;
- 	if (pagevec_count(pvec))
- 		pagevec_lru_move_fn(pvec, lru_lazyfree_fn, NULL);
-+	unlock_swap_pvec_cpu(swpvec);
- 
- 	activate_page_drain(cpu);
- }
-@@ -628,6 +742,9 @@ void lru_add_drain_cpu(int cpu)
-  */
- void deactivate_file_page(struct page *page)
- {
-+	struct swap_pagevec *swpvec;
-+	struct pagevec *pvec;
-+
- 	/*
- 	 * In a workload with many unevictable page such as mprotect,
- 	 * unevictable page deactivation for accelerating reclaim is pointless.
-@@ -636,11 +753,12 @@ void deactivate_file_page(struct page *page)
+ 	pvec = &per_cpu(lru_deactivate_file_pvecs, cpu);
+@@ -636,11 +646,12 @@ void deactivate_file_page(struct page *page)
  		return;
  
  	if (likely(get_page_unless_zero(page))) {
 -		struct pagevec *pvec = &get_cpu_var(lru_deactivate_file_pvecs);
-+		swpvec = lock_swap_pvec(&lru_deactivate_file_pvecs);
-+		pvec = &swpvec->pvec;
++		struct pagevec *pvec = &get_locked_var(swapvec_lock,
++						       lru_deactivate_file_pvecs);
  
  		if (!pagevec_add(pvec, page) || PageCompound(page))
  			pagevec_lru_move_fn(pvec, lru_deactivate_file_fn, NULL);
 -		put_cpu_var(lru_deactivate_file_pvecs);
-+		unlock_swap_pvec(swpvec, &lru_deactivate_file_pvecs);
++		put_locked_var(swapvec_lock, lru_deactivate_file_pvecs);
  	}
  }
  
-@@ -655,12 +773,16 @@ void deactivate_file_page(struct page *page)
- void deactivate_page(struct page *page)
+@@ -675,23 +686,34 @@ void mark_page_lazyfree(struct page *page)
  {
- 	if (PageLRU(page) && PageActive(page) && !PageUnevictable(page)) {
--		struct pagevec *pvec = &get_cpu_var(lru_deactivate_pvecs);
-+		struct swap_pagevec *swpvec;
-+		struct pagevec *pvec;
-+
-+		swpvec = lock_swap_pvec(&lru_deactivate_pvecs);
-+		pvec = &swpvec->pvec;
- 
- 		get_page(page);
- 		if (!pagevec_add(pvec, page) || PageCompound(page))
- 			pagevec_lru_move_fn(pvec, lru_deactivate_fn, NULL);
--		put_cpu_var(lru_deactivate_pvecs);
-+		unlock_swap_pvec(swpvec, &lru_deactivate_pvecs);
- 	}
- }
- 
-@@ -673,21 +795,29 @@ void deactivate_page(struct page *page)
-  */
- void mark_page_lazyfree(struct page *page)
- {
-+	struct swap_pagevec *swpvec;
-+	struct pagevec *pvec;
-+
  	if (PageLRU(page) && PageAnon(page) && PageSwapBacked(page) &&
  	    !PageSwapCache(page) && !PageUnevictable(page)) {
 -		struct pagevec *pvec = &get_cpu_var(lru_lazyfree_pvecs);
-+		swpvec = lock_swap_pvec(&lru_lazyfree_pvecs);
-+		pvec = &swpvec->pvec;
++		struct pagevec *pvec = &get_locked_var(swapvec_lock,
++						       lru_lazyfree_pvecs);
  
  		get_page(page);
  		if (!pagevec_add(pvec, page) || PageCompound(page))
  			pagevec_lru_move_fn(pvec, lru_lazyfree_fn, NULL);
 -		put_cpu_var(lru_lazyfree_pvecs);
-+		unlock_swap_pvec(swpvec, &lru_lazyfree_pvecs);
++		put_locked_var(swapvec_lock, lru_lazyfree_pvecs);
  	}
  }
  
@@ -26918,100 +26590,69 @@ index 38c3fa4308e21..98accaf51fce8 100644
  {
 -	lru_add_drain_cpu(get_cpu());
 -	put_cpu();
-+	if (static_branch_likely(&use_pvec_lock)) {
-+		lru_add_drain_cpu(raw_smp_processor_id());
-+	} else {
-+		lru_add_drain_cpu(get_cpu());
-+		put_cpu();
-+	}
++	lru_add_drain_cpu(local_lock_cpu(swapvec_lock));
++	local_unlock_cpu(swapvec_lock);
  }
  
  #ifdef CONFIG_SMP
-@@ -708,39 +838,54 @@ static void lru_add_drain_per_cpu(struct work_struct *dummy)
-  */
- void lru_add_drain_all(void)
- {
--	static DEFINE_MUTEX(lock);
--	static struct cpumask has_work;
--	int cpu;
-+	if (static_branch_likely(&use_pvec_lock)) {
-+		int cpu;
  
--	/*
--	 * Make sure nobody triggers this path before mm_percpu_wq is fully
--	 * initialized.
--	 */
--	if (WARN_ON(!mm_percpu_wq))
--		return;
--
--	mutex_lock(&lock);
--	cpumask_clear(&has_work);
--
--	for_each_online_cpu(cpu) {
++#ifdef CONFIG_PREEMPT_RT
++static inline void remote_lru_add_drain(int cpu, struct cpumask *has_work)
++{
++	local_lock_on(swapvec_lock, cpu);
++	lru_add_drain_cpu(cpu);
++	local_unlock_on(swapvec_lock, cpu);
++}
++
++#else
++
+ static DEFINE_PER_CPU(struct work_struct, lru_add_drain_work);
+ 
+ static void lru_add_drain_per_cpu(struct work_struct *dummy)
+@@ -699,6 +721,16 @@ static void lru_add_drain_per_cpu(struct work_struct *dummy)
+ 	lru_add_drain();
+ }
+ 
++static inline void remote_lru_add_drain(int cpu, struct cpumask *has_work)
++{
++	struct work_struct *work = &per_cpu(lru_add_drain_work, cpu);
++
++	INIT_WORK(work, lru_add_drain_per_cpu);
++	queue_work_on(cpu, mm_percpu_wq, work);
++	cpumask_set_cpu(cpu, has_work);
++}
++#endif
++
+ /*
+  * Doesn't need any cpu hotplug locking because we do rely on per-cpu
+  * kworkers being shut down before our page_alloc_cpu_dead callback is
+@@ -723,22 +755,20 @@ void lru_add_drain_all(void)
+ 	cpumask_clear(&has_work);
+ 
+ 	for_each_online_cpu(cpu) {
 -		struct work_struct *work = &per_cpu(lru_add_drain_work, cpu);
--
--		if (pagevec_count(&per_cpu(lru_add_pvec, cpu)) ||
--		    pagevec_count(&per_cpu(lru_rotate_pvecs, cpu)) ||
--		    pagevec_count(&per_cpu(lru_deactivate_file_pvecs, cpu)) ||
--		    pagevec_count(&per_cpu(lru_deactivate_pvecs, cpu)) ||
--		    pagevec_count(&per_cpu(lru_lazyfree_pvecs, cpu)) ||
+ 
+ 		if (pagevec_count(&per_cpu(lru_add_pvec, cpu)) ||
+ 		    pagevec_count(&per_cpu(lru_rotate_pvecs, cpu)) ||
+ 		    pagevec_count(&per_cpu(lru_deactivate_file_pvecs, cpu)) ||
+ 		    pagevec_count(&per_cpu(lru_deactivate_pvecs, cpu)) ||
+ 		    pagevec_count(&per_cpu(lru_lazyfree_pvecs, cpu)) ||
 -		    need_activate_page_drain(cpu)) {
 -			INIT_WORK(work, lru_add_drain_per_cpu);
 -			queue_work_on(cpu, mm_percpu_wq, work);
 -			cpumask_set_cpu(cpu, &has_work);
-+		for_each_online_cpu(cpu) {
-+			if (pagevec_count(&per_cpu(lru_add_pvec.pvec, cpu)) ||
-+			    pagevec_count(&per_cpu(lru_rotate_pvecs.pvec, cpu)) ||
-+			    pagevec_count(&per_cpu(lru_deactivate_file_pvecs.pvec, cpu)) ||
-+			    pagevec_count(&per_cpu(lru_deactivate_pvecs.pvec, cpu)) ||
-+			    pagevec_count(&per_cpu(lru_lazyfree_pvecs.pvec, cpu)) ||
-+			    need_activate_page_drain(cpu)) {
-+				lru_add_drain_cpu(cpu);
-+			}
- 		}
-+	} else {
-+		static DEFINE_MUTEX(lock);
-+		static struct cpumask has_work;
-+		int cpu;
-+
-+		/*
-+		 * Make sure nobody triggers this path before mm_percpu_wq
-+		 * is fully initialized.
-+		 */
-+		if (WARN_ON(!mm_percpu_wq))
-+			return;
-+
-+		mutex_lock(&lock);
-+		cpumask_clear(&has_work);
-+
-+		for_each_online_cpu(cpu) {
-+			struct work_struct *work = &per_cpu(lru_add_drain_work, cpu);
-+
-+			if (pagevec_count(&per_cpu(lru_add_pvec.pvec, cpu)) ||
-+			    pagevec_count(&per_cpu(lru_rotate_pvecs.pvec, cpu)) ||
-+			    pagevec_count(&per_cpu(lru_deactivate_file_pvecs.pvec, cpu)) ||
-+			    pagevec_count(&per_cpu(lru_deactivate_pvecs.pvec, cpu)) ||
-+			    pagevec_count(&per_cpu(lru_lazyfree_pvecs.pvec, cpu)) ||
-+			    need_activate_page_drain(cpu)) {
-+				INIT_WORK(work, lru_add_drain_per_cpu);
-+				queue_work_on(cpu, mm_percpu_wq, work);
-+				cpumask_set_cpu(cpu, &has_work);
-+			}
-+		}
-+
-+		for_each_cpu(cpu, &has_work)
-+			flush_work(&per_cpu(lru_add_drain_work, cpu));
-+
-+		mutex_unlock(&lock);
+-		}
++		    need_activate_page_drain(cpu))
++			remote_lru_add_drain(cpu, &has_work);
  	}
--
--	for_each_cpu(cpu, &has_work)
--		flush_work(&per_cpu(lru_add_drain_work, cpu));
--
--	mutex_unlock(&lock);
+ 
++#ifndef CONFIG_PREEMPT_RT
+ 	for_each_cpu(cpu, &has_work)
+ 		flush_work(&per_cpu(lru_add_drain_work, cpu));
++#endif
+ 
+ 	mutex_unlock(&lock);
  }
- #else
- void lru_add_drain_all(void)
 diff --git a/mm/vmalloc.c b/mm/vmalloc.c
 index 61bdbaf20cde2..f99ef15b9c534 100644
 --- a/mm/vmalloc.c
@@ -27993,7 +27634,7 @@ index ea9e73428ed9c..56fac24a627a5 100644
  }
  
 diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 118cd66b75163..3de11f2f7bb53 100644
+index 20edb7c25e221..6f460dbcdca5f 100644
 --- a/net/packet/af_packet.c
 +++ b/net/packet/af_packet.c
 @@ -57,6 +57,7 @@
