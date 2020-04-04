@@ -1,9 +1,9 @@
 # Kernel versions for RT patches from https://www.kernel.org/pub/linux/kernel/v[345].x/sha256sums.asc
 sha256  18c38901c51373853435d364422c1931ed0520b16cc4ae9440d7b2095bdce2e0  linux-3.18.140.tar.xz
 sha256  28bcd3d4201da9feefdf3bcd65c516dd674acbbf45681ce3c7d784c53b33fe03  linux-4.4.215.tar.xz
-sha256  669a74f4aeef07645061081d9c05d23216245702b4095afb3d957f79098f0daf  linux-5.4.26.tar.xz
+sha256  c863cc1346348f9a40083b4bc0d34375117b1c401af920994d42e855653ef7a4  linux-5.4.28.tar.xz
 
 # From https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/*/sha256sums.asc
 sha256  14472f1ef6f6606dfed5a938698316c849de18632d3f8cb06eb2fe7ac895221f  patch-3.18.140-rt117.patch.gz
 sha256  2bcc68c24e07a7c81deb00861fb757ed051dba4949a158f55b375f130400fed4  patch-4.4.215-rt192.patch.gz
-sha256  30f930161df45183633a1104a00a13dc49d52bbcf0a8fa8b9832adfb4b17795f  patch-5.4.26-rt17.patch.gz
+sha256  87b4d5da36fcf227c04d0843710c9a02efb3373fb193d6ef0d444c023c740b11  patch-5.4.28-rt19.patch.gz
