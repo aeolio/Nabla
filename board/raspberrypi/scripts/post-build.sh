@@ -7,12 +7,15 @@ CONFIG_FILE=${BINARIES_DIR}/rpi-firmware/config.txt
 ### modify cmdline.txt
 # remove root parameter
 if grep -q 'root=' "${BOOT_FILE}"; then
-	sed 's/root=[a-z/0-9]* //' ${BOOT_FILE}
 	sed -i 's/root=[a-z/0-9]* //' ${BOOT_FILE}
 fi
 # remove rootwait parameter
 if grep -q 'rootwait' "${BOOT_FILE}"; then
 	sed -i 's/rootwait //' ${BOOT_FILE}
+fi
+# append isolcpus parameter
+if ! grep -q 'isolcpus=' "${BOOT_FILE}"; then
+	sed -i 's/$/ isolcpus=3/' ${BOOT_FILE} 
 fi
 
 ### modify config.txt
