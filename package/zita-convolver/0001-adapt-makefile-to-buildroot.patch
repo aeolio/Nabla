@@ -1,6 +1,6 @@
---- /tmp/Makefile
-+++ /home/iago/intel64/build/zita-convolver-4.0.3/source/Makefile
-@@ -20,10 +20,15 @@
+--- a/source/Makefile.orig	2018-08-26 15:35:37.000000000 +0200
++++ b/source/Makefile	2020-04-12 06:23:24.576585056 +0200
+@@ -20,23 +20,26 @@
  
  # Modify as required.
  #
@@ -10,15 +10,15 @@
 +PREFIX ?= /usr
  INCDIR ?= $(PREFIX)/include
  LIBDIR ?= $(PREFIX)/lib$(SUFFIX)
-+
+ 
 +ifdef FFTW_PATH
 +LIBPATH += -L$(FFTW_PATH)/lib
 +INCPATH += -I$(FFTW_PATH)/include
 +endif
- 
++
  
  MAJVERS = 4
-@@ -31,12 +36,10 @@
+ MINVERS = 0.3
  VERSION = $(MAJVERS).$(MINVERS)
  
  
@@ -49,7 +49,7 @@
  
  
  install:	$(ZITA-CONVOLVER_MIN)
-@@ -58,10 +65,11 @@
+@@ -58,11 +65,11 @@
  	install -m 755 $(ZITA-CONVOLVER_MIN) $(DESTDIR)$(LIBDIR)
  	ldconfig
  	ln -sf $(ZITA-CONVOLVER_MIN) $(DESTDIR)$(LIBDIR)/$(ZITA-CONVOLVER_SO)
@@ -61,4 +61,5 @@
  
  clean:
 -	/bin/rm -f *~ *.o *.a *.d *.so.*
+-
 +	$(RM) -f *~ *.o *.a *.d *.so.*
