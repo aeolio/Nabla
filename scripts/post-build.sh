@@ -106,10 +106,6 @@ if [ $(grep -c "BR2_PACKAGE_AVAHI=y" $BR2_CONFIG) -gt 0 ]; then
 	fi
 fi
 
-### add mpd:audio user and group
-add_group "audio" "29" 
-add_user "mpd" "x" "101" "29" "music player demon" "/var/lib/mpd" "/bin/sh" 
-
 ### remove additional wpa_supplicant.conf
 WPA_SUPPLICANT_CONF="$TARGET_DIR/etc/wpa_supplicant/wpa_supplicant.conf"
 WPA_SUPPLICANT_EXTRA="$TARGET_DIR/etc/wpa_supplicant.conf"
