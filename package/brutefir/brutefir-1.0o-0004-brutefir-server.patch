@@ -1,5 +1,5 @@
 --- brutefir.orig/brutefir.c
-+++ brutefir-1.0m/brutefir.c
++++ brutefir-1.0o/brutefir.c
 @@ -62,7 +62,7 @@
      
      emalloc_set_exit_function(bf_exit, BF_EXIT_NO_MEMORY);

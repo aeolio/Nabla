@@ -1,5 +1,5 @@
 --- brutefir.orig/bfio_file.c
-+++ brutefir-1.0m/bfio_file.c
++++ brutefir-1.0o/bfio_file.c
 @@ -66,6 +66,7 @@
  struct settings {
      off_t skipbytes;
