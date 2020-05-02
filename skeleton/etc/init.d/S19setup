@@ -7,44 +7,48 @@
 ### functions that are used in more than one init script
 [ -x /etc/init.d/init_functions ] && . /etc/init.d/init_functions
 
-# assume boot device is alredy mounted r/o
+# assume boot device is already mounted r/o
 device_mounted=1
-device_readable=0
+device_writeable=0
 # other global variables
 mountpoint=""
 blockdevice=""
 # device names for block devices
-HARD_DISK=/dev/sd[a-z][0-9]
-FLASH_DISK=/dev/mmcblk[0-9]p[0-9]
+HARD_DISKS=/dev/sd[a-z][0-9]
+FLASH_DISKS=/dev/mmcblk[0-9]p[0-9]
 # the partition name
 partition_name="NABLA"
-# the default system directories to synchronize
-default_sync_directories="/etc/bruteFIR /etc/fstab /etc/mpd.conf /etc/modules.conf /etc/nabla.conf /etc/network/interfaces /etc/ssh /etc/random_seed /etc/wpa_supplicant /var/lib/mpd /var/lib/mpd/playlists"
+# script name for log output
 script=$(basename $0)
 # main configuration file relative to config directory
 config_file_path="etc/nabla.conf"
 # main configuration file during operation
 system_config_file="/etc/nabla.conf"
+# command parameters
+cmd_start="startup"
+cmd_stop="shutdown"
 
 #
 # finds out if a partition is mounted writeable or read-only
 # unmounted partitions will be assumed read-only
+# parameter $1 = device name
 #
-is_partition_readable() {
+is_partition_writeable() {
 	device="$1"
-	readable=0
+	writeable=0
 	attribute=`grep $device /proc/mounts | \
 		awk '{ print $4 }' | \
 		awk 'BEGIN{ FS="," } \
 			{ for(i=0; i<$NF; i=i+1) { if ($(i+1)~"^r[ow]$") {print $(i+1);break}} }'`
 	if [ "$attribute" = "rw" ]; then 
-		readable=1
+		writeable=1
 	fi
-	echo $readable
+	echo $writeable
 }
 
 #
 # extracts the mount point of a mounted partition
+# parameter $1 = device name
 #
 get_mountpoint() {
 	device="$1"
@@ -53,6 +57,7 @@ get_mountpoint() {
 
 #
 # finds out if a partition is mounted 
+# parameter $1 = device name
 #
 is_partition_mounted() {
 	device="$1"
@@ -66,64 +71,25 @@ is_partition_mounted() {
 
 #
 # Retrieves the partition label of a block device. 
-# If the partition has no label, the GUID is used.  
+# If the partition has no label, the GUID is used. 
+# parameter $1 = device name 
 #
 get_partition_label() {
 	device="$1"
 	label=""
-        uid=""
-        if [ -n "${device##/dev/*}" ]; then device="/dev/$device"; fi
-        for s in `blkid $device`; do
-                case $s in
-                UUID=*)
-                        uid=`expr match "$s" '.*=\"\(.*\)\"'`
-                        ;;
-                LABEL=*)
-                        label=`expr match "$s" '.*=\"\(.*\)\"'`
-                        ;;
-                esac
-        done
-        if [ -n "$label" ]; then echo "$label"; else echo "$uid"; fi
-}
-
-#
-# initially create the .config directory and a stock configuration file
-#
-create_config_file() {
-	local config_directory=$1
-	local config_file=$2
-	mkdir -p $local_config_directory || return 1
-	if [ ! -f $config_directory/$config_file ]; then
-		cat > $config_directory/$config_file <<- EOF
-		######
-		### nabla.conf - system defaults
-		######
-
-		### system preferences
-		NABLA_USE_CONVOLUTION="N"
-		NABLA_START_MUSICPLAYER="Y"
-
-		### sleep after module loading
-		NABLA_WAIT_INTERVAL=1000000
-
-		### system names
-		NABLA_PARTITION=$(partition_name)
-		NABLA_HOSTNAME="nabla"
-
-		### which directories (or files) to synchronise
-		NABLA_SYNC_DIRECTORIES="$(default_sync_directories)"
-
-		### real-time optimizations for selected processes
-		LOWER_PRIORITY_LIST=""
-		HIGHER_PRIORITY_LIST=""
-		REALTIME_PRIORITY_LIST=""
-		CPU_AFFINITY_LIST=""
-		SCHEDULER_POLICY="SCHED_FIFO"
-
-		### copy this to init.d scripts to initialize system variables
-		# [ -x /etc/nabla.conf ] && . /etc/nabla.conf
-		EOF
-	fi
+		uid=""
+		if [ -n "${device##/dev/*}" ]; then device="/dev/$device"; fi
+		for s in `blkid $device`; do
+			case $s in
+			UUID=*)
+				uid=`expr match "$s" '.*=\"\(.*\)\"'`
+				;;
+			LABEL=*)
+				label=`expr match "$s" '.*=\"\(.*\)\"'`
+				;;
+			esac
+		done
+	if [ -n "$label" ]; then echo "$label"; else echo "$uid"; fi
 }
 
 #
@@ -132,31 +98,33 @@ create_config_file() {
 #	blockdevice = path to partition device file
 #	mountpoint = path the partition is mounted on
 #	device_mounted = partition was mounted initially
-#	device_readable = partition was mounted r/o initially
+#	device_writeable = partition was mounted writeable
 #	config_directory = the directory on the partition containing the config files
+# And accepts the parameter 
+#	$1 = [$cmd_start,$cmd_stop] designates the transfer direction
 #
 setup_prepare() {
-	local direction="$1"
+	local command="$1"
 	local config_file=""
 	export blockdevice=""
 	# partition may not be mounted yet
-	for b in $HARD_DISK $FLASH_DISK; do
+	for b in $HARD_DISKS $FLASH_DISKS; do
 		label=`get_partition_label $b`
 		if [ "$label" = "$partition_name" ]; then
 			export blockdevice=$b
 			export device_mounted=`is_partition_mounted $blockdevice`
-			export device_readable=`is_partition_readable $blockdevice`
+			export device_writeable=`is_partition_writeable $blockdevice`
 		fi
 	done
 	# terminate if the partition does not exist
 	if [ -z $blockdevice ]; then return 2; fi
-	echo "$script:  Found $blockdevice mt=$device_mounted rw=$device_readable"
+	echo "$script:  Found $blockdevice mt=$device_mounted rw=$device_writeable"
 	if [ $device_mounted -eq 1 ]; then
 		export mountpoint=`get_mountpoint $blockdevice`
-		if [ $device_readable -eq 0 ]; then
+		if [ $device_writeable -eq 0 ]; then
 			# remount partition
 			mount -o remount,rw $blockdevice || return 1
-			echo "$script:  Remounted $blockdevice RW"
+			echo "$script:  Remounted $blockdevice rw"
 		else
 			echo "$script:  $blockdevice already mounted on $mountpoint"
 		fi
@@ -171,7 +139,7 @@ setup_prepare() {
 	# config file in root file system
 	config_file="$system_config_file"
 	# during startup the saved (if present) file is used
-	if [ $direction = "startup" ] && [ -f $config_directory/$config_file_path ]; then
+	if [ $command = ${cmd_start} ] && [ -f $config_directory/$config_file_path ]; then
 		config_file="$config_directory/$config_file_path"
 	fi
 	. $config_file
@@ -179,59 +147,59 @@ setup_prepare() {
 }
 
 #
-# backup configuration files to partition
+# copy from source to destination
+# function parameters
+#	$1 = source
+#	$2 = destination
+# either $source or $destination is an empty string
 #
-setup_copy_shutdown() {
+setup_copy() {
+	src_directory=$1
+	dst_directory=$2
 	sync_directories="$NABLA_SYNC_DIRECTORIES"
 	if [ -n "$sync_directories" ]; then
 		for s in $sync_directories; do
-			# corresponding directory exists on source file system
-			if [ -d "$s" ]; then
+			# item is a directory
+			if [ -d "${src_directory}${s}" ]; then
 				echo "$script:  Start syncing directory $s"
 				# create $s on target filesystem
-				mkdir -p "${config_directory}${s}" || return 1
+				mkdir -p "${dst_directory}${s}" || return 1
 				# copy (preserve symlinks, preserve file attributes)
-				cp -dp "${s}"/* "${config_directory}${s}/." > /dev/null 2>&1
+				cp -dp "${src_directory}${s}"/* "${dst_directory}${s}" > /dev/null 2>&1
 				echo "$script:  Finished syncing directory $s"
-			# corresponding file exists on source file system
-			elif [ -f "$s" ]; then
-				d=`dirname $s`
+			# item is a file
+			elif [ -f "${src_directory}${s}" ]; then
+				d=`dirname ${s}`
 				# create $d on target filesystem
-				mkdir -p "${config_directory}${d}" || return 1
+				mkdir -p "${dst_directory}${d}" || return 1
 				# copy (preserve symlinks, preserve file attributes)
-				cp -dp "$s" "${config_directory}${s}" > /dev/null 2>&1
+				cp -dp "${src_directory}${s}" "${dst_directory}${s}" > /dev/null 2>&1
 				echo "$script:  Copied file $s"
+			else
+				echo "$script:  Missing entity $s"
 			fi
 		done
 	fi
 }
 
 #
-# restore saved configuration
+# backup configuration files to config directory
+#
+setup_copy_shutdown() {
+	src_directory=""
+	dst_directory=${config_directory}
+	echo "$script:  Export to ${dst_directory}"
+	setup_copy ${src_directory} ${dst_directory}
+}
+
+#
+# restore configuration from config directory
 #
 setup_copy_startup() {
-	sync_directories="$NABLA_SYNC_DIRECTORIES"
-	if [ -n "$sync_directories" ]; then
-		for s in $sync_directories; do
-			# corresponding directory exists on source file system
-			if [ -d "${config_directory}${s}" ]; then
-				echo "$script:  Start importing directory $s"
-				# create $s on target filesystem
-				mkdir -p "${s}" || return 1
-				# copy (preserve symlinks, preserve file attributes)
-				cp -dp "${config_directory}${s}"/* "${s}/." > /dev/null 2>&1
-				echo "$script:  Finished importing directory $s"
-			# corresponding file exists on source file system
-			elif [ -f "${config_directory}${s}" ]; then
-				d=`dirname ${s}`
-				# create $d on target filesystem
-				mkdir -p "${d}" || return 1
-				# copy (preserve symlinks, preserve file attributes)
-				cp -dp "${config_directory}${s}" "${s}" > /dev/null 2>&1
-				echo "$script:  Copied file $s"
-			fi
-		done
-	fi
+	src_directory=${config_directory}
+	dst_directory=""
+	echo "$script:  Import from ${src_directory}"
+	setup_copy ${src_directory} ${dst_directory}
 }
 
 #
@@ -273,12 +241,12 @@ setup_postprocess() {
 #	blockdevice = path to partition device file
 #	mountpoint = path the partition is mounted on
 #	device_mounted = partition was mounted initially
-#	device_readable = partition was mounted r/o initially
+#	device_writeable = partition was mounted writeable
 #	config_directory = the directory on the partition containing the config files
 #
 setup_finish() {
 	if [ $device_mounted -eq 1 ]; then
-		if [ $device_readable -eq 0 ]; then
+		if [ $device_writeable -eq 0 ]; then
 			# remount partition
 			mount -o remount,ro $blockdevice || return 1
 			echo "$script:  Remounted $blockdevice RO"
@@ -292,7 +260,7 @@ setup_finish() {
 	export blockdevice=""
 	export mountpoint=""
 	export device_mounted=""
-	export device_readable=""
+	export device_writeable=""
 	export config_directory=""
 }
 
@@ -300,7 +268,7 @@ setup_finish() {
 # main function for "stop" or "sync" parameter of init script
 #
 setup_backup() {
-	setup_prepare "shutdown" || return 1
+	setup_prepare ${cmd_stop} || return 1
 	setup_copy_shutdown || return 1
 	setup_finish || return 1
 }
@@ -310,9 +278,9 @@ setup_backup() {
 #
 setup_restore() {
 	for i in `seq 10`; do
-		# wait for USB subsystem
-		usleep 1000000
-		setup_prepare "startup" && break
+		setup_prepare ${cmd_start} && break
+		# wait for USB subsystem if unsuccessful
+		usleep 500000
 	done
 	if [ -z $mountpoint ]; then return 1; fi
 	setup_copy_startup || return 1
