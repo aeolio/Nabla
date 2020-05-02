@@ -4,7 +4,8 @@
 #
 
 script=$(basename $0)
-setup_file="/etc/wpa_supplicant/wpa_supplicant.conf"
+cfg_file="/etc/wpa_supplicant/wpa_supplicant.conf"
+log_file="/var/log/wpa_supplicant.log"
 
 # Assure that at least one interface exists. 
 [ -e /sys/class/net/wlan0 ] || exit 0
@@ -12,14 +13,14 @@ setup_file="/etc/wpa_supplicant/wpa_supplicant.conf"
 # allow for multiple interfaces
 config=""
 for i in /sys/class/net/wlan?; do
-	if [ -n "$config" ]; then config="$config -N"; fi
-	config="$config -i `basename $i` -D nl80211,wext -c $setup_file"
+	if [ -n "${config}" ]; then config="${config} -N"; fi
+	config="${config} -i`basename $i` -Dnl80211,wext -c${cfg_file}"
 done
 
 case "$1" in
   start)
 	echo "$script: Starting wpa_supplicant..."
-	wpa_supplicant -B $config
+	/usr/sbin/wpa_supplicant -B -f${log_file} ${config}
 	;;
   stop)
 	echo -n "Stopping wpa_supplicant..."
