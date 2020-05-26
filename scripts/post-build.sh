@@ -106,18 +106,6 @@ if [ $(grep -c "BR2_PACKAGE_AVAHI=y" $BR2_CONFIG) -gt 0 ]; then
 	fi
 fi
 
-### remove additional wpa_supplicant.conf
-WPA_SUPPLICANT_CONF="$TARGET_DIR/etc/wpa_supplicant/wpa_supplicant.conf"
-WPA_SUPPLICANT_EXTRA="$TARGET_DIR/etc/wpa_supplicant.conf"
-if [ -f $WPA_SUPPLICANT_CONF -a -f $WPA_SUPPLICANT_EXTRA ]; then
-	rm $WPA_SUPPLICANT_EXTRA || exit 1
-fi
-
-### remove swapon/swapoff from inittab
-INITTAB="$TARGET_DIR/etc/inittab"
-sed -e '/^[^#]/ s/\(^.*swapon.*$\)/#\1/' \
-	-e '/^[^#]/ s/\(^.*swapoff.*$\)/#\1/' -i ${INITTAB}
-
 ### fix annoying ld.so.conf behaviour in buildroot make script
 LD_CONF_FILE=$TARGET_DIR/etc/ld.so.conf
 LD_CONF_DIR=$TARGET_DIR/etc/ld.so.conf.d

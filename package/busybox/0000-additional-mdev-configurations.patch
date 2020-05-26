@@ -1,0 +1,22 @@
+--- a/etc/mdev.conf
++++ b/etc/mdev.conf
+@@ -21,6 +21,7 @@
+ vcsa*[0-9]*	root:tty 660
+ ttyS[0-9]*	root:root 660
+ ttyUSB[0-9]*	root:root 660
++ttyAMA[0-9]*	root:root 660
+ 
+ # alsa sound devices
+ snd/pcm.*	root:audio 660
+@@ -37,3 +38,10 @@
+ 
+ # load modules
+ $MODALIAS=.*	root:root 660 @modprobe "$MODALIAS"
++
++# wireless regulatory rules
++ACTION=change;SUBSYSTEM=platform;regulatory.* 0:0 660 */sbin/crda
++
++# auto mount usb devices
++sd[a-z][0-9]*	root:disk 660 */var/lib/mdev/automount
++mmcblk[0-9]p[0-9]	root:disk 660 */var/lib/mdev/automount
+
