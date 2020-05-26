@@ -186,20 +186,16 @@ setup_copy() {
 # backup configuration files to config directory
 #
 setup_copy_shutdown() {
-	src_directory=""
-	dst_directory=${config_directory}
 	echo "$script:  Export to ${dst_directory}"
-	setup_copy ${src_directory} ${dst_directory}
+	setup_copy "" ${config_directory}
 }
 
 #
 # restore configuration from config directory
 #
 setup_copy_startup() {
-	src_directory=${config_directory}
-	dst_directory=""
 	echo "$script:  Import from ${src_directory}"
-	setup_copy ${src_directory} ${dst_directory}
+	setup_copy ${config_directory} ""
 }
 
 #
