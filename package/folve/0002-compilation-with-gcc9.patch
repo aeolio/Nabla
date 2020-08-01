@@ -1,0 +1,47 @@
+--- a/status-server.h
++++ b/status-server.h
+@@ -21,14 +21,13 @@
+ 
+ #include <string>
+ #include <deque>
++#include <microhttpd.h> // for MHD_ types
+ 
+ #include "file-handler-cache.h"
+ #include "file-handler.h"
+ #include "util.h"
+ 
+ class FolveFilesystem;
+-struct MHD_Daemon;
+-struct MHD_Connection;
+ 
+ class StatusServer : protected FileHandlerCache::Observer {
+ public:
+@@ -51,7 +50,7 @@
+   friend class HtmlFileHandler;
+ 
+   // micro-httpd callback
+-  static int HandleHttp(void* user_argument,
++  static MHD_Result HandleHttp(void* user_argument,
+                         struct MHD_Connection *,
+                         const char *, const char *, const char *,
+                         const char *, size_t *, void **);
+--- a/status-server.cc
++++ b/status-server.cc
+@@ -136,7 +136,7 @@
+ 
+ // Callback function called by micro http daemon. Gets the StatusServer pointer
+ // in the user_argument.
+-int StatusServer::HandleHttp(void* user_argument,
++MHD_Result StatusServer::HandleHttp(void* user_argument,
+                              struct MHD_Connection *connection,
+                              const char *url, const char *method,
+                              const char *version,
+@@ -144,7 +144,7 @@
+                              void**) {
+   StatusServer* server = (StatusServer*) user_argument;
+   struct MHD_Response *response;
+-  int ret;
++  MHD_Result ret;
+ 
+   if (strcmp(url, kSettingsUrl) == 0) {
+     server->SetFilter(MHD_lookup_connection_value(connection,
