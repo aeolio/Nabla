@@ -1,0 +1,7 @@
+2020-07-05
+raspberrypi/linux kernel tree is at 5.4.50
+
+changes made to 
+  include/linux/genhd.h -- minor change
+  kernel/sched/core.c -- removed @@ -6183,7 +6353,11 @@ void idle_task_exit(void); offending code was removed
+  net/core/dev.c -- had to leave netdev_get_name and dev_change_name unmodified; code changed considerably!
