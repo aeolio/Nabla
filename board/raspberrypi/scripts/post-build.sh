@@ -18,6 +18,16 @@ if ! grep -q 'isolcpus=' "${BOOT_FILE}"; then
 	sed -i 's/$/ isolcpus=3/' ${BOOT_FILE} 
 fi
 
+# append rcu_nocbs parameter
+if ! grep -q 'rcu_nocbs=' "${BOOT_FILE}"; then
+	sed -i 's/$/ rcu_nocbs=3/' ${BOOT_FILE} 
+fi
+
+# append no_hz_full parameter
+if ! grep -q 'no_hz_full=' "${BOOT_FILE}"; then
+	sed -i 's/$/ no_hz_full=1-3/' ${BOOT_FILE} 
+fi
+
 ### modify config.txt
 # enable initramfs
 if grep -q '^#initramfs' "${CONFIG_FILE}"; then
