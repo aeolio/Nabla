@@ -1,12 +1,12 @@
 # Kernel versions for RT patches from https://www.kernel.org/pub/linux/kernel/v[345].x/sha256sums.asc
 sha256  18c38901c51373853435d364422c1931ed0520b16cc4ae9440d7b2095bdce2e0  linux-3.18.140.tar.xz
 sha256  e7f6c63c5a3921623f1c5df32a9cd61a93a76bc543dd7d91184a4714362cd7b0  linux-4.4.231.tar.xz
-sha256  03e2a14e0eace8f4d668b72f82ad0a16f2221a676a22047aaac9ed0453dbf477  linux-5.4.54.tar.xz
+sha256  86f13d050f6389c5a1727fa81510ee8eceac795297bc584f443354609617fea4  linux-5.4.61.tar.xz
 
 # From https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/*/sha256sums.asc
 sha256  14472f1ef6f6606dfed5a938698316c849de18632d3f8cb06eb2fe7ac895221f  patch-3.18.140-rt117.patch.gz
 sha256  9ec564b6019a9453dc4bf5f25afe075a8d83c98aec5ca29c20f5ef083c6306e7  patch-4.4.231-rt202.patch.gz
-sha256  444e5d0505b4d6fbe3f5ccfffc8547f6759f818b195c84835e32e15990951ac9  patch-5.4.54-rt33.patch.gz
+sha256  4e981d86cad77cb9b12be6ff2864ee4631e740139108625c37646181eb2ceb83  patch-5.4.61-rt37.patch.gz
 
 # RaspberryPi intermediate version
 sha256  a46a07172f6eca0484bb5c997d81553c06380b6cae40ae7e8ca858156f1cb997  patch-5.4.52-rt31.patch.gz
