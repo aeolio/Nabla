@@ -122,7 +122,7 @@ setup_prepare() {
 	if [ $device_mounted -eq 1 ]; then
 		export mountpoint=`get_mountpoint $blockdevice`
 		if [ $device_writeable -eq 0 ]; then
-			# remount partition
+			# remount partition writable
 			mount -o remount,rw $blockdevice || return 1
 			echo "$script:  Remounted $blockdevice rw"
 		else
@@ -133,17 +133,21 @@ setup_prepare() {
 		export mountpoint=/tmp/$partition_name
 		mkdir -p $mountpoint
 		mount $blockdevice $mountpoint || return 1
-		echo "$script: mounted $blockdevice in $mountpoint"
+		echo "$script: mounted $blockdevice on $mountpoint"
 	fi
 	export config_directory="$mountpoint/${config_directory}"
-	# config file in root file system
+	# default to config file in root file system
 	config_file="$system_config_file"
-	# during startup the saved (if present) file is used
+	# if a saved config file exists, use it during startup
 	if [ $command = ${cmd_start} ] && [ -f $config_directory/$config_file_path ]; then
 		config_file="$config_directory/$config_file_path"
 	fi
 	. $config_file
 	echo "$script:  Configuration file $config_file read"
+	# on shutdown, also save log file location 
+	if [ $command = ${cmd_stop} ]; then
+		NABLA_SYNC_DIRECTORIES="$NABLA_SYNC_DIRECTORIES /var/log"
+	fi
 }
 
 #
@@ -186,7 +190,7 @@ setup_copy() {
 # backup configuration files to config directory
 #
 setup_copy_shutdown() {
-	echo "$script:  Export to ${dst_directory}"
+	echo "$script:  Export to ${config_directory}"
 	setup_copy "" ${config_directory}
 }
 
@@ -194,7 +198,7 @@ setup_copy_shutdown() {
 # restore configuration from config directory
 #
 setup_copy_startup() {
-	echo "$script:  Import from ${src_directory}"
+	echo "$script:  Import from ${config_directory}"
 	setup_copy ${config_directory} ""
 }
 
