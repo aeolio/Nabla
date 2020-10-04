@@ -1,0 +1,18 @@
+--- a/openbsd-compat/openbsd-compat.h
++++ b/openbsd-compat/openbsd-compat.h
+@@ -342,6 +342,14 @@
+ #include "port-net.h"
+ #include "port-uw.h"
+ 
++/* these declarations are needed, otherwise pointer gets lost in conversion */
++#if HAVE_REALLOCARRAY
++void *reallocarray(void *, size_t, size_t);
++#endif
++#if HAVE_RECALLOCARRAY
++void *recallocarray(void *, size_t, size_t, size_t);
++#endif
++
+ /* _FORTIFY_SOURCE breaks FD_ISSET(n)/FD_SET(n) for n > FD_SETSIZE. Avoid. */
+ #if defined(HAVE_FEATURES_H) && defined(_FORTIFY_SOURCE)
+ # include <features.h>
+
