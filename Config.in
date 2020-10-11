@@ -1,3 +1,7 @@
+menu "Debugging, profiling and benchmark"
+	source "$BR2_EXTERNAL_NABLA_PATH/package/interbench/Config.in"
+endmenu
+
 menu "Firmware"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"

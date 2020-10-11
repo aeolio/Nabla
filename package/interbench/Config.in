@@ -1,0 +1,6 @@
+config BR2_PACKAGE_INTERBENCH
+	bool "interbench"
+	help
+	  interbench is designed to measure the effect of changes in Linux kernel design or system configuration changes such as cpu, I/O scheduler and filesystem changes and options. With careful benchmarking, different hardware can be compared. 
+
+	  http://users.on.net/~ckolivas/interbench/

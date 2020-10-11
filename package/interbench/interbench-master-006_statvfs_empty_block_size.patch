@@ -1,0 +1,21 @@
+--- interbench-master/interbench.c
++++ interbench-next/interbench.c
+@@ -52,7 +52,7 @@
+ 
+ #define MAX_UNAME_LENGTH	100
+ #define MAX_LOG_LENGTH		((MAX_UNAME_LENGTH) + 4)
+-#define MIN_BLK_SIZE		1024
++#define MIN_BLK_SIZE		512
+ #define DEFAULT_RESERVE		64
+ #define MB			(1024 * 1024)	/* 2^20 bytes */
+ #define KB			1024
+@@ -1241,6 +1241,9 @@
+ 	strncpy(path, directory, sizeof(path)-1);
+ 	path[sizeof(path)-1] = '\0';
+ 	if( (statvfs(path,&fiData)) == 0 ) {
++		/* if block size is missing, use standard block size */
++		if(fiData.f_bsize == 0)
++			fiData.f_bsize = MIN_BLK_SIZE;
+ 		ud.filesize = fiData.f_bavail * fiData.f_bsize / KB;	/* blocks to kilobytes */
+ 		ud.filesize = ud.filesize * 45L /100L;	/* two files must co-exist, leave 5% margin */
+ 		if( ud.ram > 0 && ud.filesize > ud.ram )

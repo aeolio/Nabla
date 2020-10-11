@@ -1,0 +1,75 @@
+--- interbench-master/interbench.c
++++ interbench-next/interbench.c
+@@ -986,9 +986,13 @@
+  */
+ void calibrate_loop(void)
+ {
++	unsigned loop_counter, redo_counter;
+ 	unsigned long long start_time, loops_per_msec, run_time = 0;
++	unsigned long long loops;
++	unsigned duration;
++	float accuracy;
++	float alpha = 0.3; /* moving average */
+ 	struct timespec myts;
+-	unsigned long loops;
+ 	cpu_set_t cpumask;
+ 
+ 	CPU_ZERO(&cpumask);
+@@ -1003,21 +1007,33 @@
+ 			terminal_error("sched_setaffinity");
+ 		fprintf(stderr, "could not set cpu affinity\n");
+ 	}
+-	loops_per_msec = 100000;
++
++	loops_per_msec = 1000000;
++	accuracy = 0.01;
++	duration = 1000000;
++	loop_counter = 0;
++	redo_counter = 0;
+ 	start_time = get_usecs(&myts);
+ 	/* Run for at least one second for cpu frequency to hit maximum */
+ 	do {
+ 		burn_loops(loops_per_msec);
+ 	} while (get_usecs(&myts) - start_time < 1000000);
++
+ redo:
+-	/* Calibrate to within 1% accuracy */
+-	while (run_time > 1010000 || run_time < 990000) {
++
++	/* Calibrate to within initial 1% accuracy */
++	while (abs(run_time - duration) > duration * accuracy) {
+ 		loops = loops_per_msec;
+ 		start_time = get_nsecs(&myts);
+ 		burn_loops(loops);
+ 		run_time = get_nsecs(&myts) - start_time;
+-		loops_per_msec = (1000000 * loops_per_msec / run_time ? :
+-			loops_per_msec);
++		loops = loops * duration / run_time;
++		loops_per_msec = loops_per_msec * (1-alpha) + loops * alpha;
++		loop_counter += 1;
++		if (loop_counter > 1000 || redo_counter > 50) {
++			fprintf(stderr, "\ncalibrate_loop: accuracy insufficient\n");
++			exit(1);
++		}
+ 	}
+ 
+ 	/* Rechecking after a pause increases reproducibility */
+@@ -1027,10 +1043,15 @@
+ 	burn_loops(loops);
+ 	run_time = get_nsecs(&myts) - start_time;
+ 
+-	/* Tolerate 5% difference on checking */
+-	if (run_time > 1050000 || run_time < 950000)
++	/* Tolerate 5% error on checking */
++	if (abs(run_time - duration) > duration * 5 * accuracy) {
++		++redo_counter;
+ 		goto redo;
+-
++	}
++
++	accuracy = (float) abs(run_time - duration) / (float) duration;
++	fprintf(stderr,"Calibrated with %u loops %u repetitions %0.4f accuracy\n", 
++		loop_counter, redo_counter, accuracy);
+ 	ud.loops_per_ms = loops_per_msec;
+ 	sched_setaffinity(0, sizeof(ud.cpumask), &ud.cpumask);
+ }

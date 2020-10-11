@@ -1,0 +1,80 @@
+--- interbench-master/interbench.c
++++ interbench-next/interbench.c
+@@ -80,10 +80,19 @@
+ 	.log = 1,
+ };
+ 
++/* Used for calculating cumulative latency */
++typedef struct cumulative_latency {
++	int samples;
++	double average_latency[THREADS *(THREADS-1)];
++	double max_latency;
++	double variance[THREADS *(THREADS-1)];
++} latency_t;
++latency_t *pl;
++
+ /* Pipes main to/from load and bench processes */
+ static int m2l[2], l2m[2], m2b[2], b2m[2];
+ 
+-/* Which member of becnhmarks is used when not benchmarking */
++/* Which member of benchmarks is used when not benchmarking */
+ #define NOT_BENCHING	(THREADS)
+ #define CUSTOM		(THREADS - 1)
+ 
+@@ -1121,6 +1130,13 @@
+ 	else
+ 		deadlines_met = (double) tbj->deadlines_met /
+ 		    (double) (tbj->missed_deadlines + tbj->deadlines_met) * 100.0;
++
++	/* record cumulative latency values */
++	int i = pl->samples;	
++	pl->average_latency[i] = average_latency;
++	pl->max_latency = fmax(max_latency, pl->max_latency);
++	pl->variance[i] = (double) (sd * sd);
++	pl->samples += 1;
+ 
+ 	/*
+ 	 * Messy nonsense to format the output nicely. Values less than 1ms
+@@ -1558,6 +1574,11 @@
+ 	if (signal(SIGCHLD, deadchild) == SIG_ERR)
+ 		terminal_error("signal");
+ #endif
++
++	/* initialize cumulative latency */
++	pl = mmap(pl, sizeof(latency_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
++	if (pl == MAP_FAILED)
++		terminal_error("mmap");
+ 
+ 	ud.cpu_load = sysconf(_SC_NPROCESSORS_ONLN);
+ 	sched_getaffinity(0, sizeof(ud.cpumask), &ud.cpumask);
+@@ -1817,7 +1838,30 @@
+ 		}
+ 		log_output("\n");
+ 	}
++
++	/* 
++		Print cumulative latency value. This assumes that number of samples N in 
++		each set is fairly equal (which should be given by the nature of the data)
++		mu_total = Sigma(i=1..k) [mu(i) * N(i)] / Sigma(i=1..k) [N(i)]
++		variance = Sigma(j=1..k) [N(i) * s(i)^2] + Sigma(j=1..k) [N(j) * (mu(j) - mu_total)^2]
++		with k the number of samples, mu and s mean value and standard derivation of each set
++	*/
++	if (pl->samples) {
++		double average_latency = 0.0, deviance = 0.0;
++		for (i = 0 ; i < pl->samples ; i++)
++			average_latency += pl->average_latency[i] / pl->samples;
++		for (i = 0 ; i < pl->samples ; i++) {
++			double delta = pl->average_latency[i] - average_latency;
++			deviance += pl->variance[i] + delta * delta;
++		}
++		log_output("\t");
++		log_output("%6.1f +/- ", average_latency);
++		log_output("%-8.5g", sqrt(deviance / pl->samples));
++		log_output("%6.1f\n", pl->max_latency);
++	}	
+ 	log_output("\n");
++
++	munmap(pl, sizeof(latency_t));
+ 	if (ud.log)
+ 		fclose(ud.logfile);
+ 

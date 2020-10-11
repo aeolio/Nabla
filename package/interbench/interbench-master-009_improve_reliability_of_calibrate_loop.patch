@@ -1,0 +1,19 @@
+--- interbench-master/interbench.c
++++ interbench-next/interbench.c
+@@ -1049,7 +1049,7 @@
+ 	}
+ 
+ 	/* Rechecking after a pause increases reproducibility */
+-	sleep(1);
++	microsleep(duration/2);
+ 	loops = loops_per_msec;
+ 	start_time = get_nsecs(&myts);
+ 	burn_loops(loops);
+@@ -1058,6 +1058,7 @@
+ 	/* Tolerate 5% error on checking */
+ 	if (abs(run_time - duration) > duration * 5 * accuracy) {
+ 		++redo_counter;
++		microsleep(duration/2); /* also here a pause increases reliability */
+ 		goto redo;
+ 	}
+ 

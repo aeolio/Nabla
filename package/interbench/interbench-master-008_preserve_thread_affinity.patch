@@ -1,0 +1,128 @@
+--- interbench-master/interbench.c
++++ interbench-next/interbench.c
+@@ -631,9 +631,10 @@
+ 	pthread_t burnthreads[ud.cpu_load];
+ 
+ 	t = th->threadno;
+-	for (i = 0 ; i < ud.cpu_load ; i++)
+-		create_pthread(&burnthreads[i], NULL, burn_thread,
+-			(void*)(long) t);
++	for (i = 0 ; i < ud.cpu_load ; i++) {
++		create_pthread(&burnthreads[i], NULL, burn_thread, (void*)(long) t);
++		pthread_setaffinity_np(burnthreads[i], sizeof(ud.cpumask), &ud.cpumask);
++	}
+ 	wait_sem(s);
+ 	post_sem(&th->sem.stopchild);
+ 	for (i = 0 ; i < ud.cpu_load ; i++)
+@@ -766,6 +767,8 @@
+ 		init_all_sems(&ringthreads[i].sem);
+ 		create_pthread(&ringthreads[i].pthread, NULL, 
+ 			ring_thread, (void*)(long) i);
++		pthread_setaffinity_np(ringthreads[i].pthread, 
++			sizeof(ud.cpumask), &ud.cpumask);
+ 	}
+ 
+ 	wait_sem(&ringthreads[0].sem.ready);
+@@ -900,11 +903,6 @@
+ 	struct timespec myts;
+ 	long i = (long)t;
+ 
+-	/*
+-	 * Set affinity back to normal in case it was set on our parent
+-	 * process.
+-	 */
+-	sched_setaffinity(0, sizeof(ud.cpumask), &ud.cpumask);
+ 	th = &threadlist[i];
+ 	tk = &th->tkthread;
+ 	s = &th->tkthread.sem;
+@@ -995,7 +993,7 @@
+  * per second we can perform on this hardware to fairly accurately
+  * reproduce certain percentage cpu usage
+  */
+-void calibrate_loop(void)
++void calibrate_loop(int affinity)
+ {
+ 	unsigned loop_counter, redo_counter;
+ 	unsigned long long start_time, loops_per_msec, run_time = 0;
+@@ -1004,19 +1002,22 @@
+ 	float accuracy;
+ 	float alpha = 0.3; /* moving average */
+ 	struct timespec myts;
+-	cpu_set_t cpumask;
+-
+-	CPU_ZERO(&cpumask);
+-	CPU_SET(0, &cpumask);
+-
+-	/*
+-	 * Perform loop calibration on one CPU only as switching CPUs may
+-	 * make the value fluctuate too much to get a stable reading
+-	 */
+-	if (sched_setaffinity(0, sizeof(cpumask), &cpumask) == -1) {
+-		if (errno != EPERM)
+-			terminal_error("sched_setaffinity");
+-		fprintf(stderr, "could not set cpu affinity\n");
++
++	if (! affinity) {
++		cpu_set_t cpumask;
++
++		CPU_ZERO(&cpumask);
++		CPU_SET(0, &cpumask);
++
++		/*
++		 * Perform loop calibration on one CPU only as switching CPUs may
++		 * make the value fluctuate too much to get a stable reading
++		 */
++		if (sched_setaffinity(0, sizeof(cpumask), &cpumask) == -1) {
++			if (errno != EPERM)
++				terminal_error("sched_setaffinity");
++			fprintf(stderr, "could not set cpu affinity\n");
++		}
+ 	}
+ 
+ 	loops_per_msec = 1000000;
+@@ -1064,7 +1065,8 @@
+ 	fprintf(stderr,"Calibrated with %u loops %u repetitions %0.4f accuracy\n", 
+ 		loop_counter, redo_counter, accuracy);
+ 	ud.loops_per_ms = loops_per_msec;
+-	sched_setaffinity(0, sizeof(ud.cpumask), &ud.cpumask);
++	if (! affinity)
++		sched_setaffinity(0, sizeof(ud.cpumask), &ud.cpumask);
+ }
+ 
+ void log_output(const char *format, ...) __attribute__ ((format(printf, 1, 2)));
+@@ -1197,6 +1199,13 @@
+ 	if (fclose(fp) == -1)
+ 		terminal_error("fclose");
+ 	sync_flush();
++}
++
++void delete_read_file(void)
++{
++	char *name = "interbench.read";
++	if (remove(name) == -1)
++		terminal_error("remove");
+ }
+ 
+ void get_ram(void)
+@@ -1752,7 +1761,7 @@
+ 		 * SCHED_FIFO if we can
+ 		 */
+ 		set_fifo(99);
+-		calibrate_loop();
++		calibrate_loop(affinity);
+ 		set_normal();
+ 	} else
+ 		fprintf(stderr, "loops_per_ms specified from command line\n");
+@@ -1864,6 +1873,12 @@
+ 	}	
+ 	log_output("\n");
+ 
++	/* 
++	 * on systems with limited file system size, 
++	 * leaving this file may lead to problems later 
++	*/	
++	delete_read_file();
++
+ 	munmap(pl, sizeof(latency_t));
+ 	if (ud.log)
+ 		fclose(ud.logfile);
