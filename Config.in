@@ -1,19 +1,20 @@
-menu "Debugging, profiling and benchmark"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/interbench/Config.in"
-endmenu
-
-menu "Firmware"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
-endmenu
-
-menu "Private packages"
+menu "Audio and video applications"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/brutefir/Config.in"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/esniper/Config.in"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/folve/Config.in"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/zita-convolver/Config.in"
 endmenu
 
+menu "Debugging, profiling and benchmark"
+	source "$BR2_EXTERNAL_NABLA_PATH/package/interbench/Config.in"
+endmenu
+
+menu "Hardware handling"
+menu "Firmware"
+	source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
+	source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
+endmenu
 #menu "Staging drivers"
 #	source "$BR2_EXTERNAL_NABLA_PATH/package/rtl8723bs/Config.in"
 #endmenu
+endmenu
