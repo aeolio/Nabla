@@ -23,9 +23,9 @@ if ! grep -q 'rcu_nocbs=' "${BOOT_FILE}"; then
 	sed -i 's/$/ rcu_nocbs=3/' ${BOOT_FILE} 
 fi
 
-# append no_hz_full parameter
-if ! grep -q 'no_hz_full=' "${BOOT_FILE}"; then
-	sed -i 's/$/ no_hz_full=1-3/' ${BOOT_FILE} 
+# append nohz_full parameter
+if ! grep -q 'nohz_full=' "${BOOT_FILE}"; then
+	sed -i 's/$/ nohz_full=3/' ${BOOT_FILE} 
 fi
 
 ### modify config.txt
