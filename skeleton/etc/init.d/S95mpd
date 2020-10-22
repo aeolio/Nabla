@@ -7,8 +7,8 @@
 test -f /usr/bin/mpd || exit 0
 test -f /etc/mpd.conf || exit 0
 
-HOTPLUG=hotplug
 MUSIC=music
+HOTPLUG_DIR=/media
 
 MPD_LIB="/var/lib/mpd"
 MPD_LOG="/var/log/mpd"
@@ -18,7 +18,7 @@ WWW_ROOT="/var/www"
 WWW_MUSIC=$WWW_ROOT/Music
 
 MPD_MUSIC=$MPD_LIB/$MUSIC
-MPD_MEDIA=$MPD_MUSIC/$HOTPLUG
+PIDFILE=$MPD_RUN/pid
 
 ### initialize system variables
 [ -f /etc/nabla.conf ] && . /etc/nabla.conf
@@ -55,17 +55,17 @@ initialize() {
 	mkdir -p $MPD_LIB && chown -R mpd:audio $MPD_LIB
 	mkdir -p $MPD_LOG && chown -R mpd:audio $MPD_LOG
 	mkdir -p $MPD_RUN && chown -R mpd:audio $MPD_RUN
-	# this is the hotplug directory
-	if [ ! -h $MPD_MEDIA ]; then
-		ln -s /media $MPD_MEDIA
+	# this is the mpd link to the music directory
+	if [ ! -h $MPD_MUSIC ]; then
+		ln -s $HOTPLUG_DIR $MPD_MUSIC
 	fi
 	# this is the web server link to the music directory
 	if [ ! -h $WWW_MUSIC ]; then
 		ln -s $MPD_MUSIC $WWW_MUSIC
 	fi
 	# create ignore list
-	echo "$HOTPLUG/$NABLA_PARTITION" > $MPD_MUSIC/.mpdignore
-	# file attributes may be broken by import
+	echo "$NABLA_PARTITION" > $HOTPLUG_DIR/.mpdignore
+	# library file attributes may be broken by import
 	find $MPD_LIB -type f -exec chmod u=rw,g=rw,o=r {} \;
 }
 
@@ -74,14 +74,28 @@ start() {
 	initialize
 	unmute
 	ulimit -HS -r $HI_PRIO
-	start-stop-daemon --start --quiet --background --exec /usr/bin/mpd \
-		&& echo "OK" || echo "FAIL" 
+	# mpd needs a pid_file entry in mpd.conf corresponding to $PIDFILE
+	# using the start-stop-daemon --make-pidfile option does not work
+	start-stop-daemon --start --quiet --background --exec /usr/bin/mpd
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	return "$status"
 } 
 
 stop() {
 	echo -n "Stopping mpd: "
-	start-stop-daemon --stop --quiet --pidfile $MPD_RUN/pid \
-		&& echo "OK" || echo "FAIL" 
+	start-stop-daemon --stop --quiet --pidfile $PIDFILE
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	return "$status"
 } 
 
 case "$1" in
