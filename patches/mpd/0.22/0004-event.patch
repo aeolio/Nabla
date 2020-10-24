@@ -1,0 +1,18 @@
+--- a/src/event/Thread.cxx
++++ b/src/event/Thread.cxx
+@@ -51,6 +51,7 @@
+ {
+ 	SetThreadName(realtime ? "rtio" : "io");
+ 
++#ifndef ENABLE_RTOPT
+ 	if (realtime) {
+ 		SetThreadTimerSlack(std::chrono::microseconds(10));
+ 
+@@ -61,6 +62,7 @@
+ 			    "RTIOThread could not get realtime scheduling, continuing anyway");
+ 		}
+ 	}
++#endif
+ 
+ 	event_loop.Run();
+ }
