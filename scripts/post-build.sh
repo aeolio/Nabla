@@ -92,7 +92,7 @@ fi
 ### Avahi package selected
 ### modify avahi configuration file
 if [ $(grep -c "BR2_PACKAGE_AVAHI=y" $BR2_CONFIG) -gt 0 ]; then
-	_ETC_AVAHI="$TARGET_DIR/etc/avahi"
+	_ETC_AVAHI="${TARGET_DIR}/etc/avahi"
 	AVAHI_CONFIG=${_ETC_AVAHI}/avahi-daemon.conf
 	if [ -f $AVAHI_CONFIG ] && [ $(grep -c "^#host-name=" $AVAHI_CONFIG) -gt 0 ]; then
 		echo "patching $AVAHI_CONFIG"
@@ -103,6 +103,16 @@ if [ $(grep -c "BR2_PACKAGE_AVAHI=y" $BR2_CONFIG) -gt 0 ]; then
 		else
 			rm ${AVAHI_CONFIG}_ 
 		fi
+	fi
+fi
+
+### nfs-utils selected
+### modify init.d startup file
+if [ $(grep -c "BR2_PACKAGE_NFS_UTILS=y" $BR2_CONFIG) -gt 0 ]; then
+	_ETC_INIT_D="${TARGET_DIR}/etc/init.d"
+	NFS_STARTUP=${_ETC_INIT_D}/S60nfs
+	if [ -f $NFS_STARTUP ] && [ $(grep -c "daemon:daemon" $NFS_STARTUP) -lt 1 ]; then
+		sed -i '/^mkdir.*sm.bak/a chown daemon:daemon \/run\/nfs\/sm*' $NFS_STARTUP
 	fi
 fi
 
