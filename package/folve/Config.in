@@ -1,10 +1,11 @@
 config BR2_PACKAGE_FOLVE
 	bool "folve"
 	select BR2_PACKAGE_FLAC
-	select BR2_PACKAGE_FUSE
+	select BR2_PACKAGE_FUSE3
 	select BR2_PACKAGE_LIBSNDFILE
 	select BR2_PACKAGE_LIBMICROHTTPD
 	select BR2_PACKAGE_ZITA_CONVOLVER
+
 	help
 	  Folve is a FUSE file system that convolves audio files on the fly.
 
