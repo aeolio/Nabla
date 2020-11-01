@@ -1,1 +1,0 @@
-rpi32 uses in-tree bcm2709_defconfig for reference. 
