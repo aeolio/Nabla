@@ -1,10 +1,25 @@
 --- a/Makefile
 +++ b/Makefile
-@@ -1,5 +1,5 @@
+@@ -1,15 +1,15 @@
 -CXX=g++
 -PREFIX=/usr/local
 +CXX?=g++
 +PREFIX=/usr
  
  F_VERSION=$(shell git log -n1 --date=short --format="%cd (commit=%h)" 2>/dev/null || echo "[unknown version - compile from git]")
+ 
+-SNDFILE_INC?=$(shell pkg-config --cflags sndfile)
+-SNDFILE_LIB?=$(shell pkg-config --libs sndfile)
++SNDFILE_INC?=$($(PKG-CONFIG) --cflags sndfile)
++SNDFILE_LIB?=$($(PKG-CONFIG) --libs sndfile)
+ 
+-FUSE_INC?=$(shell pkg-config --cflags fuse3)
+-FUSE_LIB?=$(shell pkg-config --libs fuse3)
++FUSE_INC?=$($(PKG-CONFIG) --cflags fuse3)
++FUSE_LIB?=$($(PKG-CONFIG) --libs fuse3)
+ 
+-CXXFLAGS=-D_FILE_OFFSET_BITS=64 -Wall -Wextra -W -Wno-unused-parameter -O3 -DFOLVE_VERSION='"$(F_VERSION)"' $(SNDFILE_INC) $(FUSE_INC)
++CXXFLAGS=-D_FILE_OFFSET_BITS=64 -Wall -Wextra -W -Wno-unused-parameter -DFOLVE_VERSION='"$(F_VERSION)"' $(SNDFILE_INC) $(FUSE_INC)
+ 
+ LDFLAGS= -lzita-convolver -lmicrohttpd -lfftw3f $(FUSE_LIB) $(SNDFILE_LIB) -lpthread
  

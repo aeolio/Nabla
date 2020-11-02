@@ -30,7 +30,7 @@
 -LDLIBS +=
 +INCPATH += -I.
 +_PFLAGS = -DENABLE_VECTOR_MODE
-+_CFLAGS = -pthread -fPIC -Wall -ffast-math -funroll-loops -O2
++_CFLAGS = -pthread -fPIC -Wall -ffast-math -funroll-loops
 +_LFLAGS = -shared -Wl,-soname,$(ZITA-CONVOLVER_MAJ)
  
  
