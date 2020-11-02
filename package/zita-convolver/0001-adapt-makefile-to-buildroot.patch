@@ -1,5 +1,5 @@
---- a/source/Makefile.orig	2018-08-26 15:35:37.000000000 +0200
-+++ b/source/Makefile	2020-04-12 06:23:24.576585056 +0200
+--- a/source/Makefile.orig	2018-08-26 15:35:37.000000000 +0100
++++ b/source/Makefile	2020-11-02 06:19:00.000000000 +0100
 @@ -20,23 +20,26 @@
  
  # Modify as required.
@@ -29,8 +29,8 @@
 -LDLFAGS += 
 -LDLIBS +=
 +INCPATH += -I.
-+_PFLAGS = -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DENABLE_VECTOR_MODE 
-+_CFLAGS = -pthread -fPIC -Wall -ffast-math -funroll-loops -O3
++_PFLAGS = -DENABLE_VECTOR_MODE
++_CFLAGS = -pthread -fPIC -Wall -ffast-math -funroll-loops -O2
 +_LFLAGS = -shared -Wl,-soname,$(ZITA-CONVOLVER_MAJ)
  
  
