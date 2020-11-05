@@ -1,5 +1,5 @@
 #!/bin/sh
-# post-build script for Generic i386-64
+# common post-build script
 
 ### bind function library
 _path="`dirname $0`"
