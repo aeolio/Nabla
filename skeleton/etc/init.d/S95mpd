@@ -73,7 +73,8 @@ start() {
 	echo -n "Starting mpd: "
 	initialize
 	unmute
-	ulimit -HS -r $HI_PRIO
+	# mpd priority is below default hard interrupt priority (50)
+	ulimit -HS -r 50
 	# mpd needs a pid_file entry in mpd.conf corresponding to $PIDFILE
 	# using the start-stop-daemon --make-pidfile option does not work
 	start-stop-daemon --start --quiet --background --exec /usr/bin/mpd

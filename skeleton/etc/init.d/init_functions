@@ -2,10 +2,10 @@
 # function library. These functions are used in S89rtopt and S95mpd
 #
 
-# process priorities for chrt groups
-LO_PRIO=1
-HI_PRIO=50
-RT_PRIO=90
+# process priority groups
+SOFTIRQ_PRIORITY=1
+NETWORK_PRIORITY=2
+HARDIRQ_PRIORITY=51
 
 # the name of the configuration directory on the boot device
 config_directory=".config"

@@ -24,17 +24,20 @@ for cpu in $available_cpus; do
 	fi
 done
 
-# processes that should run with low real-time priority
-for process in $LOWER_PRIORITY_LIST; do
-	for pid in $(_get_pid $process); do chrt $(_chrt_policy) -p $LO_PRIO $pid; done
+### this list is an abbreviation of a map found in RedHat's tuning guide
+### access.redhat.com/documentation/en-us/red_hat_enterprise_linux_for_real_time/8/html/tuning_guide/index
+
+# system processes that should run with low real-time priority
+for process in $SOFTIRQ_PRIORITY_LIST; do
+	for pid in $(_get_pid $process); do chrt $(_chrt_policy) -p $SOFTIRQ_PRIORITY $pid; done
 done
-# processes that should run with medium real-time priority
-for process in $HIGHER_PRIORITY_LIST; do
-	for pid in $(_get_pid $process); do chrt $(_chrt_policy) -p $HI_PRIO $pid; done
+# network related processes, e.g. RPC and NFS
+for process in $NETWORK_PRIORITY_LIST; do
+	for pid in $(_get_pid $process); do chrt $(_chrt_policy) -p $NETWORK_PRIORITY $pid; done
 done
-# processes that should run with high real-time priority
-for process in $REALTIME_PRIORITY_LIST; do
-	for pid in $(_get_pid $process); do chrt $(_chrt_policy) -p $RT_PRIO $pid; done
+# interrupts that schould be prioritized
+for process in $HARDIRQ_PRIORITY_LIST; do
+	for pid in $(_get_pid $process); do chrt $(_chrt_policy) -p $HARDIRQ_PRIORITY $pid; done
 done
 
 # favor discarding mapped (file cache) over unmapped (process memory) pages
