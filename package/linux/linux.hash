@@ -2,10 +2,10 @@
 sha256	18c38901c51373853435d364422c1931ed0520b16cc4ae9440d7b2095bdce2e0  linux-3.18.140.tar.xz
 sha256	e7f6c63c5a3921623f1c5df32a9cd61a93a76bc543dd7d91184a4714362cd7b0  linux-4.4.231.tar.xz
 sha256	ec04f4ade1146a3b458a1ac3dc2059188cbb62cd51d2e66fcd8397fcec153ab7  linux-5.4.74.tar.xz
-# sha256	-- signature is missing --  linux-5.10-rc1.tar.xz
+# sha256	-- signature is missing --  linux-5.10-rc3.tar.xz
 
 # From https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/*/sha256sums.asc
 sha256	14472f1ef6f6606dfed5a938698316c849de18632d3f8cb06eb2fe7ac895221f  patch-3.18.140-rt117.patch.gz
 sha256	9ec564b6019a9453dc4bf5f25afe075a8d83c98aec5ca29c20f5ef083c6306e7  patch-4.4.231-rt202.patch.gz
 sha256	4cfbf0091e7317a24a53968a3a74cd6719291dd32f909ee6ede5746c27380a54  patch-5.4.74-rt41.patch.gz
-sha256	3ae61d82275fa249b5f8dad0bc16981547887f2d670f371cef3692df1de03c49  patch-5.10-rc2-rt4.patch.gz
+sha256	f03ec24d3bca3ae0fc303ff051d2f3a1688ccf20e7a94fc2641f60eca2b8b8b1  patch-5.10-rc3-rt6.patch.gz
