@@ -35,6 +35,128 @@ index c9ab6af4d3be9..e97d1b4876ef4 100644
  	happen to preempt a low-priority task in the middle of an RCU
  	read-side critical section.   This is especially damaging if
  	that low-priority task is not permitted to run on any other CPU,
+diff --git a/Documentation/driver-api/io-mapping.rst b/Documentation/driver-api/io-mapping.rst
+index a966239f04e48..a7830c59481f6 100644
+--- a/Documentation/driver-api/io-mapping.rst
++++ b/Documentation/driver-api/io-mapping.rst
+@@ -20,78 +20,64 @@ as it would consume too much of the kernel address space.
+ mappable, while 'size' indicates how large a mapping region to
+ enable. Both are in bytes.
+ 
+-This _wc variant provides a mapping which may only be used
+-with the io_mapping_map_atomic_wc or io_mapping_map_wc.
++This _wc variant provides a mapping which may only be used with
++io_mapping_map_local_wc() or io_mapping_map_wc().
+ 
+-With this mapping object, individual pages can be mapped either atomically
+-or not, depending on the necessary scheduling environment. Of course, atomic
+-maps are more efficient::
++With this mapping object, individual pages can be mapped either temporarily
++or long term, depending on the requirements. Of course, temporary maps are
++more efficient.
+ 
+-	void *io_mapping_map_atomic_wc(struct io_mapping *mapping,
+-				       unsigned long offset)
++	void *io_mapping_map_local_wc(struct io_mapping *mapping,
++				      unsigned long offset)
+ 
+-'offset' is the offset within the defined mapping region.
+-Accessing addresses beyond the region specified in the
+-creation function yields undefined results. Using an offset
+-which is not page aligned yields an undefined result. The
+-return value points to a single page in CPU address space.
++'offset' is the offset within the defined mapping region.  Accessing
++addresses beyond the region specified in the creation function yields
++undefined results. Using an offset which is not page aligned yields an
++undefined result. The return value points to a single page in CPU address
++space.
+ 
+-This _wc variant returns a write-combining map to the
+-page and may only be used with mappings created by
+-io_mapping_create_wc
++This _wc variant returns a write-combining map to the page and may only be
++used with mappings created by io_mapping_create_wc()
+ 
+-Note that the task may not sleep while holding this page
+-mapped.
++Temporary mappings are only valid in the context of the caller. The mapping
++is not guaranteed to be globaly visible.
+ 
+-::
++io_mapping_map_local_wc() has a side effect on X86 32bit as it disables
++migration to make the mapping code work. No caller can rely on this side
++effect.
+ 
+-	void io_mapping_unmap_atomic(void *vaddr)
++Nested mappings need to be undone in reverse order because the mapping
++code uses a stack for keeping track of them::
+ 
+-'vaddr' must be the value returned by the last
+-io_mapping_map_atomic_wc call. This unmaps the specified
+-page and allows the task to sleep once again.
++ addr1 = io_mapping_map_local_wc(map1, offset1);
++ addr2 = io_mapping_map_local_wc(map2, offset2);
++ ...
++ io_mapping_unmap_local(addr2);
++ io_mapping_unmap_local(addr1);
+ 
+-If you need to sleep while holding the lock, you can use the non-atomic
+-variant, although they may be significantly slower.
++The mappings are released with::
+ 
+-::
++	void io_mapping_unmap_local(void *vaddr)
++
++'vaddr' must be the value returned by the last io_mapping_map_local_wc()
++call. This unmaps the specified mapping and undoes eventual side effects of
++the mapping function.
++
++If you need to sleep while holding a mapping, you can use the regular
++variant, although this may be significantly slower::
+ 
+ 	void *io_mapping_map_wc(struct io_mapping *mapping,
+ 				unsigned long offset)
+ 
+-This works like io_mapping_map_atomic_wc except it allows
+-the task to sleep while holding the page mapped.
++This works like io_mapping_map_local_wc() except it has no side effects and
++the pointer is globaly visible.
+ 
+-
+-::
++The mappings are released with::
+ 
+ 	void io_mapping_unmap(void *vaddr)
+ 
+-This works like io_mapping_unmap_atomic, except it is used
+-for pages mapped with io_mapping_map_wc.
++Use for pages mapped with io_mapping_map_wc().
+ 
+ At driver close time, the io_mapping object must be freed::
+ 
+ 	void io_mapping_free(struct io_mapping *mapping)
+-
+-Current Implementation
+-======================
+-
+-The initial implementation of these functions uses existing mapping
+-mechanisms and so provides only an abstraction layer and no new
+-functionality.
+-
+-On 64-bit processors, io_mapping_create_wc calls ioremap_wc for the whole
+-range, creating a permanent kernel-visible mapping to the resource. The
+-map_atomic and map functions add the requested offset to the base of the
+-virtual address returned by ioremap_wc.
+-
+-On 32-bit processors with HIGHMEM defined, io_mapping_map_atomic_wc uses
+-kmap_atomic_pfn to map the specified page in an atomic fashion;
+-kmap_atomic_pfn isn't really supposed to be used with device pages, but it
+-provides an efficient mapping for this usage.
+-
+-On 32-bit processors without HIGHMEM defined, io_mapping_map_atomic_wc and
+-io_mapping_map_wc both use ioremap_wc, a terribly inefficient function which
+-performs an IPI to inform all processors about the new mapping. This results
+-in a significant performance penalty.
 diff --git a/arch/Kconfig b/arch/Kconfig
 index 56b6ccc0e32d3..baf1c2b12a5b9 100644
 --- a/arch/Kconfig
@@ -47,6 +169,27 @@ index 56b6ccc0e32d3..baf1c2b12a5b9 100644
  	select RING_BUFFER
  	select RING_BUFFER_ALLOW_SWAP
  	help
+diff --git a/arch/alpha/include/asm/kmap_types.h b/arch/alpha/include/asm/kmap_types.h
+deleted file mode 100644
+index 651714b45729a..0000000000000
+--- a/arch/alpha/include/asm/kmap_types.h
++++ /dev/null
+@@ -1,15 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 */
+-#ifndef _ASM_KMAP_TYPES_H
+-#define _ASM_KMAP_TYPES_H
+-
+-/* Dummy header just to define km_type. */
+-
+-#ifdef CONFIG_DEBUG_HIGHMEM
+-#define  __WITH_KM_FENCE
+-#endif
+-
+-#include <asm-generic/kmap_types.h>
+-
+-#undef __WITH_KM_FENCE
+-
+-#endif
 diff --git a/arch/alpha/include/asm/spinlock_types.h b/arch/alpha/include/asm/spinlock_types.h
 index 1d5716bc060be..6883bc952d224 100644
 --- a/arch/alpha/include/asm/spinlock_types.h
@@ -75,22 +218,45 @@ index 0a89cc9def651..d8804001d5507 100644
  	  With ARC 2G:2G address split, only upper 2G is directly addressable by
  	  kernel. Enable this to potentially allow access to rest of 2G and PAE
 diff --git a/arch/arc/include/asm/highmem.h b/arch/arc/include/asm/highmem.h
-index 6e5eafb3afdd4..6291890eaafaf 100644
+index 6e5eafb3afdd4..a6b8e2c352c44 100644
 --- a/arch/arc/include/asm/highmem.h
 +++ b/arch/arc/include/asm/highmem.h
-@@ -15,7 +15,10 @@
+@@ -9,17 +9,29 @@
+ #ifdef CONFIG_HIGHMEM
+ 
+ #include <uapi/asm/page.h>
+-#include <asm/kmap_types.h>
++#include <asm/kmap_size.h>
++
++#define FIXMAP_SIZE		PGDIR_SIZE
++#define PKMAP_SIZE		PGDIR_SIZE
+ 
+ /* start after vmalloc area */
  #define FIXMAP_BASE		(PAGE_OFFSET - FIXMAP_SIZE - PKMAP_SIZE)
- #define FIXMAP_SIZE		PGDIR_SIZE	/* only 1 PGD worth */
- #define KM_TYPE_NR		((FIXMAP_SIZE >> PAGE_SHIFT)/NR_CPUS)
+-#define FIXMAP_SIZE		PGDIR_SIZE	/* only 1 PGD worth */
+-#define KM_TYPE_NR		((FIXMAP_SIZE >> PAGE_SHIFT)/NR_CPUS)
 -#define FIXMAP_ADDR(nr)		(FIXMAP_BASE + ((nr) << PAGE_SHIFT))
 +
-+#define FIX_KMAP_BEGIN		(0)
-+#define FIX_KMAP_END		((FIXMAP_SIZE >> PAGE_SHIFT) - 1)
-+#define FIXADDR_TOP		(FIXMAP_BASE + FIXMAP_SIZE - PAGE_SIZE)
++#define FIX_KMAP_SLOTS		(KM_MAX_IDX * NR_CPUS)
++#define FIX_KMAP_BEGIN		(0UL)
++#define FIX_KMAP_END		((FIX_KMAP_BEGIN + FIX_KMAP_SLOTS) - 1)
++
++#define FIXADDR_TOP		(FIXMAP_BASE + (FIX_KMAP_END << PAGE_SHIFT))
++
++/*
++ * This should be converted to the asm-generic version, but of course this
++ * is needlessly different from all other architectures. Sigh - tglx
++ */
++#define __fix_to_virt(x)	(FIXADDR_TOP - ((x) << PAGE_SHIFT))
++#define __virt_to_fix(x)	(((FIXADDR_TOP - ((x) & PAGE_MASK))) >> PAGE_SHIFT)
  
  /* start after fixmap area */
  #define PKMAP_BASE		(FIXMAP_BASE + FIXMAP_SIZE)
-@@ -29,6 +32,9 @@
+-#define PKMAP_SIZE		PGDIR_SIZE
+ #define LAST_PKMAP		(PKMAP_SIZE >> PAGE_SHIFT)
+ #define LAST_PKMAP_MASK		(LAST_PKMAP - 1)
+ #define PKMAP_ADDR(nr)		(PKMAP_BASE + ((nr) << PAGE_SHIFT))
+@@ -29,11 +41,13 @@
  
  extern void kmap_init(void);
  
@@ -100,11 +266,48 @@ index 6e5eafb3afdd4..6291890eaafaf 100644
  static inline void flush_cache_kmaps(void)
  {
  	flush_cache_all();
+ }
+-
+ #endif
+ 
+ #endif
+diff --git a/arch/arc/include/asm/kmap_types.h b/arch/arc/include/asm/kmap_types.h
+deleted file mode 100644
+index fecf7851ec322..0000000000000
+--- a/arch/arc/include/asm/kmap_types.h
++++ /dev/null
+@@ -1,14 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0-only */
+-/*
+- * Copyright (C) 2015 Synopsys, Inc. (www.synopsys.com)
+- */
+-
+-#ifndef _ASM_KMAP_TYPES_H
+-#define _ASM_KMAP_TYPES_H
+-
+-/*
+- * We primarily need to define KM_TYPE_NR here but that in turn
+- * is a function of PGDIR_SIZE etc.
+- * To avoid circular deps issue, put everything in asm/highmem.h
+- */
+-#endif
 diff --git a/arch/arc/mm/highmem.c b/arch/arc/mm/highmem.c
-index 1b9f473c63693..b74ae42026016 100644
+index 1b9f473c63693..c79912a6b1961 100644
 --- a/arch/arc/mm/highmem.c
 +++ b/arch/arc/mm/highmem.c
-@@ -47,48 +47,6 @@
+@@ -36,9 +36,8 @@
+  *   This means each only has 1 PGDIR_SIZE worth of kvaddr mappings, which means
+  *   2M of kvaddr space for typical config (8K page and 11:8:13 traversal split)
+  *
+- * - fixmap anyhow needs a limited number of mappings. So 2M kvaddr == 256 PTE
+- *   slots across NR_CPUS would be more than sufficient (generic code defines
+- *   KM_TYPE_NR as 20).
++ * - The fixed KMAP slots for kmap_local/atomic() require KM_MAX_IDX slots per
++ *   CPU. So the number of CPUs sharing a single PTE page is limited.
+  *
+  * - pkmap being preemptible, in theory could do with more than 256 concurrent
+  *   mappings. However, generic pkmap code: map_new_virtual(), doesn't traverse
+@@ -47,48 +46,6 @@
   */
  
  extern pte_t * pkmap_page_table;
@@ -153,11 +356,19 @@ index 1b9f473c63693..b74ae42026016 100644
  
  static noinline pte_t * __init alloc_kmap_pgtable(unsigned long kvaddr)
  {
-@@ -113,5 +71,5 @@ void __init kmap_init(void)
- 	pkmap_page_table = alloc_kmap_pgtable(PKMAP_BASE);
- 
+@@ -108,10 +65,9 @@ void __init kmap_init(void)
+ {
+ 	/* Due to recursive include hell, we can't do this in processor.h */
+ 	BUILD_BUG_ON(PAGE_OFFSET < (VMALLOC_END + FIXMAP_SIZE + PKMAP_SIZE));
+-
+-	BUILD_BUG_ON(KM_TYPE_NR > PTRS_PER_PTE);
+-	pkmap_page_table = alloc_kmap_pgtable(PKMAP_BASE);
+-
  	BUILD_BUG_ON(LAST_PKMAP > PTRS_PER_PTE);
 -	fixmap_page_table = alloc_kmap_pgtable(FIXMAP_BASE);
++	BUILD_BUG_ON(FIX_KMAP_SLOTS > PTRS_PER_PTE);
++
++	pkmap_page_table = alloc_kmap_pgtable(PKMAP_BASE);
 +	alloc_kmap_pgtable(FIXMAP_BASE);
  }
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
@@ -205,11 +416,66 @@ index fe2f17eb2b505..f1fb6e092d96e 100644
  	help
  	  The address space of ARM processors is only 4 Gigabytes large
  	  and it has to accommodate user address space, kernel address
+diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
+index fc56fc3e19316..c279a8a463a2e 100644
+--- a/arch/arm/include/asm/fixmap.h
++++ b/arch/arm/include/asm/fixmap.h
+@@ -7,14 +7,14 @@
+ #define FIXADDR_TOP		(FIXADDR_END - PAGE_SIZE)
+ 
+ #include <linux/pgtable.h>
+-#include <asm/kmap_types.h>
++#include <asm/kmap_size.h>
+ 
+ enum fixed_addresses {
+ 	FIX_EARLYCON_MEM_BASE,
+ 	__end_of_permanent_fixed_addresses,
+ 
+ 	FIX_KMAP_BEGIN = __end_of_permanent_fixed_addresses,
+-	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_TYPE_NR * NR_CPUS) - 1,
++	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_MAX_IDX * NR_CPUS) - 1,
+ 
+ 	/* Support writing RO kernel text via kprobes, jump labels, etc. */
+ 	FIX_TEXT_POKE0,
+diff --git a/arch/arm/include/asm/hardirq.h b/arch/arm/include/asm/hardirq.h
+index b95848ed2bc7f..706efafbf9722 100644
+--- a/arch/arm/include/asm/hardirq.h
++++ b/arch/arm/include/asm/hardirq.h
+@@ -2,16 +2,11 @@
+ #ifndef __ASM_HARDIRQ_H
+ #define __ASM_HARDIRQ_H
+ 
+-#include <linux/cache.h>
+-#include <linux/threads.h>
+ #include <asm/irq.h>
+ 
+-typedef struct {
+-	unsigned int __softirq_pending;
+-} ____cacheline_aligned irq_cpustat_t;
+-
+-#include <linux/irq_cpustat.h>	/* Standard mappings for irq_cpustat_t above */
+-
+ #define __ARCH_IRQ_EXIT_IRQS_DISABLED	1
++#define ack_bad_irq ack_bad_irq
++
++#include <asm-generic/hardirq.h>
+ 
+ #endif /* __ASM_HARDIRQ_H */
 diff --git a/arch/arm/include/asm/highmem.h b/arch/arm/include/asm/highmem.h
-index 31811be38d781..99a99862c4744 100644
+index 31811be38d781..b22dffa8c7eb9 100644
 --- a/arch/arm/include/asm/highmem.h
 +++ b/arch/arm/include/asm/highmem.h
-@@ -46,19 +46,32 @@ extern pte_t *pkmap_page_table;
+@@ -2,7 +2,8 @@
+ #ifndef _ASM_HIGHMEM_H
+ #define _ASM_HIGHMEM_H
+ 
+-#include <asm/kmap_types.h>
++#include <asm/kmap_size.h>
++#include <asm/fixmap.h>
+ 
+ #define PKMAP_BASE		(PAGE_OFFSET - PMD_SIZE)
+ #define LAST_PKMAP		PTRS_PER_PTE
+@@ -46,19 +47,32 @@ extern pte_t *pkmap_page_table;
  
  #ifdef ARCH_NEEDS_KMAP_HIGH_GET
  extern void *kmap_high_get(struct page *page);
@@ -251,6 +517,35 @@ index 31811be38d781..99a99862c4744 100644
 +	local_flush_tlb_kernel_page(vaddr)
  
  #endif
+diff --git a/arch/arm/include/asm/irq.h b/arch/arm/include/asm/irq.h
+index 46d41140df27d..1cbcc462b07e8 100644
+--- a/arch/arm/include/asm/irq.h
++++ b/arch/arm/include/asm/irq.h
+@@ -31,6 +31,8 @@ void handle_IRQ(unsigned int, struct pt_regs *);
+ void init_IRQ(void);
+ 
+ #ifdef CONFIG_SMP
++#include <linux/cpumask.h>
++
+ extern void arch_trigger_cpumask_backtrace(const cpumask_t *mask,
+ 					   bool exclude_self);
+ #define arch_trigger_cpumask_backtrace arch_trigger_cpumask_backtrace
+diff --git a/arch/arm/include/asm/kmap_types.h b/arch/arm/include/asm/kmap_types.h
+deleted file mode 100644
+index 5590940ee43d7..0000000000000
+--- a/arch/arm/include/asm/kmap_types.h
++++ /dev/null
+@@ -1,10 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 */
+-#ifndef __ARM_KMAP_TYPES_H
+-#define __ARM_KMAP_TYPES_H
+-
+-/*
+- * This is the "bare minimum".  AIO seems to require this.
+- */
+-#define KM_TYPE_NR 16
+-
+-#endif
 diff --git a/arch/arm/include/asm/spinlock_types.h b/arch/arm/include/asm/spinlock_types.h
 index 5976958647fe1..a37c0803954ba 100644
 --- a/arch/arm/include/asm/spinlock_types.h
@@ -427,6 +722,53 @@ index 7cb1699fbfc4f..c4ce477c52611 100644
  obj-$(CONFIG_HUGETLB_PAGE)	+= hugetlbpage.o
  obj-$(CONFIG_ARM_PV_FIXUP)	+= pv-fixup-asm.o
  
+diff --git a/arch/arm/mm/cache-feroceon-l2.c b/arch/arm/mm/cache-feroceon-l2.c
+index 5c1b7a7b9af63..87328766e9102 100644
+--- a/arch/arm/mm/cache-feroceon-l2.c
++++ b/arch/arm/mm/cache-feroceon-l2.c
+@@ -49,9 +49,9 @@ static inline unsigned long l2_get_va(unsigned long paddr)
+ 	 * we simply install a virtual mapping for it only for the
+ 	 * TLB lookup to occur, hence no need to flush the untouched
+ 	 * memory mapping afterwards (note: a cache flush may happen
+-	 * in some circumstances depending on the path taken in kunmap_atomic).
++	 * in some circumstances depending on the path taken in kunmap_local).
+ 	 */
+-	void *vaddr = kmap_atomic_pfn(paddr >> PAGE_SHIFT);
++	void *vaddr = kmap_local_pfn(paddr >> PAGE_SHIFT);
+ 	return (unsigned long)vaddr + (paddr & ~PAGE_MASK);
+ #else
+ 	return __phys_to_virt(paddr);
+@@ -61,7 +61,7 @@ static inline unsigned long l2_get_va(unsigned long paddr)
+ static inline void l2_put_va(unsigned long vaddr)
+ {
+ #ifdef CONFIG_HIGHMEM
+-	kunmap_atomic((void *)vaddr);
++	kunmap_local((void *)vaddr);
+ #endif
+ }
+ 
+diff --git a/arch/arm/mm/cache-xsc3l2.c b/arch/arm/mm/cache-xsc3l2.c
+index d20d7af02d10f..0e0a3abd81743 100644
+--- a/arch/arm/mm/cache-xsc3l2.c
++++ b/arch/arm/mm/cache-xsc3l2.c
+@@ -59,7 +59,7 @@ static inline void l2_unmap_va(unsigned long va)
+ {
+ #ifdef CONFIG_HIGHMEM
+ 	if (va != -1)
+-		kunmap_atomic((void *)va);
++		kunmap_local((void *)va);
+ #endif
+ }
+ 
+@@ -75,7 +75,7 @@ static inline unsigned long l2_map_va(unsigned long pa, unsigned long prev_va)
+ 		 * in place for it.
+ 		 */
+ 		l2_unmap_va(prev_va);
+-		va = (unsigned long)kmap_atomic_pfn(pa >> PAGE_SHIFT);
++		va = (unsigned long)kmap_local_pfn(pa >> PAGE_SHIFT);
+ 	}
+ 	return va + (pa_offset >> (32 - PAGE_SHIFT));
+ #else
 diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
 index efa4020250315..59487ee9fd612 100644
 --- a/arch/arm/mm/fault.c
@@ -579,7 +921,7 @@ index 187fab227b509..0000000000000
 -	return (void *)vaddr;
 -}
 diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index f858c352f72a4..416f1e37cfd40 100644
+index 1515f6f153a0d..194b87402be03 100644
 --- a/arch/arm64/Kconfig
 +++ b/arch/arm64/Kconfig
 @@ -76,6 +76,7 @@ config ARM64
@@ -606,6 +948,24 @@ index f858c352f72a4..416f1e37cfd40 100644
  	select POWER_RESET
  	select POWER_SUPPLY
  	select SET_FS
+diff --git a/arch/arm64/include/asm/hardirq.h b/arch/arm64/include/asm/hardirq.h
+index 5ffa4bacdad38..cbfa7b6f2e098 100644
+--- a/arch/arm64/include/asm/hardirq.h
++++ b/arch/arm64/include/asm/hardirq.h
+@@ -13,11 +13,8 @@
+ #include <asm/kvm_arm.h>
+ #include <asm/sysreg.h>
+ 
+-typedef struct {
+-	unsigned int __softirq_pending;
+-} ____cacheline_aligned irq_cpustat_t;
+-
+-#include <linux/irq_cpustat.h>	/* Standard mappings for irq_cpustat_t above */
++#define ack_bad_irq ack_bad_irq
++#include <asm-generic/hardirq.h>
+ 
+ #define __ARCH_IRQ_EXIT_IRQS_DISABLED	1
+ 
 diff --git a/arch/arm64/include/asm/preempt.h b/arch/arm64/include/asm/preempt.h
 index 80e946b2abee2..994f997b15724 100644
 --- a/arch/arm64/include/asm/preempt.h
@@ -719,10 +1079,10 @@ index 7d32fc959b1a0..b2f29bd2ae871 100644
  #ifdef CONFIG_ARM64_SW_TTBR0_PAN
    DEFINE(TSK_TI_TTBR0,		offsetof(struct task_struct, thread_info.ttbr0));
 diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index f30007dff35f7..b4c059d4fa1c1 100644
+index b295fb912b12b..1c874fc48cdf6 100644
 --- a/arch/arm64/kernel/entry.S
 +++ b/arch/arm64/kernel/entry.S
-@@ -657,9 +657,18 @@ alternative_if ARM64_HAS_IRQ_PRIO_MASKING
+@@ -660,9 +660,18 @@ alternative_if ARM64_HAS_IRQ_PRIO_MASKING
  	mrs	x0, daif
  	orr	x24, x24, x0
  alternative_else_nop_endif
@@ -803,7 +1163,7 @@ index a8184cad88907..35508ef0404af 100644
  			local_daif_restore(DAIF_PROCCTX_NOIRQ);
  
 diff --git a/arch/arm64/kvm/arm.c b/arch/arm64/kvm/arm.c
-index f56122eedffc8..81552a3a621b4 100644
+index 5750ec34960e9..8dc9066bf5854 100644
 --- a/arch/arm64/kvm/arm.c
 +++ b/arch/arm64/kvm/arm.c
 @@ -685,7 +685,7 @@ int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu)
@@ -831,8 +1191,8 @@ index f56122eedffc8..81552a3a621b4 100644
 -		preempt_enable();
 +		migrate_enable();
  
- 		ret = handle_exit(vcpu, ret);
- 	}
+ 		/*
+ 		 * The ARMv8 architecture doesn't give the hypervisor
 diff --git a/arch/csky/Kconfig b/arch/csky/Kconfig
 index 268fad5f51cf4..7a86481a22ff7 100644
 --- a/arch/csky/Kconfig
@@ -845,10 +1205,41 @@ index 268fad5f51cf4..7a86481a22ff7 100644
  	default y
  
  config FORCE_MAX_ZONEORDER
+diff --git a/arch/csky/include/asm/fixmap.h b/arch/csky/include/asm/fixmap.h
+index 81f9477d5330c..4b589cc209000 100644
+--- a/arch/csky/include/asm/fixmap.h
++++ b/arch/csky/include/asm/fixmap.h
+@@ -8,7 +8,7 @@
+ #include <asm/memory.h>
+ #ifdef CONFIG_HIGHMEM
+ #include <linux/threads.h>
+-#include <asm/kmap_types.h>
++#include <asm/kmap_size.h>
+ #endif
+ 
+ enum fixed_addresses {
+@@ -17,7 +17,7 @@ enum fixed_addresses {
+ #endif
+ #ifdef CONFIG_HIGHMEM
+ 	FIX_KMAP_BEGIN,
+-	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_TYPE_NR * NR_CPUS) - 1,
++	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_MAX_IDX * NR_CPUS) - 1,
+ #endif
+ 	__end_of_fixed_addresses
+ };
 diff --git a/arch/csky/include/asm/highmem.h b/arch/csky/include/asm/highmem.h
-index 14645e3d5cd52..d22f0db710346 100644
+index 14645e3d5cd52..1f4ed3f4c0d9b 100644
 --- a/arch/csky/include/asm/highmem.h
 +++ b/arch/csky/include/asm/highmem.h
+@@ -9,7 +9,7 @@
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/uaccess.h>
+-#include <asm/kmap_types.h>
++#include <asm/kmap_size.h>
+ #include <asm/cache.h>
+ 
+ /* undef for production */
 @@ -32,10 +32,12 @@ extern pte_t *pkmap_page_table;
  
  #define ARCH_HAS_KMAP_FLUSH_TLB
@@ -975,6 +1366,25 @@ index 19d233497ba52..de72fb23016dc 100644
  typedef struct {
  	volatile unsigned int lock;
  } arch_spinlock_t;
+diff --git a/arch/ia64/include/asm/kmap_types.h b/arch/ia64/include/asm/kmap_types.h
+deleted file mode 100644
+index 5c268cf7c2bd5..0000000000000
+--- a/arch/ia64/include/asm/kmap_types.h
++++ /dev/null
+@@ -1,13 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 */
+-#ifndef _ASM_IA64_KMAP_TYPES_H
+-#define _ASM_IA64_KMAP_TYPES_H
+-
+-#ifdef CONFIG_DEBUG_HIGHMEM
+-#define  __WITH_KM_FENCE
+-#endif
+-
+-#include <asm-generic/kmap_types.h>
+-
+-#undef __WITH_KM_FENCE
+-
+-#endif /* _ASM_IA64_KMAP_TYPES_H */
 diff --git a/arch/ia64/include/asm/spinlock_types.h b/arch/ia64/include/asm/spinlock_types.h
 index 6e345fefcdcab..681408d6816fb 100644
 --- a/arch/ia64/include/asm/spinlock_types.h
@@ -1002,6 +1412,28 @@ index 33925ffed68fd..7f6ca0ab4f81f 100644
  	help
  	  The address space of Microblaze processors is only 4 Gigabytes large
  	  and it has to accommodate user address space, kernel address
+diff --git a/arch/microblaze/include/asm/fixmap.h b/arch/microblaze/include/asm/fixmap.h
+index 0379ce5229e3a..e6e9288bff761 100644
+--- a/arch/microblaze/include/asm/fixmap.h
++++ b/arch/microblaze/include/asm/fixmap.h
+@@ -20,7 +20,7 @@
+ #include <asm/page.h>
+ #ifdef CONFIG_HIGHMEM
+ #include <linux/threads.h>
+-#include <asm/kmap_types.h>
++#include <asm/kmap_size.h>
+ #endif
+ 
+ #define FIXADDR_TOP	((unsigned long)(-PAGE_SIZE))
+@@ -47,7 +47,7 @@ enum fixed_addresses {
+ 	FIX_HOLE,
+ #ifdef CONFIG_HIGHMEM
+ 	FIX_KMAP_BEGIN,	/* reserved pte's for temporary kernel mappings */
+-	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_TYPE_NR * num_possible_cpus()) - 1,
++	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_MAX_IDX * num_possible_cpus()) - 1,
+ #endif
+ 	__end_of_fixed_addresses
+ };
 diff --git a/arch/microblaze/include/asm/highmem.h b/arch/microblaze/include/asm/highmem.h
 index 284ca8fb54c1d..4418633fb1632 100644
 --- a/arch/microblaze/include/asm/highmem.h
@@ -1153,10 +1585,41 @@ index 2000bb2b0220d..6b762bebff33d 100644
  
  config CPU_SUPPORTS_HIGHMEM
  	bool
+diff --git a/arch/mips/include/asm/fixmap.h b/arch/mips/include/asm/fixmap.h
+index 743535be7528c..beea14761cef0 100644
+--- a/arch/mips/include/asm/fixmap.h
++++ b/arch/mips/include/asm/fixmap.h
+@@ -17,7 +17,7 @@
+ #include <spaces.h>
+ #ifdef CONFIG_HIGHMEM
+ #include <linux/threads.h>
+-#include <asm/kmap_types.h>
++#include <asm/kmap_size.h>
+ #endif
+ 
+ /*
+@@ -52,7 +52,7 @@ enum fixed_addresses {
+ #ifdef CONFIG_HIGHMEM
+ 	/* reserved pte's for temporary kernel mappings */
+ 	FIX_KMAP_BEGIN = FIX_CMAP_END + 1,
+-	FIX_KMAP_END = FIX_KMAP_BEGIN+(KM_TYPE_NR*NR_CPUS)-1,
++	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_MAX_IDX * NR_CPUS) - 1,
+ #endif
+ 	__end_of_fixed_addresses
+ };
 diff --git a/arch/mips/include/asm/highmem.h b/arch/mips/include/asm/highmem.h
-index f1f788b571666..cb2e0fb8483b8 100644
+index f1f788b571666..19edf8e699712 100644
 --- a/arch/mips/include/asm/highmem.h
 +++ b/arch/mips/include/asm/highmem.h
+@@ -24,7 +24,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/uaccess.h>
+ #include <asm/cpu-features.h>
+-#include <asm/kmap_types.h>
++#include <asm/kmap_size.h>
+ 
+ /* declarations for highmem.c */
+ extern unsigned long highstart_pfn, highend_pfn;
 @@ -48,11 +48,11 @@ extern pte_t *pkmap_page_table;
  
  #define ARCH_HAS_KMAP_FLUSH_TLB
@@ -1171,6 +1634,97 @@ index f1f788b571666..cb2e0fb8483b8 100644
  
  #endif /* __KERNEL__ */
  
+diff --git a/arch/mips/include/asm/kmap_types.h b/arch/mips/include/asm/kmap_types.h
+deleted file mode 100644
+index 16665dc2431b6..0000000000000
+--- a/arch/mips/include/asm/kmap_types.h
++++ /dev/null
+@@ -1,13 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 */
+-#ifndef _ASM_KMAP_TYPES_H
+-#define _ASM_KMAP_TYPES_H
+-
+-#ifdef CONFIG_DEBUG_HIGHMEM
+-#define	 __WITH_KM_FENCE
+-#endif
+-
+-#include <asm-generic/kmap_types.h>
+-
+-#undef __WITH_KM_FENCE
+-
+-#endif
+diff --git a/arch/mips/kernel/crash_dump.c b/arch/mips/kernel/crash_dump.c
+index 01b2bd95ba1f7..9aba83e1eeb4e 100644
+--- a/arch/mips/kernel/crash_dump.c
++++ b/arch/mips/kernel/crash_dump.c
+@@ -5,8 +5,6 @@
+ #include <linux/uaccess.h>
+ #include <linux/slab.h>
+ 
+-static void *kdump_buf_page;
+-
+ /**
+  * copy_oldmem_page - copy one page from "oldmem"
+  * @pfn: page frame number to be copied
+@@ -17,51 +15,25 @@ static void *kdump_buf_page;
+  * @userbuf: if set, @buf is in user address space, use copy_to_user(),
+  *	otherwise @buf is in kernel address space, use memcpy().
+  *
+- * Copy a page from "oldmem". For this page, there is no pte mapped
++ * Copy a page from "oldmem". For this page, there might be no pte mapped
+  * in the current kernel.
+- *
+- * Calling copy_to_user() in atomic context is not desirable. Hence first
+- * copying the data to a pre-allocated kernel page and then copying to user
+- * space in non-atomic context.
+  */
+-ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
+-			 size_t csize, unsigned long offset, int userbuf)
++ssize_t copy_oldmem_page(unsigned long pfn, char *buf, size_t csize,
++			 unsigned long offset, int userbuf)
+ {
+ 	void  *vaddr;
+ 
+ 	if (!csize)
+ 		return 0;
+ 
+-	vaddr = kmap_atomic_pfn(pfn);
++	vaddr = kmap_local_pfn(pfn);
+ 
+ 	if (!userbuf) {
+-		memcpy(buf, (vaddr + offset), csize);
+-		kunmap_atomic(vaddr);
++		memcpy(buf, vaddr + offset, csize);
+ 	} else {
+-		if (!kdump_buf_page) {
+-			pr_warn("Kdump: Kdump buffer page not allocated\n");
+-
+-			return -EFAULT;
+-		}
+-		copy_page(kdump_buf_page, vaddr);
+-		kunmap_atomic(vaddr);
+-		if (copy_to_user(buf, (kdump_buf_page + offset), csize))
+-			return -EFAULT;
++		if (copy_to_user(buf, vaddr + offset, csize))
++			csize = -EFAULT;
+ 	}
+ 
+ 	return csize;
+ }
+-
+-static int __init kdump_buf_page_init(void)
+-{
+-	int ret = 0;
+-
+-	kdump_buf_page = kmalloc(PAGE_SIZE, GFP_KERNEL);
+-	if (!kdump_buf_page) {
+-		pr_warn("Kdump: Failed to allocate kdump buffer page\n");
+-		ret = -ENOMEM;
+-	}
+-
+-	return ret;
+-}
+-arch_initcall(kdump_buf_page_init);
 diff --git a/arch/mips/mm/highmem.c b/arch/mips/mm/highmem.c
 index 5fec7f45d79a8..57e2f08f00d0c 100644
 --- a/arch/mips/mm/highmem.c
@@ -1264,10 +1818,18 @@ index 5fec7f45d79a8..57e2f08f00d0c 100644
 -	kmap_pte = virt_to_kpte(kmap_vstart);
 -}
 diff --git a/arch/mips/mm/init.c b/arch/mips/mm/init.c
-index 07e84a7749387..7e159e93f7118 100644
+index 07e84a7749387..bc80893e5c0f8 100644
 --- a/arch/mips/mm/init.c
 +++ b/arch/mips/mm/init.c
-@@ -402,9 +402,6 @@ void __init paging_init(void)
+@@ -36,7 +36,6 @@
+ #include <asm/cachectl.h>
+ #include <asm/cpu.h>
+ #include <asm/dma.h>
+-#include <asm/kmap_types.h>
+ #include <asm/maar.h>
+ #include <asm/mmu_context.h>
+ #include <asm/sections.h>
+@@ -402,9 +401,6 @@ void __init paging_init(void)
  
  	pagetable_init();
  
@@ -1289,11 +1851,41 @@ index f88a12fdf0f35..c107599524855 100644
  	help
  	  The address space of Andes processors is only 4 Gigabytes large
  	  and it has to accommodate user address space, kernel address
+diff --git a/arch/nds32/include/asm/fixmap.h b/arch/nds32/include/asm/fixmap.h
+index 5a4bf11e58003..2fa09a2de4281 100644
+--- a/arch/nds32/include/asm/fixmap.h
++++ b/arch/nds32/include/asm/fixmap.h
+@@ -6,7 +6,7 @@
+ 
+ #ifdef CONFIG_HIGHMEM
+ #include <linux/threads.h>
+-#include <asm/kmap_types.h>
++#include <asm/kmap_size.h>
+ #endif
+ 
+ enum fixed_addresses {
+@@ -14,7 +14,7 @@ enum fixed_addresses {
+ 	FIX_KMAP_RESERVED,
+ 	FIX_KMAP_BEGIN,
+ #ifdef CONFIG_HIGHMEM
+-	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_TYPE_NR * NR_CPUS),
++	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_MAX_IDX * NR_CPUS) - 1,
+ #endif
+ 	FIX_EARLYCON_MEM_BASE,
+ 	__end_of_fixed_addresses
 diff --git a/arch/nds32/include/asm/highmem.h b/arch/nds32/include/asm/highmem.h
-index fe986d0e6e3ff..d844c282c090c 100644
+index fe986d0e6e3ff..16159a8716f22 100644
 --- a/arch/nds32/include/asm/highmem.h
 +++ b/arch/nds32/include/asm/highmem.h
-@@ -45,11 +45,22 @@ extern pte_t *pkmap_page_table;
+@@ -5,7 +5,6 @@
+ #define _ASM_HIGHMEM_H
+ 
+ #include <asm/proc-fns.h>
+-#include <asm/kmap_types.h>
+ #include <asm/fixmap.h>
+ 
+ /*
+@@ -45,11 +44,22 @@ extern pte_t *pkmap_page_table;
  extern void kmap_init(void);
  
  /*
@@ -1314,7 +1906,7 @@ index fe986d0e6e3ff..d844c282c090c 100644
 +		__nds32__isb();					\
 +	} while (0)
 +
-+#define arch_kmap_local_pre_unmap(vaddr, pte)			\
++#define arch_kmap_local_pre_unmap(vaddr)			\
 +	do {							\
 +		__nds32__tlbop_inv(vaddr);			\
 +		__nds32__isb();					\
@@ -1387,6 +1979,61 @@ index 4284cd59e21ad..0000000000000
 -	}
 -}
 -EXPORT_SYMBOL(kunmap_atomic_high);
+diff --git a/arch/openrisc/mm/init.c b/arch/openrisc/mm/init.c
+index 8348feaaf46e5..bf9b2310fc936 100644
+--- a/arch/openrisc/mm/init.c
++++ b/arch/openrisc/mm/init.c
+@@ -33,7 +33,6 @@
+ #include <asm/io.h>
+ #include <asm/tlb.h>
+ #include <asm/mmu_context.h>
+-#include <asm/kmap_types.h>
+ #include <asm/fixmap.h>
+ #include <asm/tlbflush.h>
+ #include <asm/sections.h>
+diff --git a/arch/openrisc/mm/ioremap.c b/arch/openrisc/mm/ioremap.c
+index a978590d802d0..5aed97a18bac9 100644
+--- a/arch/openrisc/mm/ioremap.c
++++ b/arch/openrisc/mm/ioremap.c
+@@ -15,7 +15,6 @@
+ #include <linux/io.h>
+ #include <linux/pgtable.h>
+ #include <asm/pgalloc.h>
+-#include <asm/kmap_types.h>
+ #include <asm/fixmap.h>
+ #include <asm/bug.h>
+ #include <linux/sched.h>
+diff --git a/arch/parisc/include/asm/hardirq.h b/arch/parisc/include/asm/hardirq.h
+index 7f7039516e53f..fad29aa6f45fa 100644
+--- a/arch/parisc/include/asm/hardirq.h
++++ b/arch/parisc/include/asm/hardirq.h
+@@ -32,7 +32,6 @@ typedef struct {
+ DECLARE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
+ 
+ #define __ARCH_IRQ_STAT
+-#define __IRQ_STAT(cpu, member) (irq_stat[cpu].member)
+ #define inc_irq_stat(member)	this_cpu_inc(irq_stat.member)
+ #define __inc_irq_stat(member)	__this_cpu_inc(irq_stat.member)
+ #define ack_bad_irq(irq) WARN(1, "unexpected IRQ trap at vector %02x\n", irq)
+diff --git a/arch/parisc/include/asm/kmap_types.h b/arch/parisc/include/asm/kmap_types.h
+deleted file mode 100644
+index 3e70b5cd11231..0000000000000
+--- a/arch/parisc/include/asm/kmap_types.h
++++ /dev/null
+@@ -1,13 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 */
+-#ifndef _ASM_KMAP_TYPES_H
+-#define _ASM_KMAP_TYPES_H
+-
+-#ifdef CONFIG_DEBUG_HIGHMEM
+-#define  __WITH_KM_FENCE
+-#endif
+-
+-#include <asm-generic/kmap_types.h>
+-
+-#undef __WITH_KM_FENCE
+-
+-#endif
 diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
 index e9f13fe084929..9f011dd00d62f 100644
 --- a/arch/powerpc/Kconfig
@@ -1423,11 +2070,38 @@ index e9f13fe084929..9f011dd00d62f 100644
  
  source "kernel/Kconfig.hz"
  
+diff --git a/arch/powerpc/include/asm/fixmap.h b/arch/powerpc/include/asm/fixmap.h
+index 6bfc87915d5db..8d03c16a36635 100644
+--- a/arch/powerpc/include/asm/fixmap.h
++++ b/arch/powerpc/include/asm/fixmap.h
+@@ -20,7 +20,7 @@
+ #include <asm/page.h>
+ #ifdef CONFIG_HIGHMEM
+ #include <linux/threads.h>
+-#include <asm/kmap_types.h>
++#include <asm/kmap_size.h>
+ #endif
+ 
+ #ifdef CONFIG_KASAN
+@@ -55,7 +55,7 @@ enum fixed_addresses {
+ 	FIX_EARLY_DEBUG_BASE = FIX_EARLY_DEBUG_TOP+(ALIGN(SZ_128K, PAGE_SIZE)/PAGE_SIZE)-1,
+ #ifdef CONFIG_HIGHMEM
+ 	FIX_KMAP_BEGIN,	/* reserved pte's for temporary kernel mappings */
+-	FIX_KMAP_END = FIX_KMAP_BEGIN+(KM_TYPE_NR*NR_CPUS)-1,
++	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_MAX_IDX * NR_CPUS) - 1,
+ #endif
+ #ifdef CONFIG_PPC_8xx
+ 	/* For IMMR we need an aligned 512K area */
 diff --git a/arch/powerpc/include/asm/highmem.h b/arch/powerpc/include/asm/highmem.h
-index 104026f7d6bc2..64af53049e138 100644
+index 104026f7d6bc2..80a5ae771c653 100644
 --- a/arch/powerpc/include/asm/highmem.h
 +++ b/arch/powerpc/include/asm/highmem.h
-@@ -29,7 +29,6 @@
+@@ -24,12 +24,10 @@
+ #ifdef __KERNEL__
+ 
+ #include <linux/interrupt.h>
+-#include <asm/kmap_types.h>
+ #include <asm/cacheflush.h>
  #include <asm/page.h>
  #include <asm/fixmap.h>
  
@@ -1435,7 +2109,7 @@ index 104026f7d6bc2..64af53049e138 100644
  extern pte_t *pkmap_page_table;
  
  /*
-@@ -60,6 +59,11 @@ extern pte_t *pkmap_page_table;
+@@ -60,6 +58,11 @@ extern pte_t *pkmap_page_table;
  
  #define flush_cache_kmaps()	flush_cache_all()
  
@@ -1447,6 +2121,25 @@ index 104026f7d6bc2..64af53049e138 100644
  #endif /* __KERNEL__ */
  
  #endif /* _ASM_HIGHMEM_H */
+diff --git a/arch/powerpc/include/asm/kmap_types.h b/arch/powerpc/include/asm/kmap_types.h
+deleted file mode 100644
+index c8fa182d48c8e..0000000000000
+--- a/arch/powerpc/include/asm/kmap_types.h
++++ /dev/null
+@@ -1,13 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0-or-later */
+-#ifndef _ASM_POWERPC_KMAP_TYPES_H
+-#define _ASM_POWERPC_KMAP_TYPES_H
+-
+-#ifdef __KERNEL__
+-
+-/*
+- */
+-
+-#define KM_TYPE_NR 16
+-
+-#endif	/* __KERNEL__ */
+-#endif	/* _ASM_POWERPC_KMAP_TYPES_H */
 diff --git a/arch/powerpc/include/asm/spinlock_types.h b/arch/powerpc/include/asm/spinlock_types.h
 index c5d742f18021d..cc6922a011ba1 100644
 --- a/arch/powerpc/include/asm/spinlock_types.h
@@ -2042,6 +2735,78 @@ index cfed272e4fd59..8e28e8176ec88 100644
  typedef struct {
  	int lock;
  } __attribute__ ((aligned (4))) arch_spinlock_t;
+diff --git a/arch/sh/include/asm/fixmap.h b/arch/sh/include/asm/fixmap.h
+index f38adc189b832..b07fbc7f7bc6a 100644
+--- a/arch/sh/include/asm/fixmap.h
++++ b/arch/sh/include/asm/fixmap.h
+@@ -13,9 +13,6 @@
+ #include <linux/kernel.h>
+ #include <linux/threads.h>
+ #include <asm/page.h>
+-#ifdef CONFIG_HIGHMEM
+-#include <asm/kmap_types.h>
+-#endif
+ 
+ /*
+  * Here we define all the compile-time 'special' virtual
+@@ -53,11 +50,6 @@ enum fixed_addresses {
+ 	FIX_CMAP_BEGIN,
+ 	FIX_CMAP_END = FIX_CMAP_BEGIN + (FIX_N_COLOURS * NR_CPUS) - 1,
+ 
+-#ifdef CONFIG_HIGHMEM
+-	FIX_KMAP_BEGIN,	/* reserved pte's for temporary kernel mappings */
+-	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_TYPE_NR * NR_CPUS) - 1,
+-#endif
+-
+ #ifdef CONFIG_IOREMAP_FIXED
+ 	/*
+ 	 * FIX_IOREMAP entries are useful for mapping physical address
+diff --git a/arch/sh/include/asm/hardirq.h b/arch/sh/include/asm/hardirq.h
+index edaea3559a232..9fe4495a8e90b 100644
+--- a/arch/sh/include/asm/hardirq.h
++++ b/arch/sh/include/asm/hardirq.h
+@@ -2,16 +2,10 @@
+ #ifndef __ASM_SH_HARDIRQ_H
+ #define __ASM_SH_HARDIRQ_H
+ 
+-#include <linux/threads.h>
+-#include <linux/irq.h>
+-
+-typedef struct {
+-	unsigned int __softirq_pending;
+-	unsigned int __nmi_count;		/* arch dependent */
+-} ____cacheline_aligned irq_cpustat_t;
+-
+-#include <linux/irq_cpustat.h>	/* Standard mappings for irq_cpustat_t above */
+-
+ extern void ack_bad_irq(unsigned int irq);
++#define ack_bad_irq ack_bad_irq
++#define ARCH_WANTS_NMI_IRQSTAT
++
++#include <asm-generic/hardirq.h>
+ 
+ #endif /* __ASM_SH_HARDIRQ_H */
+diff --git a/arch/sh/include/asm/kmap_types.h b/arch/sh/include/asm/kmap_types.h
+deleted file mode 100644
+index b78107f923dd3..0000000000000
+--- a/arch/sh/include/asm/kmap_types.h
++++ /dev/null
+@@ -1,15 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 */
+-#ifndef __SH_KMAP_TYPES_H
+-#define __SH_KMAP_TYPES_H
+-
+-/* Dummy header just to define km_type. */
+-
+-#ifdef CONFIG_DEBUG_HIGHMEM
+-#define  __WITH_KM_FENCE
+-#endif
+-
+-#include <asm-generic/kmap_types.h>
+-
+-#undef __WITH_KM_FENCE
+-
+-#endif
 diff --git a/arch/sh/include/asm/spinlock_types.h b/arch/sh/include/asm/spinlock_types.h
 index e82369f286a20..22ca9a98bbb8b 100644
 --- a/arch/sh/include/asm/spinlock_types.h
@@ -2058,9 +2823,18 @@ index e82369f286a20..22ca9a98bbb8b 100644
  	volatile unsigned int lock;
  } arch_spinlock_t;
 diff --git a/arch/sh/kernel/irq.c b/arch/sh/kernel/irq.c
-index 5717c7cbdd97a..c4e46252377ed 100644
+index 5717c7cbdd97a..9d2e4026be961 100644
 --- a/arch/sh/kernel/irq.c
 +++ b/arch/sh/kernel/irq.c
+@@ -44,7 +44,7 @@ int arch_show_interrupts(struct seq_file *p, int prec)
+ 
+ 	seq_printf(p, "%*s: ", prec, "NMI");
+ 	for_each_online_cpu(j)
+-		seq_printf(p, "%10u ", nmi_count(j));
++		seq_printf(p, "%10u ", per_cpu(irq_stat.__nmi_count, j);
+ 	seq_printf(p, "  Non-maskable interrupts\n");
+ 
+ 	seq_printf(p, "%*s: %10u\n", prec, "ERR", atomic_read(&irq_err_count));
 @@ -148,6 +148,7 @@ void irq_ctx_exit(int cpu)
  	hardirq_ctx[cpu] = NULL;
  }
@@ -2077,6 +2851,45 @@ index 5717c7cbdd97a..c4e46252377ed 100644
  #else
  static inline void handle_one_irq(unsigned int irq)
  {
+diff --git a/arch/sh/kernel/traps.c b/arch/sh/kernel/traps.c
+index 9c3d32b80038a..f5beecdac6938 100644
+--- a/arch/sh/kernel/traps.c
++++ b/arch/sh/kernel/traps.c
+@@ -186,7 +186,7 @@ BUILD_TRAP_HANDLER(nmi)
+ 	arch_ftrace_nmi_enter();
+ 
+ 	nmi_enter();
+-	nmi_count(cpu)++;
++	this_cpu_inc(irq_stat.__nmi_count);
+ 
+ 	switch (notify_die(DIE_NMI, "NMI", regs, 0, vec & 0xff, SIGINT)) {
+ 	case NOTIFY_OK:
+diff --git a/arch/sh/mm/init.c b/arch/sh/mm/init.c
+index 3348e0c4d7698..0db6919af8d32 100644
+--- a/arch/sh/mm/init.c
++++ b/arch/sh/mm/init.c
+@@ -362,9 +362,6 @@ void __init mem_init(void)
+ 	mem_init_print_info(NULL);
+ 	pr_info("virtual kernel memory layout:\n"
+ 		"    fixmap  : 0x%08lx - 0x%08lx   (%4ld kB)\n"
+-#ifdef CONFIG_HIGHMEM
+-		"    pkmap   : 0x%08lx - 0x%08lx   (%4ld kB)\n"
+-#endif
+ 		"    vmalloc : 0x%08lx - 0x%08lx   (%4ld MB)\n"
+ 		"    lowmem  : 0x%08lx - 0x%08lx   (%4ld MB) (cached)\n"
+ #ifdef CONFIG_UNCACHED_MAPPING
+@@ -376,11 +373,6 @@ void __init mem_init(void)
+ 		FIXADDR_START, FIXADDR_TOP,
+ 		(FIXADDR_TOP - FIXADDR_START) >> 10,
+ 
+-#ifdef CONFIG_HIGHMEM
+-		PKMAP_BASE, PKMAP_BASE+LAST_PKMAP*PAGE_SIZE,
+-		(LAST_PKMAP*PAGE_SIZE) >> 10,
+-#endif
+-
+ 		(unsigned long)VMALLOC_START, VMALLOC_END,
+ 		(VMALLOC_END - VMALLOC_START) >> 20,
+ 
 diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
 index a6ca135442f9a..e841708cb8308 100644
 --- a/arch/sparc/Kconfig
@@ -2090,10 +2903,18 @@ index a6ca135442f9a..e841708cb8308 100644
  config ZONE_DMA
  	bool
 diff --git a/arch/sparc/include/asm/highmem.h b/arch/sparc/include/asm/highmem.h
-index 6c35f0d27ee1a..f84298a7100c5 100644
+index 6c35f0d27ee1a..875116209ec14 100644
 --- a/arch/sparc/include/asm/highmem.h
 +++ b/arch/sparc/include/asm/highmem.h
-@@ -33,8 +33,6 @@ extern unsigned long highstart_pfn, highend_pfn;
+@@ -24,7 +24,6 @@
+ #include <linux/interrupt.h>
+ #include <linux/pgtable.h>
+ #include <asm/vaddrs.h>
+-#include <asm/kmap_types.h>
+ #include <asm/pgtsrmmu.h>
+ 
+ /* declarations for highmem.c */
+@@ -33,8 +32,6 @@ extern unsigned long highstart_pfn, highend_pfn;
  #define kmap_prot __pgprot(SRMMU_ET_PTE | SRMMU_PRIV | SRMMU_CACHE)
  extern pte_t *pkmap_page_table;
  
@@ -2102,7 +2923,7 @@ index 6c35f0d27ee1a..f84298a7100c5 100644
  /*
   * Right now we initialize only a single pte table. It can be extended
   * easily, subsequent pte tables have to be allocated in one physical
-@@ -53,6 +51,11 @@ void kmap_init(void) __init;
+@@ -53,6 +50,11 @@ void kmap_init(void) __init;
  
  #define flush_cache_kmaps()	flush_cache_all()
  
@@ -2114,6 +2935,43 @@ index 6c35f0d27ee1a..f84298a7100c5 100644
  #endif /* __KERNEL__ */
  
  #endif /* _ASM_HIGHMEM_H */
+diff --git a/arch/sparc/include/asm/kmap_types.h b/arch/sparc/include/asm/kmap_types.h
+deleted file mode 100644
+index 55a99b6bd91e0..0000000000000
+--- a/arch/sparc/include/asm/kmap_types.h
++++ /dev/null
+@@ -1,11 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 */
+-#ifndef _ASM_KMAP_TYPES_H
+-#define _ASM_KMAP_TYPES_H
+-
+-/* Dummy header just to define km_type.  None of this
+- * is actually used on sparc.  -DaveM
+- */
+-
+-#include <asm-generic/kmap_types.h>
+-
+-#endif
+diff --git a/arch/sparc/include/asm/vaddrs.h b/arch/sparc/include/asm/vaddrs.h
+index 84d054b07a6ff..4fec0341e2a81 100644
+--- a/arch/sparc/include/asm/vaddrs.h
++++ b/arch/sparc/include/asm/vaddrs.h
+@@ -32,13 +32,13 @@
+ #define SRMMU_NOCACHE_ALCRATIO	64	/* 256 pages per 64MB of system RAM */
+ 
+ #ifndef __ASSEMBLY__
+-#include <asm/kmap_types.h>
++#include <asm/kmap_size.h>
+ 
+ enum fixed_addresses {
+ 	FIX_HOLE,
+ #ifdef CONFIG_HIGHMEM
+ 	FIX_KMAP_BEGIN,
+-	FIX_KMAP_END = (KM_TYPE_NR * NR_CPUS),
++	FIX_KMAP_END = (KM_MAX_IDX * NR_CPUS),
+ #endif
+ 	__end_of_fixed_addresses
+ };
 diff --git a/arch/sparc/kernel/irq_64.c b/arch/sparc/kernel/irq_64.c
 index 3ec9f1402aad3..eb21682abfcb1 100644
 --- a/arch/sparc/kernel/irq_64.c
@@ -2279,6 +3137,65 @@ index 0070f8b9a753a..a03caa5f6628d 100644
  	{
  		unsigned long max_zone_pfn[MAX_NR_ZONES] = { 0 };
  
+diff --git a/arch/um/include/asm/fixmap.h b/arch/um/include/asm/fixmap.h
+index 2c697a145ac1b..2efac58271880 100644
+--- a/arch/um/include/asm/fixmap.h
++++ b/arch/um/include/asm/fixmap.h
+@@ -3,7 +3,6 @@
+ #define __UM_FIXMAP_H
+ 
+ #include <asm/processor.h>
+-#include <asm/kmap_types.h>
+ #include <asm/archparam.h>
+ #include <asm/page.h>
+ #include <linux/threads.h>
+diff --git a/arch/um/include/asm/hardirq.h b/arch/um/include/asm/hardirq.h
+index b426796d26fd7..52e2c36267a93 100644
+--- a/arch/um/include/asm/hardirq.h
++++ b/arch/um/include/asm/hardirq.h
+@@ -2,22 +2,7 @@
+ #ifndef __ASM_UM_HARDIRQ_H
+ #define __ASM_UM_HARDIRQ_H
+ 
+-#include <linux/cache.h>
+-#include <linux/threads.h>
+-
+-typedef struct {
+-	unsigned int __softirq_pending;
+-} ____cacheline_aligned irq_cpustat_t;
+-
+-#include <linux/irq_cpustat.h>	/* Standard mappings for irq_cpustat_t above */
+-#include <linux/irq.h>
+-
+-#ifndef ack_bad_irq
+-static inline void ack_bad_irq(unsigned int irq)
+-{
+-	printk(KERN_CRIT "unexpected IRQ trap at vector %02x\n", irq);
+-}
+-#endif
++#include <asm-generic/hardirq.h>
+ 
+ #define __ARCH_IRQ_EXIT_IRQS_DISABLED 1
+ 
+diff --git a/arch/um/include/asm/kmap_types.h b/arch/um/include/asm/kmap_types.h
+deleted file mode 100644
+index b0bd12de1d23c..0000000000000
+--- a/arch/um/include/asm/kmap_types.h
++++ /dev/null
+@@ -1,13 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 */
+-/* 
+- * Copyright (C) 2002 Jeff Dike (jdike@karaya.com)
+- */
+-
+-#ifndef __UM_KMAP_TYPES_H
+-#define __UM_KMAP_TYPES_H
+-
+-/* No more #include "asm/arch/kmap_types.h" ! */
+-
+-#define KM_TYPE_NR 14
+-
+-#endif
 diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
 index f6946b81f74a9..ed5780f610806 100644
 --- a/arch/x86/Kconfig
@@ -2601,9 +3518,27 @@ index d3d91a0abf88f..6d07747215147 100644
  		nbytes = walk.nbytes;
  	}
 diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
-index 77217bd292bd5..9de29ee55cb10 100644
+index 77217bd292bd5..8eba66a33e397 100644
 --- a/arch/x86/include/asm/fixmap.h
 +++ b/arch/x86/include/asm/fixmap.h
+@@ -31,7 +31,7 @@
+ #include <asm/pgtable_types.h>
+ #ifdef CONFIG_X86_32
+ #include <linux/threads.h>
+-#include <asm/kmap_types.h>
++#include <asm/kmap_size.h>
+ #else
+ #include <uapi/asm/vsyscall.h>
+ #endif
+@@ -94,7 +94,7 @@ enum fixed_addresses {
+ #endif
+ #ifdef CONFIG_X86_32
+ 	FIX_KMAP_BEGIN,	/* reserved pte's for temporary kernel mappings */
+-	FIX_KMAP_END = FIX_KMAP_BEGIN+(KM_TYPE_NR*NR_CPUS)-1,
++	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_MAX_IDX * NR_CPUS) - 1,
+ #ifdef CONFIG_PCI_MMCONFIG
+ 	FIX_PCIE_MCFG,
+ #endif
 @@ -151,7 +151,6 @@ extern void reserve_top_address(unsigned long reserve);
  
  extern int fixmaps_set;
@@ -2613,10 +3548,10 @@ index 77217bd292bd5..9de29ee55cb10 100644
  
  void __native_set_fixmap(enum fixed_addresses idx, pte_t pte);
 diff --git a/arch/x86/include/asm/fpu/api.h b/arch/x86/include/asm/fpu/api.h
-index dcd9503b10983..22a39b72ce93f 100644
+index dcd9503b10983..b0ce938bbdb71 100644
 --- a/arch/x86/include/asm/fpu/api.h
 +++ b/arch/x86/include/asm/fpu/api.h
-@@ -23,6 +23,7 @@ extern void kernel_fpu_begin(void);
+@@ -23,23 +23,39 @@ extern void kernel_fpu_begin(void);
  extern void kernel_fpu_end(void);
  extern bool irq_fpu_usable(void);
  extern void fpregs_mark_activate(void);
@@ -2624,32 +3559,55 @@ index dcd9503b10983..22a39b72ce93f 100644
  
  /*
   * Use fpregs_lock() while editing CPU's FPU registers or fpu->state.
-@@ -33,12 +34,18 @@ extern void fpregs_mark_activate(void);
+  * A context switch will (and softirq might) save CPU's FPU registers to
+  * fpu->state and set TIF_NEED_FPU_LOAD leaving CPU's FPU registers in
+  * a random state.
++ *
++ * local_bh_disable() protects against both preemption and soft interrupts
++ * on !RT kernels.
++ *
++ * On RT kernels local_bh_disable() is not sufficient because it only
++ * serializes soft interrupt related sections via a local lock, but stays
++ * preemptible. Disabling preemption is the right choice here as bottom
++ * half processing is always in thread context on RT kernels so it
++ * implicitly prevents bottom half processing as well.
++ *
++ * Disabling preemption also serializes against kernel_fpu_begin().
+  */
  static inline void fpregs_lock(void)
  {
- 	preempt_disable();
+-	preempt_disable();
 -	local_bh_disable();
-+	/*
-+	 * On RT disabling preemption is good enough because bottom halfs
-+	 * are always running in thread context.
-+	 */
 +	if (!IS_ENABLED(CONFIG_PREEMPT_RT))
 +		local_bh_disable();
++	else
++		preempt_disable();
  }
  
  static inline void fpregs_unlock(void)
  {
 -	local_bh_enable();
+-	preempt_enable();
 +	if (!IS_ENABLED(CONFIG_PREEMPT_RT))
 +		local_bh_enable();
- 	preempt_enable();
++	else
++		preempt_enable();
  }
  
+ #ifdef CONFIG_X86_DEBUG_FPU
 diff --git a/arch/x86/include/asm/highmem.h b/arch/x86/include/asm/highmem.h
-index 0f420b24e0fcb..bf6ed26788de1 100644
+index 0f420b24e0fcb..032e020853aa6 100644
 --- a/arch/x86/include/asm/highmem.h
 +++ b/arch/x86/include/asm/highmem.h
-@@ -58,11 +58,17 @@ extern unsigned long highstart_pfn, highend_pfn;
+@@ -23,7 +23,6 @@
+ 
+ #include <linux/interrupt.h>
+ #include <linux/threads.h>
+-#include <asm/kmap_types.h>
+ #include <asm/tlbflush.h>
+ #include <asm/paravirt.h>
+ #include <asm/fixmap.h>
+@@ -58,11 +57,17 @@ extern unsigned long highstart_pfn, highend_pfn;
  #define PKMAP_NR(virt)  ((virt-PKMAP_BASE) >> PAGE_SHIFT)
  #define PKMAP_ADDR(nr)  (PKMAP_BASE + ((nr) << PAGE_SHIFT))
  
@@ -2698,6 +3656,37 @@ index bacf68c4d70e6..e2de092fc38cb 100644
 +void iomap_free(resource_size_t base, unsigned long size);
  
  #endif /* _ASM_X86_IOMAP_H */
+diff --git a/arch/x86/include/asm/kmap_types.h b/arch/x86/include/asm/kmap_types.h
+deleted file mode 100644
+index 04ab8266e347c..0000000000000
+--- a/arch/x86/include/asm/kmap_types.h
++++ /dev/null
+@@ -1,13 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 */
+-#ifndef _ASM_X86_KMAP_TYPES_H
+-#define _ASM_X86_KMAP_TYPES_H
+-
+-#if defined(CONFIG_X86_32) && defined(CONFIG_DEBUG_HIGHMEM)
+-#define  __WITH_KM_FENCE
+-#endif
+-
+-#include <asm-generic/kmap_types.h>
+-
+-#undef __WITH_KM_FENCE
+-
+-#endif /* _ASM_X86_KMAP_TYPES_H */
+diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
+index 0fad9f61c76ab..b6b02b7c19cc9 100644
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -41,7 +41,6 @@
+ #ifndef __ASSEMBLY__
+ 
+ #include <asm/desc_defs.h>
+-#include <asm/kmap_types.h>
+ #include <asm/pgtable_types.h>
+ #include <asm/nospec-branch.h>
+ 
 diff --git a/arch/x86/include/asm/preempt.h b/arch/x86/include/asm/preempt.h
 index 69485ca13665f..471dec2d78e12 100644
 --- a/arch/x86/include/asm/preempt.h
@@ -2882,6 +3871,84 @@ index 05ef1f4550cbd..b6c32736ad20d 100644
  	ack_APIC_irq();
  
  	set_irq_regs(old_regs);
+diff --git a/arch/x86/kernel/crash_dump_32.c b/arch/x86/kernel/crash_dump_32.c
+index 33ee47670b993..5fcac46aaf6b1 100644
+--- a/arch/x86/kernel/crash_dump_32.c
++++ b/arch/x86/kernel/crash_dump_32.c
+@@ -13,8 +13,6 @@
+ 
+ #include <linux/uaccess.h>
+ 
+-static void *kdump_buf_page;
+-
+ static inline bool is_crashed_pfn_valid(unsigned long pfn)
+ {
+ #ifndef CONFIG_X86_PAE
+@@ -41,15 +39,11 @@ static inline bool is_crashed_pfn_valid(unsigned long pfn)
+  * @userbuf: if set, @buf is in user address space, use copy_to_user(),
+  *	otherwise @buf is in kernel address space, use memcpy().
+  *
+- * Copy a page from "oldmem". For this page, there is no pte mapped
+- * in the current kernel. We stitch up a pte, similar to kmap_atomic.
+- *
+- * Calling copy_to_user() in atomic context is not desirable. Hence first
+- * copying the data to a pre-allocated kernel page and then copying to user
+- * space in non-atomic context.
++ * Copy a page from "oldmem". For this page, there might be no pte mapped
++ * in the current kernel.
+  */
+-ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
+-                               size_t csize, unsigned long offset, int userbuf)
++ssize_t copy_oldmem_page(unsigned long pfn, char *buf, size_t csize,
++			 unsigned long offset, int userbuf)
+ {
+ 	void  *vaddr;
+ 
+@@ -59,38 +53,16 @@ ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
+ 	if (!is_crashed_pfn_valid(pfn))
+ 		return -EFAULT;
+ 
+-	vaddr = kmap_atomic_pfn(pfn);
++	vaddr = kmap_local_pfn(pfn);
+ 
+ 	if (!userbuf) {
+-		memcpy(buf, (vaddr + offset), csize);
+-		kunmap_atomic(vaddr);
++		memcpy(buf, vaddr + offset, csize);
+ 	} else {
+-		if (!kdump_buf_page) {
+-			printk(KERN_WARNING "Kdump: Kdump buffer page not"
+-				" allocated\n");
+-			kunmap_atomic(vaddr);
+-			return -EFAULT;
+-		}
+-		copy_page(kdump_buf_page, vaddr);
+-		kunmap_atomic(vaddr);
+-		if (copy_to_user(buf, (kdump_buf_page + offset), csize))
+-			return -EFAULT;
++		if (copy_to_user(buf, vaddr + offset, csize))
++			csize = -EFAULT;
+ 	}
+ 
++	kunmap_local(vaddr);
++
+ 	return csize;
+ }
+-
+-static int __init kdump_buf_page_init(void)
+-{
+-	int ret = 0;
+-
+-	kdump_buf_page = kmalloc(PAGE_SIZE, GFP_KERNEL);
+-	if (!kdump_buf_page) {
+-		printk(KERN_WARNING "Kdump: Failed to allocate kdump buffer"
+-			 " page\n");
+-		ret = -ENOMEM;
+-	}
+-
+-	return ret;
+-}
+-arch_initcall(kdump_buf_page_init);
 diff --git a/arch/x86/kernel/fpu/core.c b/arch/x86/kernel/fpu/core.c
 index eb86a2b831b15..23aaf9e132e9f 100644
 --- a/arch/x86/kernel/fpu/core.c
@@ -2940,7 +4007,7 @@ index 440eed558558d..7cfc4e6b7c94a 100644
  }
 +#endif
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 397f599b20e5a..a5c3259a4477d 100644
+index f5ede41bf9e62..64679d6ec02e4 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
 @@ -7832,6 +7832,14 @@ int kvm_arch_init(void *opaque)
@@ -3146,11 +4213,44 @@ index d0dfa50bd0bb4..dc22ef3cf4bed 100644
  	help
  	  Linux can use the full amount of RAM in the system by
  	  default. However, the default MMUv2 setup only maps the
+diff --git a/arch/xtensa/include/asm/fixmap.h b/arch/xtensa/include/asm/fixmap.h
+index a06ffb0c61c77..92049b61c3511 100644
+--- a/arch/xtensa/include/asm/fixmap.h
++++ b/arch/xtensa/include/asm/fixmap.h
+@@ -16,7 +16,7 @@
+ #ifdef CONFIG_HIGHMEM
+ #include <linux/threads.h>
+ #include <linux/pgtable.h>
+-#include <asm/kmap_types.h>
++#include <asm/kmap_size.h>
+ #endif
+ 
+ /*
+@@ -39,7 +39,7 @@ enum fixed_addresses {
+ 	/* reserved pte's for temporary kernel mappings */
+ 	FIX_KMAP_BEGIN,
+ 	FIX_KMAP_END = FIX_KMAP_BEGIN +
+-		(KM_TYPE_NR * NR_CPUS * DCACHE_N_COLORS) - 1,
++		(KM_MAX_IDX * NR_CPUS * DCACHE_N_COLORS) - 1,
+ #endif
+ 	__end_of_fixed_addresses
+ };
 diff --git a/arch/xtensa/include/asm/highmem.h b/arch/xtensa/include/asm/highmem.h
-index eac503215f178..f8f24299acc19 100644
+index eac503215f178..0fc3b1cebc56a 100644
 --- a/arch/xtensa/include/asm/highmem.h
 +++ b/arch/xtensa/include/asm/highmem.h
-@@ -68,6 +68,15 @@ static inline void flush_cache_kmaps(void)
+@@ -16,9 +16,8 @@
+ #include <linux/pgtable.h>
+ #include <asm/cacheflush.h>
+ #include <asm/fixmap.h>
+-#include <asm/kmap_types.h>
+ 
+-#define PKMAP_BASE		((FIXADDR_START - \
++#define PKMAP_BASE		((FIXADDR_START -			\
+ 				  (LAST_PKMAP + 1) * PAGE_SIZE) & PMD_MASK)
+ #define LAST_PKMAP		(PTRS_PER_PTE * DCACHE_N_COLORS)
+ #define LAST_PKMAP_MASK		(LAST_PKMAP - 1)
+@@ -68,6 +67,15 @@ static inline void flush_cache_kmaps(void)
  	flush_cache_all();
  }
  
@@ -3182,7 +4282,7 @@ index 64c9389254f13..dc846323b1cd7 100644
  #include <asm-generic/qrwlock_types.h>
  
 diff --git a/arch/xtensa/mm/highmem.c b/arch/xtensa/mm/highmem.c
-index 673196fe862ef..69017f99e9b96 100644
+index 673196fe862ef..0735ca5e8f869 100644
 --- a/arch/xtensa/mm/highmem.c
 +++ b/arch/xtensa/mm/highmem.c
 @@ -12,8 +12,6 @@
@@ -3194,7 +4294,12 @@ index 673196fe862ef..69017f99e9b96 100644
  #if DCACHE_WAY_SIZE > PAGE_SIZE
  unsigned int last_pkmap_nr_arr[DCACHE_N_COLORS];
  wait_queue_head_t pkmap_map_wait_arr[DCACHE_N_COLORS];
-@@ -37,55 +35,21 @@ static inline enum fixed_addresses kmap_idx(int type, unsigned long color)
+@@ -33,59 +31,25 @@ static inline void kmap_waitqueues_init(void)
+ 
+ static inline enum fixed_addresses kmap_idx(int type, unsigned long color)
+ {
+-	return (type + KM_TYPE_NR * smp_processor_id()) * DCACHE_N_COLORS +
++	return (type + KM_MAX_IDX * smp_processor_id()) * DCACHE_N_COLORS +
  		color;
  }
  
@@ -3213,7 +4318,7 @@ index 673196fe862ef..69017f99e9b96 100644
 -	set_pte(kmap_pte + idx, mk_pte(page, prot));
 -
 -	return (void *)vaddr;
-+	return kmap_idx(type, DCACHE_ALIAS(pfn << PAGE_SHIFT);
++	return kmap_idx(type, DCACHE_ALIAS(pfn << PAGE_SHIFT));
  }
 -EXPORT_SYMBOL(kmap_atomic_high_prot);
  
@@ -3623,10 +4728,10 @@ index 1784530b8387b..c08cbb306636b 100644
  static ssize_t tpm_dev_transmit(struct tpm_chip *chip, struct tpm_space *space,
  				u8 *buf, size_t bufsiz)
 diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 0b214963539de..39cee10c59f88 100644
+index 4ed6e660273a4..c2bd0d40b5fc2 100644
 --- a/drivers/char/tpm/tpm_tis.c
 +++ b/drivers/char/tpm/tpm_tis.c
-@@ -49,6 +49,31 @@ static inline struct tpm_tis_tcg_phy *to_tpm_tis_tcg_phy(struct tpm_tis_data *da
+@@ -50,6 +50,31 @@ static inline struct tpm_tis_tcg_phy *to_tpm_tis_tcg_phy(struct tpm_tis_data *da
  	return container_of(data, struct tpm_tis_tcg_phy, priv);
  }
  
@@ -3655,10 +4760,10 @@ index 0b214963539de..39cee10c59f88 100644
 +	tpm_tis_flush(iobase);
 +}
 +
- static bool interrupts = true;
- module_param(interrupts, bool, 0444);
+ static int interrupts = -1;
+ module_param(interrupts, int, 0444);
  MODULE_PARM_DESC(interrupts, "Enable interrupts");
-@@ -146,7 +171,7 @@ static int tpm_tcg_write_bytes(struct tpm_tis_data *data, u32 addr, u16 len,
+@@ -169,7 +194,7 @@ static int tpm_tcg_write_bytes(struct tpm_tis_data *data, u32 addr, u16 len,
  	struct tpm_tis_tcg_phy *phy = to_tpm_tis_tcg_phy(data);
  
  	while (len--)
@@ -3667,7 +4772,7 @@ index 0b214963539de..39cee10c59f88 100644
  
  	return 0;
  }
-@@ -173,7 +198,7 @@ static int tpm_tcg_write32(struct tpm_tis_data *data, u32 addr, u32 value)
+@@ -196,7 +221,7 @@ static int tpm_tcg_write32(struct tpm_tis_data *data, u32 addr, u32 value)
  {
  	struct tpm_tis_tcg_phy *phy = to_tpm_tis_tcg_phy(data);
  
@@ -3749,6 +4854,38 @@ index 63040cb0d4e10..b329ac3324641 100644
  
  	if (intel_vgpu_active(dev_priv))
  		return;
+diff --git a/drivers/gpu/drm/i915/gem/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/gem/i915_gem_execbuffer.c
+index 1904e6e5ea64b..59635ff118e75 100644
+--- a/drivers/gpu/drm/i915/gem/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/gem/i915_gem_execbuffer.c
+@@ -1081,7 +1081,7 @@ static void reloc_cache_reset(struct reloc_cache *cache, struct i915_execbuffer
+ 		struct i915_ggtt *ggtt = cache_to_ggtt(cache);
+ 
+ 		intel_gt_flush_ggtt_writes(ggtt->vm.gt);
+-		io_mapping_unmap_atomic((void __iomem *)vaddr);
++		io_mapping_unmap_local((void __iomem *)vaddr);
+ 
+ 		if (drm_mm_node_allocated(&cache->node)) {
+ 			ggtt->vm.clear_range(&ggtt->vm,
+@@ -1147,7 +1147,7 @@ static void *reloc_iomap(struct drm_i915_gem_object *obj,
+ 
+ 	if (cache->vaddr) {
+ 		intel_gt_flush_ggtt_writes(ggtt->vm.gt);
+-		io_mapping_unmap_atomic((void __force __iomem *) unmask_page(cache->vaddr));
++		io_mapping_unmap_local((void __force __iomem *) unmask_page(cache->vaddr));
+ 	} else {
+ 		struct i915_vma *vma;
+ 		int err;
+@@ -1195,8 +1195,7 @@ static void *reloc_iomap(struct drm_i915_gem_object *obj,
+ 		offset += page << PAGE_SHIFT;
+ 	}
+ 
+-	vaddr = (void __force *)io_mapping_map_atomic_wc(&ggtt->iomap,
+-							 offset);
++	vaddr = (void __force *)io_mapping_map_local_wc(&ggtt->iomap, offset);
+ 	cache->page = page;
+ 	cache->vaddr = (unsigned long)vaddr;
+ 
 diff --git a/drivers/gpu/drm/i915/gt/intel_engine_pm.c b/drivers/gpu/drm/i915/gt/intel_engine_pm.c
 index f7b2e07e22298..313d8a28e7769 100644
 --- a/drivers/gpu/drm/i915/gt/intel_engine_pm.c
@@ -3776,6 +4913,68 @@ index f7b2e07e22298..313d8a28e7769 100644
  }
  
  #else
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index bb0c12975f38e..04808bf5efb63 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -379,22 +379,15 @@ gtt_user_read(struct io_mapping *mapping,
+ 	      char __user *user_data, int length)
+ {
+ 	void __iomem *vaddr;
+-	unsigned long unwritten;
++	bool fail = false;
+ 
+ 	/* We can use the cpu mem copy function because this is X86. */
+-	vaddr = io_mapping_map_atomic_wc(mapping, base);
+-	unwritten = __copy_to_user_inatomic(user_data,
+-					    (void __force *)vaddr + offset,
+-					    length);
+-	io_mapping_unmap_atomic(vaddr);
+-	if (unwritten) {
+-		vaddr = io_mapping_map_wc(mapping, base, PAGE_SIZE);
+-		unwritten = copy_to_user(user_data,
+-					 (void __force *)vaddr + offset,
+-					 length);
+-		io_mapping_unmap(vaddr);
+-	}
+-	return unwritten;
++	vaddr = io_mapping_map_local_wc(mapping, base);
++	if (copy_to_user(user_data, (void __force *)vaddr + offset, length))
++		fail = true;
++	io_mapping_unmap_local(vaddr);
++
++	return fail;
+ }
+ 
+ static int
+@@ -557,21 +550,14 @@ ggtt_write(struct io_mapping *mapping,
+ 	   char __user *user_data, int length)
+ {
+ 	void __iomem *vaddr;
+-	unsigned long unwritten;
++	bool fail = false;
+ 
+ 	/* We can use the cpu mem copy function because this is X86. */
+-	vaddr = io_mapping_map_atomic_wc(mapping, base);
+-	unwritten = __copy_from_user_inatomic_nocache((void __force *)vaddr + offset,
+-						      user_data, length);
+-	io_mapping_unmap_atomic(vaddr);
+-	if (unwritten) {
+-		vaddr = io_mapping_map_wc(mapping, base, PAGE_SIZE);
+-		unwritten = copy_from_user((void __force *)vaddr + offset,
+-					   user_data, length);
+-		io_mapping_unmap(vaddr);
+-	}
+-
+-	return unwritten;
++	vaddr = io_mapping_map_local_wc(mapping, base);
++	if (copy_from_user((void __force *)vaddr + offset, user_data, length))
++		fail = true;
++	io_mapping_unmap_local(vaddr);
++	return fail;
+ }
+ 
+ /**
 diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
 index 759f523c6a6bf..7339a42ab2b80 100644
 --- a/drivers/gpu/drm/i915/i915_irq.c
@@ -3820,6 +5019,306 @@ index a4addcc649782..396b6598694d3 100644
  DEFINE_EVENT(i915_request, i915_request_submit,
  	     TP_PROTO(struct i915_request *rq),
  	     TP_ARGS(rq)
+diff --git a/drivers/gpu/drm/i915/selftests/i915_gem.c b/drivers/gpu/drm/i915/selftests/i915_gem.c
+index 23a6132c5f4e8..b15eaf83500be 100644
+--- a/drivers/gpu/drm/i915/selftests/i915_gem.c
++++ b/drivers/gpu/drm/i915/selftests/i915_gem.c
+@@ -57,12 +57,12 @@ static void trash_stolen(struct drm_i915_private *i915)
+ 
+ 		ggtt->vm.insert_page(&ggtt->vm, dma, slot, I915_CACHE_NONE, 0);
+ 
+-		s = io_mapping_map_atomic_wc(&ggtt->iomap, slot);
++		s = io_mapping_map_local_wc(&ggtt->iomap, slot);
+ 		for (x = 0; x < PAGE_SIZE / sizeof(u32); x++) {
+ 			prng = next_pseudo_random32(prng);
+ 			iowrite32(prng, &s[x]);
+ 		}
+-		io_mapping_unmap_atomic(s);
++		io_mapping_unmap_local(s);
+ 	}
+ 
+ 	ggtt->vm.clear_range(&ggtt->vm, slot, PAGE_SIZE);
+diff --git a/drivers/gpu/drm/i915/selftests/i915_gem_gtt.c b/drivers/gpu/drm/i915/selftests/i915_gem_gtt.c
+index c53a222e3dece..53226d460c693 100644
+--- a/drivers/gpu/drm/i915/selftests/i915_gem_gtt.c
++++ b/drivers/gpu/drm/i915/selftests/i915_gem_gtt.c
+@@ -1200,9 +1200,9 @@ static int igt_ggtt_page(void *arg)
+ 		u64 offset = tmp.start + order[n] * PAGE_SIZE;
+ 		u32 __iomem *vaddr;
+ 
+-		vaddr = io_mapping_map_atomic_wc(&ggtt->iomap, offset);
++		vaddr = io_mapping_map_local_wc(&ggtt->iomap, offset);
+ 		iowrite32(n, vaddr + n);
+-		io_mapping_unmap_atomic(vaddr);
++		io_mapping_unmap_local(vaddr);
+ 	}
+ 	intel_gt_flush_ggtt_writes(ggtt->vm.gt);
+ 
+@@ -1212,9 +1212,9 @@ static int igt_ggtt_page(void *arg)
+ 		u32 __iomem *vaddr;
+ 		u32 val;
+ 
+-		vaddr = io_mapping_map_atomic_wc(&ggtt->iomap, offset);
++		vaddr = io_mapping_map_local_wc(&ggtt->iomap, offset);
+ 		val = ioread32(vaddr + n);
+-		io_mapping_unmap_atomic(vaddr);
++		io_mapping_unmap_local(vaddr);
+ 
+ 		if (val != n) {
+ 			pr_err("insert page failed: found %d, expected %d\n",
+diff --git a/drivers/gpu/drm/nouveau/nvkm/subdev/devinit/fbmem.h b/drivers/gpu/drm/nouveau/nvkm/subdev/devinit/fbmem.h
+index 6c5bbff12eb49..411f91ee20fa6 100644
+--- a/drivers/gpu/drm/nouveau/nvkm/subdev/devinit/fbmem.h
++++ b/drivers/gpu/drm/nouveau/nvkm/subdev/devinit/fbmem.h
+@@ -60,19 +60,19 @@ fbmem_fini(struct io_mapping *fb)
+ static inline u32
+ fbmem_peek(struct io_mapping *fb, u32 off)
+ {
+-	u8 __iomem *p = io_mapping_map_atomic_wc(fb, off & PAGE_MASK);
++	u8 __iomem *p = io_mapping_map_local_wc(fb, off & PAGE_MASK);
+ 	u32 val = ioread32(p + (off & ~PAGE_MASK));
+-	io_mapping_unmap_atomic(p);
++	io_mapping_unmap_local(p);
+ 	return val;
+ }
+ 
+ static inline void
+ fbmem_poke(struct io_mapping *fb, u32 off, u32 val)
+ {
+-	u8 __iomem *p = io_mapping_map_atomic_wc(fb, off & PAGE_MASK);
++	u8 __iomem *p = io_mapping_map_local_wc(fb, off & PAGE_MASK);
+ 	iowrite32(val, p + (off & ~PAGE_MASK));
+ 	wmb();
+-	io_mapping_unmap_atomic(p);
++	io_mapping_unmap_local(p);
+ }
+ 
+ static inline bool
+diff --git a/drivers/gpu/drm/qxl/qxl_image.c b/drivers/gpu/drm/qxl/qxl_image.c
+index 60ab7151b84dc..93f92ccd42e58 100644
+--- a/drivers/gpu/drm/qxl/qxl_image.c
++++ b/drivers/gpu/drm/qxl/qxl_image.c
+@@ -124,12 +124,12 @@ qxl_image_init_helper(struct qxl_device *qdev,
+ 				  wrong (check the bitmaps are sent correctly
+ 				  first) */
+ 
+-	ptr = qxl_bo_kmap_atomic_page(qdev, chunk_bo, 0);
++	ptr = qxl_bo_kmap_local_page(qdev, chunk_bo, 0);
+ 	chunk = ptr;
+ 	chunk->data_size = height * chunk_stride;
+ 	chunk->prev_chunk = 0;
+ 	chunk->next_chunk = 0;
+-	qxl_bo_kunmap_atomic_page(qdev, chunk_bo, ptr);
++	qxl_bo_kunmap_local_page(qdev, chunk_bo, ptr);
+ 
+ 	{
+ 		void *k_data, *i_data;
+@@ -143,7 +143,7 @@ qxl_image_init_helper(struct qxl_device *qdev,
+ 			i_data = (void *)data;
+ 
+ 			while (remain > 0) {
+-				ptr = qxl_bo_kmap_atomic_page(qdev, chunk_bo, page << PAGE_SHIFT);
++				ptr = qxl_bo_kmap_local_page(qdev, chunk_bo, page << PAGE_SHIFT);
+ 
+ 				if (page == 0) {
+ 					chunk = ptr;
+@@ -157,7 +157,7 @@ qxl_image_init_helper(struct qxl_device *qdev,
+ 
+ 				memcpy(k_data, i_data, size);
+ 
+-				qxl_bo_kunmap_atomic_page(qdev, chunk_bo, ptr);
++				qxl_bo_kunmap_local_page(qdev, chunk_bo, ptr);
+ 				i_data += size;
+ 				remain -= size;
+ 				page++;
+@@ -175,10 +175,10 @@ qxl_image_init_helper(struct qxl_device *qdev,
+ 					page_offset = offset_in_page(out_offset);
+ 					size = min((int)(PAGE_SIZE - page_offset), remain);
+ 
+-					ptr = qxl_bo_kmap_atomic_page(qdev, chunk_bo, page_base);
++					ptr = qxl_bo_kmap_local_page(qdev, chunk_bo, page_base);
+ 					k_data = ptr + page_offset;
+ 					memcpy(k_data, i_data, size);
+-					qxl_bo_kunmap_atomic_page(qdev, chunk_bo, ptr);
++					qxl_bo_kunmap_local_page(qdev, chunk_bo, ptr);
+ 					remain -= size;
+ 					i_data += size;
+ 					out_offset += size;
+@@ -189,7 +189,7 @@ qxl_image_init_helper(struct qxl_device *qdev,
+ 	qxl_bo_kunmap(chunk_bo);
+ 
+ 	image_bo = dimage->bo;
+-	ptr = qxl_bo_kmap_atomic_page(qdev, image_bo, 0);
++	ptr = qxl_bo_kmap_local_page(qdev, image_bo, 0);
+ 	image = ptr;
+ 
+ 	image->descriptor.id = 0;
+@@ -212,7 +212,7 @@ qxl_image_init_helper(struct qxl_device *qdev,
+ 		break;
+ 	default:
+ 		DRM_ERROR("unsupported image bit depth\n");
+-		qxl_bo_kunmap_atomic_page(qdev, image_bo, ptr);
++		qxl_bo_kunmap_local_page(qdev, image_bo, ptr);
+ 		return -EINVAL;
+ 	}
+ 	image->u.bitmap.flags = QXL_BITMAP_TOP_DOWN;
+@@ -222,7 +222,7 @@ qxl_image_init_helper(struct qxl_device *qdev,
+ 	image->u.bitmap.palette = 0;
+ 	image->u.bitmap.data = qxl_bo_physical_address(qdev, chunk_bo, 0);
+ 
+-	qxl_bo_kunmap_atomic_page(qdev, image_bo, ptr);
++	qxl_bo_kunmap_local_page(qdev, image_bo, ptr);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/gpu/drm/qxl/qxl_ioctl.c b/drivers/gpu/drm/qxl/qxl_ioctl.c
+index 5cea6eea72abb..785023081b795 100644
+--- a/drivers/gpu/drm/qxl/qxl_ioctl.c
++++ b/drivers/gpu/drm/qxl/qxl_ioctl.c
+@@ -89,11 +89,11 @@ apply_reloc(struct qxl_device *qdev, struct qxl_reloc_info *info)
+ {
+ 	void *reloc_page;
+ 
+-	reloc_page = qxl_bo_kmap_atomic_page(qdev, info->dst_bo, info->dst_offset & PAGE_MASK);
++	reloc_page = qxl_bo_kmap_local_page(qdev, info->dst_bo, info->dst_offset & PAGE_MASK);
+ 	*(uint64_t *)(reloc_page + (info->dst_offset & ~PAGE_MASK)) = qxl_bo_physical_address(qdev,
+ 											      info->src_bo,
+ 											      info->src_offset);
+-	qxl_bo_kunmap_atomic_page(qdev, info->dst_bo, reloc_page);
++	qxl_bo_kunmap_local_page(qdev, info->dst_bo, reloc_page);
+ }
+ 
+ static void
+@@ -105,9 +105,9 @@ apply_surf_reloc(struct qxl_device *qdev, struct qxl_reloc_info *info)
+ 	if (info->src_bo && !info->src_bo->is_primary)
+ 		id = info->src_bo->surface_id;
+ 
+-	reloc_page = qxl_bo_kmap_atomic_page(qdev, info->dst_bo, info->dst_offset & PAGE_MASK);
++	reloc_page = qxl_bo_kmap_local_page(qdev, info->dst_bo, info->dst_offset & PAGE_MASK);
+ 	*(uint32_t *)(reloc_page + (info->dst_offset & ~PAGE_MASK)) = id;
+-	qxl_bo_kunmap_atomic_page(qdev, info->dst_bo, reloc_page);
++	qxl_bo_kunmap_local_page(qdev, info->dst_bo, reloc_page);
+ }
+ 
+ /* return holding the reference to this object */
+@@ -149,7 +149,6 @@ static int qxl_process_single_command(struct qxl_device *qdev,
+ 	struct qxl_bo *cmd_bo;
+ 	void *fb_cmd;
+ 	int i, ret, num_relocs;
+-	int unwritten;
+ 
+ 	switch (cmd->type) {
+ 	case QXL_CMD_DRAW:
+@@ -185,21 +184,21 @@ static int qxl_process_single_command(struct qxl_device *qdev,
+ 		goto out_free_reloc;
+ 
+ 	/* TODO copy slow path code from i915 */
+-	fb_cmd = qxl_bo_kmap_atomic_page(qdev, cmd_bo, (release->release_offset & PAGE_MASK));
+-	unwritten = __copy_from_user_inatomic_nocache
+-		(fb_cmd + sizeof(union qxl_release_info) + (release->release_offset & ~PAGE_MASK),
+-		 u64_to_user_ptr(cmd->command), cmd->command_size);
++	fb_cmd = qxl_bo_kmap_local_page(qdev, cmd_bo, (release->release_offset & PAGE_MASK));
+ 
+-	{
++	if (copy_from_user(fb_cmd + sizeof(union qxl_release_info) +
++			   (release->release_offset & ~PAGE_MASK),
++			   u64_to_user_ptr(cmd->command), cmd->command_size)) {
++		ret = -EFAULT;
++	} else {
+ 		struct qxl_drawable *draw = fb_cmd;
+ 
+ 		draw->mm_time = qdev->rom->mm_clock;
+ 	}
+ 
+-	qxl_bo_kunmap_atomic_page(qdev, cmd_bo, fb_cmd);
+-	if (unwritten) {
+-		DRM_ERROR("got unwritten %d\n", unwritten);
+-		ret = -EFAULT;
++	qxl_bo_kunmap_local_page(qdev, cmd_bo, fb_cmd);
++	if (ret) {
++		DRM_ERROR("copy from user failed %d\n", ret);
+ 		goto out_free_release;
+ 	}
+ 
+diff --git a/drivers/gpu/drm/qxl/qxl_object.c b/drivers/gpu/drm/qxl/qxl_object.c
+index 2bc364412e8b8..9350d238ba545 100644
+--- a/drivers/gpu/drm/qxl/qxl_object.c
++++ b/drivers/gpu/drm/qxl/qxl_object.c
+@@ -172,8 +172,8 @@ int qxl_bo_kmap(struct qxl_bo *bo, void **ptr)
+ 	return 0;
+ }
+ 
+-void *qxl_bo_kmap_atomic_page(struct qxl_device *qdev,
+-			      struct qxl_bo *bo, int page_offset)
++void *qxl_bo_kmap_local_page(struct qxl_device *qdev,
++			     struct qxl_bo *bo, int page_offset)
+ {
+ 	unsigned long offset;
+ 	void *rptr;
+@@ -188,7 +188,7 @@ void *qxl_bo_kmap_atomic_page(struct qxl_device *qdev,
+ 		goto fallback;
+ 
+ 	offset = bo->tbo.mem.start << PAGE_SHIFT;
+-	return io_mapping_map_atomic_wc(map, offset + page_offset);
++	return io_mapping_map_local_wc(map, offset + page_offset);
+ fallback:
+ 	if (bo->kptr) {
+ 		rptr = bo->kptr + (page_offset * PAGE_SIZE);
+@@ -214,14 +214,14 @@ void qxl_bo_kunmap(struct qxl_bo *bo)
+ 	ttm_bo_kunmap(&bo->kmap);
+ }
+ 
+-void qxl_bo_kunmap_atomic_page(struct qxl_device *qdev,
+-			       struct qxl_bo *bo, void *pmap)
++void qxl_bo_kunmap_local_page(struct qxl_device *qdev,
++			      struct qxl_bo *bo, void *pmap)
+ {
+ 	if ((bo->tbo.mem.mem_type != TTM_PL_VRAM) &&
+ 	    (bo->tbo.mem.mem_type != TTM_PL_PRIV))
+ 		goto fallback;
+ 
+-	io_mapping_unmap_atomic(pmap);
++	io_mapping_unmap_local(pmap);
+ 	return;
+  fallback:
+ 	qxl_bo_kunmap(bo);
+diff --git a/drivers/gpu/drm/qxl/qxl_object.h b/drivers/gpu/drm/qxl/qxl_object.h
+index 6b434e5ef795a..02f1e03742286 100644
+--- a/drivers/gpu/drm/qxl/qxl_object.h
++++ b/drivers/gpu/drm/qxl/qxl_object.h
+@@ -88,8 +88,8 @@ extern int qxl_bo_create(struct qxl_device *qdev,
+ 			 struct qxl_bo **bo_ptr);
+ extern int qxl_bo_kmap(struct qxl_bo *bo, void **ptr);
+ extern void qxl_bo_kunmap(struct qxl_bo *bo);
+-void *qxl_bo_kmap_atomic_page(struct qxl_device *qdev, struct qxl_bo *bo, int page_offset);
+-void qxl_bo_kunmap_atomic_page(struct qxl_device *qdev, struct qxl_bo *bo, void *map);
++void *qxl_bo_kmap_local_page(struct qxl_device *qdev, struct qxl_bo *bo, int page_offset);
++void qxl_bo_kunmap_local_page(struct qxl_device *qdev, struct qxl_bo *bo, void *map);
+ extern struct qxl_bo *qxl_bo_ref(struct qxl_bo *bo);
+ extern void qxl_bo_unref(struct qxl_bo **bo);
+ extern int qxl_bo_pin(struct qxl_bo *bo);
+diff --git a/drivers/gpu/drm/qxl/qxl_release.c b/drivers/gpu/drm/qxl/qxl_release.c
+index 4fae3e393da14..9f37b51e61c6c 100644
+--- a/drivers/gpu/drm/qxl/qxl_release.c
++++ b/drivers/gpu/drm/qxl/qxl_release.c
+@@ -408,7 +408,7 @@ union qxl_release_info *qxl_release_map(struct qxl_device *qdev,
+ 	union qxl_release_info *info;
+ 	struct qxl_bo *bo = release->release_bo;
+ 
+-	ptr = qxl_bo_kmap_atomic_page(qdev, bo, release->release_offset & PAGE_MASK);
++	ptr = qxl_bo_kmap_local_page(qdev, bo, release->release_offset & PAGE_MASK);
+ 	if (!ptr)
+ 		return NULL;
+ 	info = ptr + (release->release_offset & ~PAGE_MASK);
+@@ -423,7 +423,7 @@ void qxl_release_unmap(struct qxl_device *qdev,
+ 	void *ptr;
+ 
+ 	ptr = ((void *)info) - (release->release_offset & ~PAGE_MASK);
+-	qxl_bo_kunmap_atomic_page(qdev, bo, ptr);
++	qxl_bo_kunmap_local_page(qdev, bo, ptr);
+ }
+ 
+ void qxl_release_fence_buffer_objects(struct qxl_release *release)
 diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
 index e0ae911ef427d..781edf5504360 100644
 --- a/drivers/gpu/drm/radeon/radeon_display.c
@@ -3840,6 +5339,124 @@ index e0ae911ef427d..781edf5504360 100644
  
  	/* Decode into vertical and horizontal scanout position. */
  	*vpos = position & 0x1fff;
+diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
+index fb2a25f8408fc..164b9a015d32e 100644
+--- a/drivers/gpu/drm/ttm/ttm_bo_util.c
++++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
+@@ -181,13 +181,15 @@ static int ttm_copy_io_ttm_page(struct ttm_tt *ttm, void *src,
+ 		return -ENOMEM;
+ 
+ 	src = (void *)((unsigned long)src + (page << PAGE_SHIFT));
+-	dst = kmap_atomic_prot(d, prot);
+-	if (!dst)
+-		return -ENOMEM;
++	/*
++	 * Ensure that a highmem page is mapped with the correct
++	 * pgprot. For non highmem the mapping is already there.
++	 */
++	dst = kmap_local_page_prot(d, prot);
+ 
+ 	memcpy_fromio(dst, src, PAGE_SIZE);
+ 
+-	kunmap_atomic(dst);
++	kunmap_local(dst);
+ 
+ 	return 0;
+ }
+@@ -203,13 +205,15 @@ static int ttm_copy_ttm_io_page(struct ttm_tt *ttm, void *dst,
+ 		return -ENOMEM;
+ 
+ 	dst = (void *)((unsigned long)dst + (page << PAGE_SHIFT));
+-	src = kmap_atomic_prot(s, prot);
+-	if (!src)
+-		return -ENOMEM;
++	/*
++	 * Ensure that a highmem page is mapped with the correct
++	 * pgprot. For non highmem the mapping is already there.
++	 */
++	src = kmap_local_page_prot(s, prot);
+ 
+ 	memcpy_toio(dst, src, PAGE_SIZE);
+ 
+-	kunmap_atomic(src);
++	kunmap_local(src);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_blit.c b/drivers/gpu/drm/vmwgfx/vmwgfx_blit.c
+index e8d66182cd7b5..71dba228f68ef 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_blit.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_blit.c
+@@ -375,12 +375,12 @@ static int vmw_bo_cpu_blit_line(struct vmw_bo_blit_line_data *d,
+ 		copy_size = min_t(u32, copy_size, PAGE_SIZE - src_page_offset);
+ 
+ 		if (unmap_src) {
+-			kunmap_atomic(d->src_addr);
++			kunmap_local(d->src_addr);
+ 			d->src_addr = NULL;
+ 		}
+ 
+ 		if (unmap_dst) {
+-			kunmap_atomic(d->dst_addr);
++			kunmap_local(d->dst_addr);
+ 			d->dst_addr = NULL;
+ 		}
+ 
+@@ -388,12 +388,8 @@ static int vmw_bo_cpu_blit_line(struct vmw_bo_blit_line_data *d,
+ 			if (WARN_ON_ONCE(dst_page >= d->dst_num_pages))
+ 				return -EINVAL;
+ 
+-			d->dst_addr =
+-				kmap_atomic_prot(d->dst_pages[dst_page],
+-						 d->dst_prot);
+-			if (!d->dst_addr)
+-				return -ENOMEM;
+-
++			d->dst_addr = kmap_local_page_prot(d->dst_pages[dst_page],
++							   d->dst_prot);
+ 			d->mapped_dst = dst_page;
+ 		}
+ 
+@@ -401,12 +397,8 @@ static int vmw_bo_cpu_blit_line(struct vmw_bo_blit_line_data *d,
+ 			if (WARN_ON_ONCE(src_page >= d->src_num_pages))
+ 				return -EINVAL;
+ 
+-			d->src_addr =
+-				kmap_atomic_prot(d->src_pages[src_page],
+-						 d->src_prot);
+-			if (!d->src_addr)
+-				return -ENOMEM;
+-
++			d->src_addr = kmap_local_page_prot(d->src_pages[src_page],
++							   d->src_prot);
+ 			d->mapped_src = src_page;
+ 		}
+ 		diff->do_cpy(diff, d->dst_addr + dst_page_offset,
+@@ -436,8 +428,10 @@ static int vmw_bo_cpu_blit_line(struct vmw_bo_blit_line_data *d,
+  *
+  * Performs a CPU blit from one buffer object to another avoiding a full
+  * bo vmap which may exhaust- or fragment vmalloc space.
+- * On supported architectures (x86), we're using kmap_atomic which avoids
+- * cross-processor TLB- and cache flushes and may, on non-HIGHMEM systems
++ *
++ * On supported architectures (x86), we're using kmap_local_prot() which
++ * avoids cross-processor TLB- and cache flushes. kmap_local_prot() will
++ * either map a highmem page with the proper pgprot on HIGHMEM=y systems or
+  * reference already set-up mappings.
+  *
+  * Neither of the buffer objects may be placed in PCI memory
+@@ -500,9 +494,9 @@ int vmw_bo_cpu_blit(struct ttm_buffer_object *dst,
+ 	}
+ out:
+ 	if (d.src_addr)
+-		kunmap_atomic(d.src_addr);
++		kunmap_local(d.src_addr);
+ 	if (d.dst_addr)
+-		kunmap_atomic(d.dst_addr);
++		kunmap_local(d.dst_addr);
+ 
+ 	return ret;
+ }
 diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
 index 40e2b9f91163c..d9de4813ffac8 100644
 --- a/drivers/hv/hyperv_vmbus.h
@@ -4205,7 +5822,7 @@ index 988bf6bcce42d..bcd26d6725395 100644
  		if (ier & UART_IER_MSI)
  			value |= UART_MCR_MDCE | UART_MCR_FCM;
 diff --git a/drivers/tty/serial/8250/8250_mtk.c b/drivers/tty/serial/8250/8250_mtk.c
-index 41f4120abdf29..5c379343ba96a 100644
+index fa876e2c13e5d..29f4f8f2efaa2 100644
 --- a/drivers/tty/serial/8250/8250_mtk.c
 +++ b/drivers/tty/serial/8250/8250_mtk.c
 @@ -213,12 +213,37 @@ static void mtk8250_shutdown(struct uart_port *port)
@@ -4562,6 +6179,30 @@ index 04f75a44f2432..60cbce1995a59 100644
  
  	_enter("%p{%pd},%llx", dentry, dentry, vnode->fid.vnode);
  
+diff --git a/fs/aio.c b/fs/aio.c
+index c45c20d875388..0247daf559877 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -43,7 +43,6 @@
+ #include <linux/mount.h>
+ #include <linux/pseudo_fs.h>
+ 
+-#include <asm/kmap_types.h>
+ #include <linux/uaccess.h>
+ #include <linux/nospec.h>
+ 
+diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
+index 0378933d163c6..01947f6033006 100644
+--- a/fs/btrfs/ctree.h
++++ b/fs/btrfs/ctree.h
+@@ -17,7 +17,6 @@
+ #include <linux/wait.h>
+ #include <linux/slab.h>
+ #include <trace/events/btrfs.h>
+-#include <asm/kmap_types.h>
+ #include <asm/unaligned.h>
+ #include <linux/pagemap.h>
+ #include <linux/btrfs.h>
 diff --git a/fs/cifs/readdir.c b/fs/cifs/readdir.c
 index 799be3a5d25e1..d5165a7da0718 100644
 --- a/fs/cifs/readdir.c
@@ -4797,7 +6438,7 @@ index 65ec2029fa802..7052441be9679 100644
  
  static inline void task_core_dumping(struct seq_file *m, struct mm_struct *mm)
 diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 0f707003dda53..133e33232df81 100644
+index b362523a9829a..91b8d87b56647 100644
 --- a/fs/proc/base.c
 +++ b/fs/proc/base.c
 @@ -96,6 +96,7 @@
@@ -4808,7 +6449,7 @@ index 0f707003dda53..133e33232df81 100644
  #include <trace/events/oom.h>
  #include "internal.h"
  #include "fd.h"
-@@ -2036,7 +2037,7 @@ bool proc_fill_cache(struct file *file, struct dir_context *ctx,
+@@ -2038,7 +2039,7 @@ bool proc_fill_cache(struct file *file, struct dir_context *ctx,
  
  	child = d_hash_and_lookup(dir, &qname);
  	if (!child) {
@@ -4830,6 +6471,73 @@ index 317899222d7fd..28f9efbc51ed0 100644
  		child = d_alloc_parallel(dir, &qname, &wq);
  		if (IS_ERR(child))
  			return false;
+diff --git a/include/asm-generic/Kbuild b/include/asm-generic/Kbuild
+index e78bbb9a07e90..4365b9aa3e3f6 100644
+--- a/include/asm-generic/Kbuild
++++ b/include/asm-generic/Kbuild
+@@ -30,7 +30,7 @@ mandatory-y += irq.h
+ mandatory-y += irq_regs.h
+ mandatory-y += irq_work.h
+ mandatory-y += kdebug.h
+-mandatory-y += kmap_types.h
++mandatory-y += kmap_size.h
+ mandatory-y += kprobes.h
+ mandatory-y += linkage.h
+ mandatory-y += local.h
+diff --git a/include/asm-generic/hardirq.h b/include/asm-generic/hardirq.h
+index d14214dfc10b3..7317e8258b486 100644
+--- a/include/asm-generic/hardirq.h
++++ b/include/asm-generic/hardirq.h
+@@ -7,9 +7,13 @@
+ 
+ typedef struct {
+ 	unsigned int __softirq_pending;
++#ifdef ARCH_WANTS_NMI_IRQSTAT
++	unsigned int __nmi_count;
++#endif
+ } ____cacheline_aligned irq_cpustat_t;
+ 
+-#include <linux/irq_cpustat.h>	/* Standard mappings for irq_cpustat_t above */
++DECLARE_PER_CPU_ALIGNED(irq_cpustat_t, irq_stat);
++
+ #include <linux/irq.h>
+ 
+ #ifndef ack_bad_irq
+diff --git a/include/asm-generic/kmap_size.h b/include/asm-generic/kmap_size.h
+new file mode 100644
+index 0000000000000..9d6c7786a645f
+--- /dev/null
++++ b/include/asm-generic/kmap_size.h
+@@ -0,0 +1,12 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _ASM_GENERIC_KMAP_SIZE_H
++#define _ASM_GENERIC_KMAP_SIZE_H
++
++/* For debug this provides guard pages between the maps */
++#ifdef CONFIG_DEBUG_HIGHMEM
++# define KM_MAX_IDX	33
++#else
++# define KM_MAX_IDX	16
++#endif
++
++#endif
+diff --git a/include/asm-generic/kmap_types.h b/include/asm-generic/kmap_types.h
+deleted file mode 100644
+index 9f95b7b63d192..0000000000000
+--- a/include/asm-generic/kmap_types.h
++++ /dev/null
+@@ -1,11 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 */
+-#ifndef _ASM_GENERIC_KMAP_TYPES_H
+-#define _ASM_GENERIC_KMAP_TYPES_H
+-
+-#ifdef __WITH_KM_FENCE
+-# define KM_TYPE_NR 41
+-#else
+-# define KM_TYPE_NR 20
+-#endif
+-
+-#endif
 diff --git a/include/asm-generic/preempt.h b/include/asm-generic/preempt.h
 index d683f5e6d7913..71c1535db56a2 100644
 --- a/include/asm-generic/preempt.h
@@ -5016,7 +6724,7 @@ index 474f29638d2c9..733cc8ddd3eef 100644
  
  /**
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 0bd126418bb6a..5788ba8344f06 100644
+index 21cc971fd9609..2ead53c723e0d 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
 @@ -699,7 +699,7 @@ struct inode {
@@ -5029,17 +6737,17 @@ index 0bd126418bb6a..5788ba8344f06 100644
  
  	__u32			i_generation;
 diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index 754f67ac4326a..41408d5e40149 100644
+index 754f67ac4326a..b14fb2a2a9c56 100644
 --- a/include/linux/hardirq.h
 +++ b/include/linux/hardirq.h
-@@ -8,6 +8,7 @@
+@@ -6,6 +6,7 @@
+ #include <linux/preempt.h>
+ #include <linux/lockdep.h>
  #include <linux/ftrace_irq.h>
++#include <linux/sched.h>
  #include <linux/vtime.h>
  #include <asm/hardirq.h>
-+#include <linux/sched.h>
  
- extern void synchronize_irq(unsigned int irq);
- extern bool synchronize_hardirq(unsigned int irq);
 @@ -115,7 +116,6 @@ extern void rcu_nmi_exit(void);
  	do {							\
  		lockdep_off();					\
@@ -5056,14 +6764,16 @@ index 754f67ac4326a..41408d5e40149 100644
  		arch_nmi_exit();				\
  		lockdep_on();					\
  	} while (0)
-diff --git a/include/linux/highmem.h b/include/linux/highmem.h
-index 14e6202ce47f1..6ae7483c486af 100644
---- a/include/linux/highmem.h
-+++ b/include/linux/highmem.h
-@@ -31,9 +31,26 @@ static inline void invalidate_kernel_vmap_range(void *vaddr, int size)
- 
- #include <asm/kmap_types.h>
- 
+diff --git a/include/linux/highmem-internal.h b/include/linux/highmem-internal.h
+new file mode 100644
+index 0000000000000..f9bc6acd36798
+--- /dev/null
++++ b/include/linux/highmem-internal.h
+@@ -0,0 +1,222 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _LINUX_HIGHMEM_INTERNAL_H
++#define _LINUX_HIGHMEM_INTERNAL_H
++
 +/*
 + * Outside of CONFIG_HIGHMEM to support X86 32bit iomap_atomic() cruft.
 + */
@@ -5083,180 +6793,141 @@ index 14e6202ce47f1..6ae7483c486af 100644
 +static inline void kmap_assert_nomap(void) { }
 +#endif
 +
- #ifdef CONFIG_HIGHMEM
--extern void *kmap_atomic_high_prot(struct page *page, pgprot_t prot);
--extern void kunmap_atomic_high(void *kvaddr);
- #include <asm/highmem.h>
- 
- #ifndef ARCH_HAS_KMAP_FLUSH_TLB
-@@ -69,27 +86,108 @@ static inline void kunmap(struct page *page)
- }
- 
- /*
-- * kmap_atomic/kunmap_atomic is significantly faster than kmap/kunmap because
-- * no global lock is needed and because the kmap code must perform a global TLB
-- * invalidation when the kmap pool wraps.
-+ * For highmem systems it is required to temporarily map pages
-+ * which reside in the portion of memory which is not covered
-+ * by the permanent kernel mapping.
-  *
-- * However when holding an atomic kmap it is not legal to sleep, so atomic
-- * kmaps are appropriate for short, tight code paths only.
-+ * This comes in three flavors:
-  *
-- * The use of kmap_atomic/kunmap_atomic is discouraged - kmap/kunmap
-- * gives a more generic (and caching) interface. But kmap_atomic can
-- * be used in IRQ contexts, so in some (very limited) cases we need
-- * it.
-+ * 1) kmap/kunmap:
-+ *
-+ *    An interface to acquire longer term mappings with no restrictions
-+ *    on preemption and migration. This comes with an overhead as the
-+ *    mapping space is restricted and protected by a global lock. It
-+ *    also requires global TLB invalidation when the kmap pool wraps.
-+ *
-+ *    kmap() might block when the mapping space is fully utilized until a
-+ *    slot becomes available. Only callable from preemptible thread
-+ *    context.
-+ *
-+ * 2) kmap_local.*()/kunmap_local.*()
-+ *
-+ *    An interface to acquire short term mappings. Can be invoked from any
-+ *    context including interrupts. The mapping is per thread, CPU local
-+ *    and not globaly visible. It can only be used in the context which
-+ *    acquried the mapping. Nesting kmap_local.*() and kmap_atomic.*()
-+ *    mappings is allowed to a certain extent (up to KMAP_TYPE_NR).
-+ *
-+ *    Nested kmap_local.*() and kunmap_local.*() invocations have to be
-+ *    strictly ordered because the map implementation is stack based.
-+ *
-+ *    kmap_local.*() disables migration, but keeps preemption enabled. It's
-+ *    valid to take pagefaults in a kmap_local region unless the context in
-+ *    which the local kmap is acquired does not allow it for other reasons.
-+ *
-+ *    If a task holding local kmaps is preempted, the maps are removed on
-+ *    context switch and restored when the task comes back on the CPU. As
-+ *    the maps are strictly CPU local it is guaranteed that the task stays
-+ *    on the CPU and the CPU cannot be unplugged until the local kmaps are
-+ *    released.
-+ *
-+ * 3) kmap_atomic.*()/kunmap_atomic.*()
-+ *
-+ *    Based on the same mechanism as kmap local. Atomic kmap disables
-+ *    preemption and pagefaults. Only use if absolutely required, use
-+ *    the corresponding kmap_local variant if possible.
-+ *
-+ * Local and atomic kmaps are faster than kmap/kunmap, but impose
-+ * restrictions. Only use them when required.
-+ *
-+ * For !HIGHMEM enabled systems the kmap flavours are not doing any mapping
-+ * operation and kmap() won't sleep, but the kmap local and atomic variants
-+ * still disable migration resp. pagefaults and preemption.
-  */
- static inline void *kmap_atomic_prot(struct page *page, pgprot_t prot)
- {
--	preempt_disable();
-+	if (IS_ENABLED(CONFIG_PREEMPT_RT))
-+		migrate_disable();
++#ifdef CONFIG_HIGHMEM
++#include <asm/highmem.h>
++
++#ifndef ARCH_HAS_KMAP_FLUSH_TLB
++static inline void kmap_flush_tlb(unsigned long addr) { }
++#endif
++
++#ifndef kmap_prot
++#define kmap_prot PAGE_KERNEL
++#endif
++
++void *kmap_high(struct page *page);
++void kunmap_high(struct page *page);
++void __kmap_flush_unused(void);
++struct page *__kmap_to_page(void *addr);
++
++static inline void *kmap(struct page *page)
++{
++	void *addr;
++
++	might_sleep();
++	if (!PageHighMem(page))
++		addr = page_address(page);
 +	else
-+		preempt_disable();
- 	pagefault_disable();
--	if (!PageHighMem(page))
--		return page_address(page);
--	return kmap_atomic_high_prot(page, prot);
-+	return __kmap_local_page_prot(page, prot);
++		addr = kmap_high(page);
++	kmap_flush_tlb((unsigned long)addr);
++	return addr;
 +}
 +
-+static inline void *kmap_atomic(struct page *page)
++static inline void kunmap(struct page *page)
 +{
-+	return kmap_atomic_prot(page, kmap_prot);
++	might_sleep();
++	if (!PageHighMem(page))
++		return;
++	kunmap_high(page);
 +}
 +
-+static inline void *kmap_atomic_pfn(unsigned long pfn)
++static inline struct page *kmap_to_page(void *addr)
 +{
-+	if (IS_ENABLED(CONFIG_PREEMPT_RT))
-+		migrate_disable();
-+	else
-+		preempt_disable();
-+	pagefault_disable();
-+	return __kmap_local_pfn_prot(pfn, kmap_prot);
++	return __kmap_to_page(addr);
 +}
 +
-+static inline void __kunmap_atomic(void *addr)
++static inline void kmap_flush_unused(void)
 +{
-+	kunmap_local_indexed(addr);
-+}
-+
-+static inline void *kmap_local_page_prot(struct page *page, pgprot_t prot)
-+{
-+	migrate_disable();
-+	return __kmap_local_page_prot(page, prot);
++	__kmap_flush_unused();
 +}
 +
 +static inline void *kmap_local_page(struct page *page)
 +{
-+	return kmap_local_page_prot(page, kmap_prot);
++	return __kmap_local_page_prot(page, kmap_prot);
++}
++
++static inline void *kmap_local_page_prot(struct page *page, pgprot_t prot)
++{
++	return __kmap_local_page_prot(page, prot);
 +}
 +
 +static inline void *kmap_local_pfn(unsigned long pfn)
 +{
-+	migrate_disable();
 +	return __kmap_local_pfn_prot(pfn, kmap_prot);
 +}
 +
 +static inline void __kunmap_local(void *vaddr)
 +{
 +	kunmap_local_indexed(vaddr);
- }
--#define kmap_atomic(page)	kmap_atomic_prot(page, kmap_prot)
- 
- /* declarations for linux/mm/highmem.c */
- unsigned int nr_free_highpages(void);
-@@ -153,74 +251,77 @@ static inline void kunmap(struct page *page)
- 
- static inline void *kmap_atomic(struct page *page)
- {
--	preempt_disable();
++}
++
++static inline void *kmap_atomic(struct page *page)
++{
 +	if (IS_ENABLED(CONFIG_PREEMPT_RT))
 +		migrate_disable();
 +	else
 +		preempt_disable();
- 	pagefault_disable();
- 	return page_address(page);
- }
--#define kmap_atomic_prot(page, prot)	kmap_atomic(page)
- 
--static inline void kunmap_atomic_high(void *addr)
-+static inline void *kmap_atomic_prot(struct page *page, pgprot_t prot)
-+{
-+	return kmap_atomic(page);
++	pagefault_disable();
++	return __kmap_local_page_prot(page, kmap_prot);
 +}
 +
-+static inline void *kmap_atomic_pfn(unsigned long pfn)
-+{
-+	return kmap_atomic(pfn_to_page(pfn));
-+}
-+
-+static inline void __kunmap_local(void *addr)
- {
--	/*
--	 * Mostly nothing to do in the CONFIG_HIGHMEM=n case as kunmap_atomic()
--	 * handles re-enabling faults + preemption
--	 */
- #ifdef ARCH_HAS_FLUSH_ON_KUNMAP
- 	kunmap_flush_on_unmap(addr);
- #endif
- }
- 
--#define kmap_atomic_pfn(pfn)	kmap_atomic(pfn_to_page(pfn))
 +static inline void __kunmap_atomic(void *addr)
 +{
-+	__kunmap_local(addr);
++	kunmap_local_indexed(addr);
++	pagefault_enable();
++	if (IS_ENABLED(CONFIG_PREEMPT_RT))
++		migrate_enable();
++	else
++		preempt_enable();
++}
++
++unsigned int __nr_free_highpages(void);
++extern atomic_long_t _totalhigh_pages;
++
++static inline unsigned int nr_free_highpages(void)
++{
++	return __nr_free_highpages();
++}
++
++static inline unsigned long totalhigh_pages(void)
++{
++	return (unsigned long)atomic_long_read(&_totalhigh_pages);
++}
++
++static inline void totalhigh_pages_inc(void)
++{
++	atomic_long_inc(&_totalhigh_pages);
++}
++
++static inline void totalhigh_pages_add(long count)
++{
++	atomic_long_add(count, &_totalhigh_pages);
++}
++
++#else /* CONFIG_HIGHMEM */
++
++static inline struct page *kmap_to_page(void *addr)
++{
++	return virt_to_page(addr);
++}
++
++static inline void *kmap(struct page *page)
++{
++	might_sleep();
++	return page_address(page);
++}
++
++static inline void kunmap_high(struct page *page) { }
++static inline void kmap_flush_unused(void) { }
++
++static inline void kunmap(struct page *page)
++{
++#ifdef ARCH_HAS_FLUSH_ON_KUNMAP
++	kunmap_flush_on_unmap(page_address(page));
++#endif
 +}
 +
 +static inline void *kmap_local_page(struct page *page)
 +{
-+	migrate_disable();
 +	return page_address(page);
 +}
 +
@@ -5269,11 +6940,333 @@ index 14e6202ce47f1..6ae7483c486af 100644
 +{
 +	return kmap_local_page(pfn_to_page(pfn));
 +}
++
++static inline void __kunmap_local(void *addr)
++{
++#ifdef ARCH_HAS_FLUSH_ON_KUNMAP
++	kunmap_flush_on_unmap(addr);
++#endif
++}
++
++static inline void *kmap_atomic(struct page *page)
++{
++	if (IS_ENABLED(CONFIG_PREEMPT_RT))
++		migrate_disable();
++	else
++		preempt_disable();
++	pagefault_disable();
++	return page_address(page);
++}
++
++static inline void __kunmap_atomic(void *addr)
++{
++#ifdef ARCH_HAS_FLUSH_ON_KUNMAP
++	kunmap_flush_on_unmap(addr);
++#endif
++	pagefault_enable();
++	if (IS_ENABLED(CONFIG_PREEMPT_RT))
++		migrate_enable();
++	else
++		preempt_enable();
++}
++
++static inline unsigned int nr_free_highpages(void) { return 0; }
++static inline unsigned long totalhigh_pages(void) { return 0UL; }
++
++#endif /* CONFIG_HIGHMEM */
++
++/*
++ * Prevent people trying to call kunmap_atomic() as if it were kunmap()
++ * kunmap_atomic() should get the return value of kmap_atomic, not the page.
++ */
++#define kunmap_atomic(__addr)					\
++do {								\
++	BUILD_BUG_ON(__same_type((__addr), struct page *));	\
++	__kunmap_atomic(__addr);				\
++} while (0)
++
++#define kunmap_local(__addr)					\
++do {								\
++	BUILD_BUG_ON(__same_type((__addr), struct page *));	\
++	__kunmap_local(__addr);					\
++} while (0)
++
++#endif
+diff --git a/include/linux/highmem.h b/include/linux/highmem.h
+index 14e6202ce47f1..f597830f26b40 100644
+--- a/include/linux/highmem.h
++++ b/include/linux/highmem.h
+@@ -11,6 +11,119 @@
  
- #define kmap_flush_unused()	do {} while(0)
+ #include <asm/cacheflush.h>
  
- #endif /* CONFIG_HIGHMEM */
++#include "highmem-internal.h"
++
++/**
++ * kmap - Map a page for long term usage
++ * @page:	Pointer to the page to be mapped
++ *
++ * Returns: The virtual address of the mapping
++ *
++ * Can only be invoked from preemptible task context because on 32bit
++ * systems with CONFIG_HIGHMEM enabled this function might sleep.
++ *
++ * For systems with CONFIG_HIGHMEM=n and for pages in the low memory area
++ * this returns the virtual address of the direct kernel mapping.
++ *
++ * The returned virtual address is globally visible and valid up to the
++ * point where it is unmapped via kunmap(). The pointer can be handed to
++ * other contexts.
++ *
++ * For highmem pages on 32bit systems this can be slow as the mapping space
++ * is limited and protected by a global lock. In case that there is no
++ * mapping slot available the function blocks until a slot is released via
++ * kunmap().
++ */
++static inline void *kmap(struct page *page);
++
++/**
++ * kunmap - Unmap the virtual address mapped by kmap()
++ * @addr:	Virtual address to be unmapped
++ *
++ * Counterpart to kmap(). A NOOP for CONFIG_HIGHMEM=n and for mappings of
++ * pages in the low memory area.
++ */
++static inline void kunmap(struct page *page);
++
++/**
++ * kmap_to_page - Get the page for a kmap'ed address
++ * @addr:	The address to look up
++ *
++ * Returns: The page which is mapped to @addr.
++ */
++static inline struct page *kmap_to_page(void *addr);
++
++/**
++ * kmap_flush_unused - Flush all unused kmap mappings in order to
++ *		       remove stray mappings
++ */
++static inline void kmap_flush_unused(void);
++
++/**
++ * kmap_local_page - Map a page for temporary usage
++ * @page:	Pointer to the page to be mapped
++ *
++ * Returns: The virtual address of the mapping
++ *
++ * Can be invoked from any context.
++ *
++ * Requires careful handling when nesting multiple mappings because the map
++ * management is stack based. The unmap has to be in the reverse order of
++ * the map operation:
++ *
++ * addr1 = kmap_local_page(page1);
++ * addr2 = kmap_local_page(page2);
++ * ...
++ * kunmap_local(addr2);
++ * kunmap_local(addr1);
++ *
++ * Unmapping addr1 before addr2 is invalid and causes malfunction.
++ *
++ * Contrary to kmap() mappings the mapping is only valid in the context of
++ * the caller and cannot be handed to other contexts.
++ *
++ * On CONFIG_HIGHMEM=n kernels and for low memory pages this returns the
++ * virtual address of the direct mapping. Only real highmem pages are
++ * temporarily mapped.
++ *
++ * While it is significantly faster than kmap() for the higmem case it
++ * comes with restrictions about the pointer validity. Only use when really
++ * necessary.
++ *
++ * On HIGHMEM enabled systems mapping a highmem page has the side effect of
++ * disabling migration in order to keep the virtual address stable across
++ * preemption. No caller of kmap_local_page() can rely on this side effect.
++ */
++static inline void *kmap_local_page(struct page *page);
++
++/**
++ * kmap_atomic - Atomically map a page for temporary usage - Deprecated!
++ * @page:	Pointer to the page to be mapped
++ *
++ * Returns: The virtual address of the mapping
++ *
++ * Effectively a wrapper around kmap_local_page() which disables pagefaults
++ * and preemption.
++ *
++ * Do not use in new code. Use kmap_local_page() instead.
++ */
++static inline void *kmap_atomic(struct page *page);
++
++/**
++ * kunmap_atomic - Unmap the virtual address mapped by kmap_atomic()
++ * @addr:	Virtual address to be unmapped
++ *
++ * Counterpart to kmap_atomic().
++ *
++ * Effectively a wrapper around kunmap_local() which additionally undoes
++ * the side effects of kmap_atomic(), i.e. reenabling pagefaults and
++ * preemption.
++ */
++
++/* Highmem related interfaces for management code */
++static inline unsigned int nr_free_highpages(void);
++static inline unsigned long totalhigh_pages(void);
++
+ #ifndef ARCH_HAS_FLUSH_ANON_PAGE
+ static inline void flush_anon_page(struct vm_area_struct *vma, struct page *page, unsigned long vmaddr)
+ {
+@@ -29,199 +142,6 @@ static inline void invalidate_kernel_vmap_range(void *vaddr, int size)
+ }
+ #endif
  
+-#include <asm/kmap_types.h>
+-
+-#ifdef CONFIG_HIGHMEM
+-extern void *kmap_atomic_high_prot(struct page *page, pgprot_t prot);
+-extern void kunmap_atomic_high(void *kvaddr);
+-#include <asm/highmem.h>
+-
+-#ifndef ARCH_HAS_KMAP_FLUSH_TLB
+-static inline void kmap_flush_tlb(unsigned long addr) { }
+-#endif
+-
+-#ifndef kmap_prot
+-#define kmap_prot PAGE_KERNEL
+-#endif
+-
+-void *kmap_high(struct page *page);
+-static inline void *kmap(struct page *page)
+-{
+-	void *addr;
+-
+-	might_sleep();
+-	if (!PageHighMem(page))
+-		addr = page_address(page);
+-	else
+-		addr = kmap_high(page);
+-	kmap_flush_tlb((unsigned long)addr);
+-	return addr;
+-}
+-
+-void kunmap_high(struct page *page);
+-
+-static inline void kunmap(struct page *page)
+-{
+-	might_sleep();
+-	if (!PageHighMem(page))
+-		return;
+-	kunmap_high(page);
+-}
+-
+-/*
+- * kmap_atomic/kunmap_atomic is significantly faster than kmap/kunmap because
+- * no global lock is needed and because the kmap code must perform a global TLB
+- * invalidation when the kmap pool wraps.
+- *
+- * However when holding an atomic kmap it is not legal to sleep, so atomic
+- * kmaps are appropriate for short, tight code paths only.
+- *
+- * The use of kmap_atomic/kunmap_atomic is discouraged - kmap/kunmap
+- * gives a more generic (and caching) interface. But kmap_atomic can
+- * be used in IRQ contexts, so in some (very limited) cases we need
+- * it.
+- */
+-static inline void *kmap_atomic_prot(struct page *page, pgprot_t prot)
+-{
+-	preempt_disable();
+-	pagefault_disable();
+-	if (!PageHighMem(page))
+-		return page_address(page);
+-	return kmap_atomic_high_prot(page, prot);
+-}
+-#define kmap_atomic(page)	kmap_atomic_prot(page, kmap_prot)
+-
+-/* declarations for linux/mm/highmem.c */
+-unsigned int nr_free_highpages(void);
+-extern atomic_long_t _totalhigh_pages;
+-static inline unsigned long totalhigh_pages(void)
+-{
+-	return (unsigned long)atomic_long_read(&_totalhigh_pages);
+-}
+-
+-static inline void totalhigh_pages_inc(void)
+-{
+-	atomic_long_inc(&_totalhigh_pages);
+-}
+-
+-static inline void totalhigh_pages_dec(void)
+-{
+-	atomic_long_dec(&_totalhigh_pages);
+-}
+-
+-static inline void totalhigh_pages_add(long count)
+-{
+-	atomic_long_add(count, &_totalhigh_pages);
+-}
+-
+-static inline void totalhigh_pages_set(long val)
+-{
+-	atomic_long_set(&_totalhigh_pages, val);
+-}
+-
+-void kmap_flush_unused(void);
+-
+-struct page *kmap_to_page(void *addr);
+-
+-#else /* CONFIG_HIGHMEM */
+-
+-static inline unsigned int nr_free_highpages(void) { return 0; }
+-
+-static inline struct page *kmap_to_page(void *addr)
+-{
+-	return virt_to_page(addr);
+-}
+-
+-static inline unsigned long totalhigh_pages(void) { return 0UL; }
+-
+-static inline void *kmap(struct page *page)
+-{
+-	might_sleep();
+-	return page_address(page);
+-}
+-
+-static inline void kunmap_high(struct page *page)
+-{
+-}
+-
+-static inline void kunmap(struct page *page)
+-{
+-#ifdef ARCH_HAS_FLUSH_ON_KUNMAP
+-	kunmap_flush_on_unmap(page_address(page));
+-#endif
+-}
+-
+-static inline void *kmap_atomic(struct page *page)
+-{
+-	preempt_disable();
+-	pagefault_disable();
+-	return page_address(page);
+-}
+-#define kmap_atomic_prot(page, prot)	kmap_atomic(page)
+-
+-static inline void kunmap_atomic_high(void *addr)
+-{
+-	/*
+-	 * Mostly nothing to do in the CONFIG_HIGHMEM=n case as kunmap_atomic()
+-	 * handles re-enabling faults + preemption
+-	 */
+-#ifdef ARCH_HAS_FLUSH_ON_KUNMAP
+-	kunmap_flush_on_unmap(addr);
+-#endif
+-}
+-
+-#define kmap_atomic_pfn(pfn)	kmap_atomic(pfn_to_page(pfn))
+-
+-#define kmap_flush_unused()	do {} while(0)
+-
+-#endif /* CONFIG_HIGHMEM */
+-
 -#if defined(CONFIG_HIGHMEM) || defined(CONFIG_X86_32)
 -
 -DECLARE_PER_CPU(int, __kmap_atomic_idx);
@@ -5307,38 +7300,24 @@ index 14e6202ce47f1..6ae7483c486af 100644
 -
 -#endif
 -
- /*
-  * Prevent people trying to call kunmap_atomic() as if it were kunmap()
-  * kunmap_atomic() should get the return value of kmap_atomic, not the page.
-  */
+-/*
+- * Prevent people trying to call kunmap_atomic() as if it were kunmap()
+- * kunmap_atomic() should get the return value of kmap_atomic, not the page.
+- */
 -#define kunmap_atomic(addr)                                     \
 -do {                                                            \
 -	BUILD_BUG_ON(__same_type((addr), struct page *));       \
 -	kunmap_atomic_high(addr);                                  \
 -	pagefault_enable();                                     \
 -	preempt_enable();                                       \
-+#define kunmap_atomic(__addr)					\
-+do {								\
-+	BUILD_BUG_ON(__same_type((__addr), struct page *));	\
-+	__kunmap_atomic(__addr);				\
-+	pagefault_enable();					\
-+	if (IS_ENABLED(CONFIG_PREEMPT_RT))			\
-+		migrate_enable();				\
-+	else							\
-+		preempt_enable();				\
- } while (0)
- 
-+#define kunmap_local(__addr)					\
-+do {								\
-+	BUILD_BUG_ON(__same_type((__addr), struct page *));	\
-+	__kunmap_local(__addr);					\
-+	migrate_enable();					\
-+} while (0)
- 
+-} while (0)
+-
+-
  /* when CONFIG_HIGHMEM is not set these will be plain clear/copy_page */
  #ifndef clear_user_highpage
+ static inline void clear_user_highpage(struct page *page, unsigned long vaddr)
 diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index ee8299eb1f524..fa0a1ec9cb691 100644
+index ee8299eb1f524..e65df3c95bc55 100644
 --- a/include/linux/interrupt.h
 +++ b/include/linux/interrupt.h
 @@ -560,7 +560,7 @@ struct softirq_action
@@ -5359,11 +7338,10 @@ index ee8299eb1f524..fa0a1ec9cb691 100644
  static inline int tasklet_trylock(struct tasklet_struct *t)
  {
  	return !test_and_set_bit(TASKLET_STATE_RUN, &(t)->state);
-@@ -665,15 +665,11 @@ static inline void tasklet_unlock(struct tasklet_struct *t)
- 	smp_mb__before_atomic();
+@@ -666,14 +666,11 @@ static inline void tasklet_unlock(struct tasklet_struct *t)
  	clear_bit(TASKLET_STATE_RUN, &(t)->state);
  }
--
+ 
 -static inline void tasklet_unlock_wait(struct tasklet_struct *t)
 -{
 -	while (test_bit(TASKLET_STATE_RUN, &(t)->state)) { barrier(); }
@@ -5380,53 +7358,38 @@ index ee8299eb1f524..fa0a1ec9cb691 100644
  
  extern void __tasklet_schedule(struct tasklet_struct *t);
 diff --git a/include/linux/io-mapping.h b/include/linux/io-mapping.h
-index c75e4d3d8833f..2b69e2e793a41 100644
+index c75e4d3d8833f..4bb8223f2f822 100644
 --- a/include/linux/io-mapping.h
 +++ b/include/linux/io-mapping.h
-@@ -69,13 +69,40 @@ io_mapping_map_atomic_wc(struct io_mapping *mapping,
+@@ -60,22 +60,20 @@ io_mapping_fini(struct io_mapping *mapping)
+ 	iomap_free(mapping->base, mapping->size);
+ }
+ 
+-/* Atomic map/unmap */
++/* Temporary mappings which are only valid in the current context */
+ static inline void __iomem *
+-io_mapping_map_atomic_wc(struct io_mapping *mapping,
+-			 unsigned long offset)
++io_mapping_map_local_wc(struct io_mapping *mapping, unsigned long offset)
+ {
+ 	resource_size_t phys_addr;
  
  	BUG_ON(offset >= mapping->size);
  	phys_addr = mapping->base + offset;
 -	return iomap_atomic_prot_pfn(PHYS_PFN(phys_addr), mapping->prot);
-+	if (IS_ENABLED(CONFIG_PREEMPT_RT))
-+		migrate_disable();
-+	else
-+		preempt_disable();
-+	pagefault_disable();
 +	return __iomap_local_pfn_prot(PHYS_PFN(phys_addr), mapping->prot);
  }
  
- static inline void
- io_mapping_unmap_atomic(void __iomem *vaddr)
+-static inline void
+-io_mapping_unmap_atomic(void __iomem *vaddr)
++static inline void io_mapping_unmap_local(void __iomem *vaddr)
  {
 -	iounmap_atomic(vaddr);
 +	kunmap_local_indexed((void __force *)vaddr);
-+	pagefault_enable();
-+	if (IS_ENABLED(CONFIG_PREEMPT_RT))
-+		migrate_enable();
-+	else
-+		preempt_enable();
-+}
-+
-+static inline void __iomem *
-+io_mapping_map_local_wc(struct io_mapping *mapping, unsigned long offset)
-+{
-+	resource_size_t phys_addr;
-+
-+	BUG_ON(offset >= mapping->size);
-+	phys_addr = mapping->base + offset;
-+	migrate_disable();
-+	return __iomap_local_pfn_prot(PHYS_PFN(phys_addr), mapping->prot);
-+}
-+
-+static inline void io_mapping_unmap_local(void __iomem *vaddr)
-+{
-+	kunmap_local_indexed((void __force *)vaddr);
-+	migrate_enable();
  }
  
  static inline void __iomem *
-@@ -97,7 +124,7 @@ io_mapping_unmap(void __iomem *vaddr)
+@@ -97,7 +95,7 @@ io_mapping_unmap(void __iomem *vaddr)
  	iounmap(vaddr);
  }
  
@@ -5435,47 +7398,70 @@ index c75e4d3d8833f..2b69e2e793a41 100644
  
  #include <linux/uaccess.h>
  
-@@ -149,7 +176,10 @@ static inline void __iomem *
- io_mapping_map_atomic_wc(struct io_mapping *mapping,
- 			 unsigned long offset)
+@@ -144,25 +142,19 @@ io_mapping_unmap(void __iomem *vaddr)
+ {
+ }
+ 
+-/* Atomic map/unmap */
++/* Temporary mappings which are only valid in the current context */
+ static inline void __iomem *
+-io_mapping_map_atomic_wc(struct io_mapping *mapping,
+-			 unsigned long offset)
++io_mapping_map_local_wc(struct io_mapping *mapping, unsigned long offset)
  {
 -	preempt_disable();
-+	if (IS_ENABLED(CONFIG_PREEMPT_RT))
-+		migrate_disable();
-+	else
-+		preempt_disable();
- 	pagefault_disable();
+-	pagefault_disable();
  	return io_mapping_map_wc(mapping, offset, PAGE_SIZE);
  }
-@@ -159,10 +189,26 @@ io_mapping_unmap_atomic(void __iomem *vaddr)
+ 
+-static inline void
+-io_mapping_unmap_atomic(void __iomem *vaddr)
++static inline void io_mapping_unmap_local(void __iomem *vaddr)
  {
  	io_mapping_unmap(vaddr);
- 	pagefault_enable();
+-	pagefault_enable();
 -	preempt_enable();
-+	if (IS_ENABLED(CONFIG_PREEMPT_RT))
-+		migrate_enable();
-+	else
-+		preempt_enable();
  }
  
 -#endif /* HAVE_ATOMIC_IOMAP */
-+static inline void __iomem *
-+io_mapping_map_local_wc(struct io_mapping *mapping, unsigned long offset)
-+{
-+	migrate_disable();
-+	return io_mapping_map_wc(mapping, offset, PAGE_SIZE);
-+}
-+
-+static inline void io_mapping_unmap_local(void __iomem *vaddr)
-+{
-+	io_mapping_unmap(vaddr);
-+	migrate_enable();
-+}
-+
 +#endif /* !HAVE_ATOMIC_IOMAP */
  
  static inline struct io_mapping *
  io_mapping_create_wc(resource_size_t base,
+diff --git a/include/linux/irq_cpustat.h b/include/linux/irq_cpustat.h
+deleted file mode 100644
+index 6e8895cd4d926..0000000000000
+--- a/include/linux/irq_cpustat.h
++++ /dev/null
+@@ -1,28 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 */
+-#ifndef __irq_cpustat_h
+-#define __irq_cpustat_h
+-
+-/*
+- * Contains default mappings for irq_cpustat_t, used by almost every
+- * architecture.  Some arch (like s390) have per cpu hardware pages and
+- * they define their own mappings for irq_stat.
+- *
+- * Keith Owens <kaos@ocs.com.au> July 2000.
+- */
+-
+-
+-/*
+- * Simple wrappers reducing source bloat.  Define all irq_stat fields
+- * here, even ones that are arch dependent.  That way we get common
+- * definitions instead of differing sets for each arch.
+- */
+-
+-#ifndef __ARCH_IRQ_STAT
+-DECLARE_PER_CPU_ALIGNED(irq_cpustat_t, irq_stat);	/* defined in asm/hardirq.h */
+-#define __IRQ_STAT(cpu, member)	(per_cpu(irq_stat.member, cpu))
+-#endif
+-
+-/* arch dependent irq_stat fields */
+-#define nmi_count(cpu)		__IRQ_STAT((cpu), __nmi_count)	/* i386 */
+-
+-#endif	/* __irq_cpustat_h */
 diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
 index 30823780c1928..f941f2d7d71ce 100644
 --- a/include/linux/irq_work.h
@@ -6042,46 +8028,63 @@ index fa10acb8d6a42..2f86f84e9fc1a 100644
  #include <linux/refcount.h>
  
 diff --git a/include/linux/preempt.h b/include/linux/preempt.h
-index 7d9c1c0e149c0..934b8e3cba872 100644
+index 7d9c1c0e149c0..af39859f02ee1 100644
 --- a/include/linux/preempt.h
 +++ b/include/linux/preempt.h
-@@ -77,10 +77,14 @@
+@@ -77,31 +77,37 @@
  /* preempt_count() and related functions, depends on PREEMPT_NEED_RESCHED */
  #include <asm/preempt.h>
  
--#define hardirq_count()	(preempt_count() & HARDIRQ_MASK)
++#define nmi_count()	(preempt_count() & NMI_MASK)
+ #define hardirq_count()	(preempt_count() & HARDIRQ_MASK)
 -#define softirq_count()	(preempt_count() & SOFTIRQ_MASK)
 -#define irq_count()	(preempt_count() & (HARDIRQ_MASK | SOFTIRQ_MASK \
 -				 | NMI_MASK))
-+#define pc_nmi_count()		(preempt_count() & NMI_MASK)
-+#define hardirq_count()		(preempt_count() & HARDIRQ_MASK)
 +#ifdef CONFIG_PREEMPT_RT
 +# define softirq_count()	(current->softirq_disable_cnt & SOFTIRQ_MASK)
 +#else
 +# define softirq_count()	(preempt_count() & SOFTIRQ_MASK)
 +#endif
-+#define irq_count()		(pc_nmi_count() | hardirq_count() | softirq_count())
++#define irq_count()	(nmi_count() | hardirq_count() | softirq_count())
  
  /*
-  * Are we doing bottom half or hardware interrupt processing?
-@@ -95,13 +99,12 @@
-  * Note: due to the BH disabled confusion: in_softirq(),in_interrupt() really
-  *       should not be used in new code.
+- * Are we doing bottom half or hardware interrupt processing?
++ * Macros to retrieve the current execution context:
+  *
+- * in_irq()       - We're in (hard) IRQ context
++ * in_nmi()		- We're in NMI context
++ * in_hardirq()		- We're in hard IRQ context
++ * in_serving_softirq()	- We're in softirq context
++ * in_task()		- We're in task context
++ */
++#define in_nmi()		(nmi_count())
++#define in_hardirq()		(hardirq_count())
++#define in_serving_softirq()	(softirq_count() & SOFTIRQ_OFFSET)
++#define in_task()		(!(in_nmi() | in_hardirq() | in_serving_softirq()))
++
++/*
++ * The following macros are deprecated and should not be used in new code:
++ * in_irq()       - Obsolete version of in_hardirq()
+  * in_softirq()   - We have BH disabled, or are processing softirqs
+  * in_interrupt() - We're in NMI,IRQ,SoftIRQ context or have BH disabled
+- * in_serving_softirq() - We're in softirq context
+- * in_nmi()       - We're in NMI context
+- * in_task()	  - We're in task context
+- *
+- * Note: due to the BH disabled confusion: in_softirq(),in_interrupt() really
+- *       should not be used in new code.
   */
-+#define in_nmi()		(pc_nmi_count())
  #define in_irq()		(hardirq_count())
--#define in_softirq()		(softirq_count())
+ #define in_softirq()		(softirq_count())
  #define in_interrupt()		(irq_count())
-+#define in_softirq()		(softirq_count())
- #define in_serving_softirq()	(softirq_count() & SOFTIRQ_OFFSET)
+-#define in_serving_softirq()	(softirq_count() & SOFTIRQ_OFFSET)
 -#define in_nmi()		(preempt_count() & NMI_MASK)
 -#define in_task()		(!(preempt_count() & \
 -				   (NMI_MASK | HARDIRQ_MASK | SOFTIRQ_OFFSET)))
-+#define in_task()		(!(irq_count() & (NMI_MASK | HARDIRQ_MASK | SOFTIRQ_OFFSET)))
  
  /*
   * The preempt_count offset after preempt_disable();
-@@ -115,7 +118,11 @@
+@@ -115,7 +121,11 @@
  /*
   * The preempt_count offset after spin_lock()
   */
@@ -6093,7 +8096,7 @@ index 7d9c1c0e149c0..934b8e3cba872 100644
  
  /*
   * The preempt_count offset needed for things like:
-@@ -164,6 +171,20 @@ extern void preempt_count_sub(int val);
+@@ -164,6 +174,20 @@ extern void preempt_count_sub(int val);
  #define preempt_count_inc() preempt_count_add(1)
  #define preempt_count_dec() preempt_count_sub(1)
  
@@ -6114,7 +8117,7 @@ index 7d9c1c0e149c0..934b8e3cba872 100644
  #ifdef CONFIG_PREEMPT_COUNT
  
  #define preempt_disable() \
-@@ -172,13 +193,25 @@ do { \
+@@ -172,13 +196,25 @@ do { \
  	barrier(); \
  } while (0)
  
@@ -6141,7 +8144,7 @@ index 7d9c1c0e149c0..934b8e3cba872 100644
  
  #define preemptible()	(preempt_count() == 0 && !irqs_disabled())
  
-@@ -203,6 +236,18 @@ do { \
+@@ -203,6 +239,18 @@ do { \
  		__preempt_schedule(); \
  } while (0)
  
@@ -6160,7 +8163,7 @@ index 7d9c1c0e149c0..934b8e3cba872 100644
  #else /* !CONFIG_PREEMPTION */
  #define preempt_enable() \
  do { \
-@@ -210,6 +255,12 @@ do { \
+@@ -210,6 +258,12 @@ do { \
  	preempt_count_dec(); \
  } while (0)
  
@@ -6173,15 +8176,20 @@ index 7d9c1c0e149c0..934b8e3cba872 100644
  #define preempt_enable_notrace() \
  do { \
  	barrier(); \
-@@ -248,6 +299,7 @@ do { \
+@@ -248,8 +302,12 @@ do { \
  #define preempt_disable_notrace()		barrier()
  #define preempt_enable_no_resched_notrace()	barrier()
  #define preempt_enable_notrace()		barrier()
 +#define preempt_check_resched_rt()		barrier()
  #define preemptible()				0
  
++#define preempt_lazy_disable()			barrier()
++#define preempt_lazy_enable()			barrier()
++
  #endif /* CONFIG_PREEMPT_COUNT */
-@@ -268,10 +320,22 @@ do { \
+ 
+ #ifdef MODULE
+@@ -268,10 +326,22 @@ do { \
  } while (0)
  #define preempt_fold_need_resched() \
  do { \
@@ -6205,7 +8213,7 @@ index 7d9c1c0e149c0..934b8e3cba872 100644
  #ifdef CONFIG_PREEMPT_NOTIFIERS
  
  struct preempt_notifier;
-@@ -322,34 +386,78 @@ static inline void preempt_notifier_init(struct preempt_notifier *notifier,
+@@ -322,34 +392,78 @@ static inline void preempt_notifier_init(struct preempt_notifier *notifier,
  
  #endif
  
@@ -6887,14 +8895,14 @@ index 25e3fde856178..9101367852bc9 100644
   * lock for reading
   */
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 063cd120b4593..ef4b5a270e2f4 100644
+index 063cd120b4593..30f4405dd3924 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
 @@ -34,6 +34,7 @@
  #include <linux/rseq.h>
  #include <linux/seqlock.h>
  #include <linux/kcsan.h>
-+#include <asm/kmap_types.h>
++#include <asm/kmap_size.h>
  
  /* task_struct member predeclarations (sorted alphabetically): */
  struct audit_context;
@@ -6938,7 +8946,7 @@ index 063cd120b4593..ef4b5a270e2f4 100644
 +struct kmap_ctrl {
 +#ifdef CONFIG_KMAP_LOCAL
 +	int				idx;
-+	pte_t				pteval[KM_TYPE_NR];
++	pte_t				pteval[KM_MAX_IDX];
 +#endif
 +};
 +
@@ -7236,10 +9244,10 @@ index a5a5d1d4d7b1d..0470d1582b09a 100644
  	unsigned char huge;	    /* Whether to try for hugepages */
  	kuid_t uid;		    /* Mount uid for root directory */
 diff --git a/include/linux/signal.h b/include/linux/signal.h
-index 7bbc0e9cf0847..3030d984a1442 100644
+index b256f9c65661c..ebf6c515a7b20 100644
 --- a/include/linux/signal.h
 +++ b/include/linux/signal.h
-@@ -263,6 +263,7 @@ static inline void init_sigpending(struct sigpending *sig)
+@@ -265,6 +265,7 @@ static inline void init_sigpending(struct sigpending *sig)
  }
  
  extern void flush_sigqueue(struct sigpending *queue);
@@ -8589,7 +10597,7 @@ index 6ff2578ecf17d..fa535eaa48265 100644
  	[CPUHP_AP_SMPBOOT_THREADS] = {
  		.name			= "smpboot/threads:online",
 diff --git a/kernel/entry/common.c b/kernel/entry/common.c
-index 2b8366693d5c1..8810c09b29f43 100644
+index e9e2df3f3f9ee..c9e7db5609748 100644
 --- a/kernel/entry/common.c
 +++ b/kernel/entry/common.c
 @@ -2,6 +2,7 @@
@@ -8650,7 +10658,7 @@ index 87a2d515de0d5..25373045fdb8f 100644
  	spin_unlock(&sighand->siglock);
  
 diff --git a/kernel/fork.c b/kernel/fork.c
-index 32083db7a2a23..833198db52f1c 100644
+index 6d266388d3804..49afc065fd09d 100644
 --- a/kernel/fork.c
 +++ b/kernel/fork.c
 @@ -42,6 +42,7 @@
@@ -8728,7 +10736,7 @@ index 32083db7a2a23..833198db52f1c 100644
  	p->utime = p->stime = p->gtime = 0;
  #ifdef CONFIG_ARCH_HAS_SCALED_CPUTIME
 diff --git a/kernel/futex.c b/kernel/futex.c
-index be68ac0d49adf..a95d464c91ade 100644
+index ac328874f6e58..683140236f3e9 100644
 --- a/kernel/futex.c
 +++ b/kernel/futex.c
 @@ -1480,6 +1480,7 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_pi_state *pi_
@@ -8739,7 +10747,7 @@ index be68ac0d49adf..a95d464c91ade 100644
  	int ret = 0;
  
  	new_owner = rt_mutex_next_owner(&pi_state->pi_mutex);
-@@ -1539,13 +1540,13 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_pi_state *pi_
+@@ -1541,13 +1542,13 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_pi_state *pi_
  	pi_state->owner = new_owner;
  	raw_spin_unlock(&new_owner->pi_lock);
  
@@ -8756,7 +10764,7 @@ index be68ac0d49adf..a95d464c91ade 100644
  
  	return ret;
  }
-@@ -2146,6 +2147,16 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
+@@ -2148,6 +2149,16 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
  				 */
  				requeue_pi_wake_futex(this, &key2, hb2);
  				continue;
@@ -8773,7 +10781,7 @@ index be68ac0d49adf..a95d464c91ade 100644
  			} else if (ret) {
  				/*
  				 * rt_mutex_start_proxy_lock() detected a
-@@ -2831,7 +2842,7 @@ static int futex_lock_pi(u32 __user *uaddr, unsigned int flags,
+@@ -2845,7 +2856,7 @@ static int futex_lock_pi(u32 __user *uaddr, unsigned int flags,
  		goto no_block;
  	}
  
@@ -8782,7 +10790,7 @@ index be68ac0d49adf..a95d464c91ade 100644
  
  	/*
  	 * On PREEMPT_RT_FULL, when hb->lock becomes an rt_mutex, we must not
-@@ -3172,7 +3183,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+@@ -3186,7 +3197,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
  	struct hrtimer_sleeper timeout, *to;
  	struct futex_pi_state *pi_state = NULL;
  	struct rt_mutex_waiter rt_waiter;
@@ -8791,7 +10799,7 @@ index be68ac0d49adf..a95d464c91ade 100644
  	union futex_key key2 = FUTEX_KEY_INIT;
  	struct futex_q q = futex_q_init;
  	int res, ret;
-@@ -3193,7 +3204,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+@@ -3207,7 +3218,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
  	 * The waiter is allocated on our stack, manipulated by the requeue
  	 * code while we sleep on uaddr.
  	 */
@@ -8800,7 +10808,7 @@ index be68ac0d49adf..a95d464c91ade 100644
  
  	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, FUTEX_WRITE);
  	if (unlikely(ret != 0))
-@@ -3224,20 +3235,55 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+@@ -3238,20 +3249,55 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
  	/* Queue the futex_q, drop the hb lock, wait for wakeup. */
  	futex_wait_queue_me(hb, &q, to);
  
@@ -8867,7 +10875,7 @@ index be68ac0d49adf..a95d464c91ade 100644
  
  	/* Check if the requeue code acquired the second futex for us. */
  	if (!q.rt_waiter) {
-@@ -3246,7 +3292,8 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+@@ -3260,7 +3306,8 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
  		 * did a lock-steal - fix up the PI-state in that case.
  		 */
  		if (q.pi_state && (q.pi_state->owner != current)) {
@@ -8877,7 +10885,7 @@ index be68ac0d49adf..a95d464c91ade 100644
  			ret = fixup_pi_state_owner(uaddr2, &q, current);
  			if (ret && rt_mutex_owner(&q.pi_state->pi_mutex) == current) {
  				pi_state = q.pi_state;
-@@ -3257,7 +3304,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+@@ -3271,7 +3318,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
  			 * the requeue_pi() code acquired for us.
  			 */
  			put_pi_state(q.pi_state);
@@ -8886,7 +10894,7 @@ index be68ac0d49adf..a95d464c91ade 100644
  		}
  	} else {
  		struct rt_mutex *pi_mutex;
-@@ -3271,7 +3318,8 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+@@ -3285,7 +3332,8 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
  		pi_mutex = &q.pi_state->pi_mutex;
  		ret = rt_mutex_wait_proxy_lock(pi_mutex, to, &rt_waiter);
  
@@ -8919,10 +10927,19 @@ index 762a928e18f92..7929fcdb78174 100644
  	if (!noirqdebug)
  		note_interrupt(desc, retval);
 diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index c460e0496006e..67dc04573ae35 100644
+index c460e0496006e..ef4c1343bd0ca 100644
 --- a/kernel/irq/manage.c
 +++ b/kernel/irq/manage.c
-@@ -1175,6 +1175,12 @@ static int irq_thread(void *data)
+@@ -1155,6 +1155,8 @@ static int irq_thread(void *data)
+ 	irqreturn_t (*handler_fn)(struct irq_desc *desc,
+ 			struct irqaction *action);
+ 
++	sched_set_fifo(current);
++
+ 	if (force_irqthreads && test_bit(IRQTF_FORCED_THREAD,
+ 					&action->thread_flags))
+ 		handler_fn = irq_forced_thread_fn;
+@@ -1175,6 +1177,12 @@ static int irq_thread(void *data)
  		if (action_ret == IRQ_WAKE_THREAD)
  			irq_wake_secondary(desc, action);
  
@@ -8935,6 +10952,15 @@ index c460e0496006e..67dc04573ae35 100644
  		wake_threads_waitq(desc);
  	}
  
+@@ -1320,8 +1328,6 @@ setup_irq_thread(struct irqaction *new, unsigned int irq, bool secondary)
+ 	if (IS_ERR(t))
+ 		return PTR_ERR(t);
+ 
+-	sched_set_fifo(t);
+-
+ 	/*
+ 	 * We keep the reference to the task struct even if
+ 	 * the thread dies to avoid that the interrupt code
 @@ -2711,7 +2717,7 @@ EXPORT_SYMBOL_GPL(irq_get_irqchip_state);
   *	This call sets the internal irqchip state of an interrupt,
   *	depending on the value of @which.
@@ -9127,6 +11153,54 @@ index 35859da8bd4f7..dfff31ed644a6 100644
  #endif
  	NULL
  };
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index 933a625621b8d..4a31127c6efbf 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -243,6 +243,7 @@ EXPORT_SYMBOL_GPL(kthread_parkme);
+ 
+ static int kthread(void *_create)
+ {
++	static const struct sched_param param = { .sched_priority = 0 };
+ 	/* Copy data: it's on kthread's stack */
+ 	struct kthread_create_info *create = _create;
+ 	int (*threadfn)(void *data) = create->threadfn;
+@@ -273,6 +274,13 @@ static int kthread(void *_create)
+ 	init_completion(&self->parked);
+ 	current->vfork_done = &self->exited;
+ 
++	/*
++	 * The new thread inherited kthreadd's priority and CPU mask. Reset
++	 * back to default in case they have been changed.
++	 */
++	sched_setscheduler_nocheck(current, SCHED_NORMAL, &param);
++	set_cpus_allowed_ptr(current, housekeeping_cpumask(HK_FLAG_KTHREAD));
++
+ 	/* OK, tell user we're spawned, wait for stop or wakeup */
+ 	__set_current_state(TASK_UNINTERRUPTIBLE);
+ 	create->result = current;
+@@ -370,7 +378,6 @@ struct task_struct *__kthread_create_on_node(int (*threadfn)(void *data),
+ 	}
+ 	task = create->result;
+ 	if (!IS_ERR(task)) {
+-		static const struct sched_param param = { .sched_priority = 0 };
+ 		char name[TASK_COMM_LEN];
+ 
+ 		/*
+@@ -379,13 +386,6 @@ struct task_struct *__kthread_create_on_node(int (*threadfn)(void *data),
+ 		 */
+ 		vsnprintf(name, sizeof(name), namefmt, args);
+ 		set_task_comm(task, name);
+-		/*
+-		 * root may have changed our (kthreadd's) priority or CPU mask.
+-		 * The kernel thread should not inherit these properties.
+-		 */
+-		sched_setscheduler_nocheck(task, SCHED_NORMAL, &param);
+-		set_cpus_allowed_ptr(task,
+-				     housekeeping_cpumask(HK_FLAG_KTHREAD));
+ 	}
+ 	kfree(create);
+ 	return task;
 diff --git a/kernel/locking/Makefile b/kernel/locking/Makefile
 index 6d11cfb9b41f2..c7fbf737e16ea 100644
 --- a/kernel/locking/Makefile
@@ -9167,10 +11241,10 @@ index 6d11cfb9b41f2..c7fbf737e16ea 100644
  obj-$(CONFIG_LOCK_TORTURE_TEST) += locktorture.o
  obj-$(CONFIG_WW_MUTEX_SELFTEST) += test-ww_mutex.o
 diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
-index 3e99dfef84084..fd8c0623f3f3a 100644
+index b71ad8d9f1c9a..f0ad863d4e278 100644
 --- a/kernel/locking/lockdep.c
 +++ b/kernel/locking/lockdep.c
-@@ -5292,6 +5292,7 @@ static void check_flags(unsigned long flags)
+@@ -5286,6 +5286,7 @@ static void check_flags(unsigned long flags)
  		}
  	}
  
@@ -9178,7 +11252,7 @@ index 3e99dfef84084..fd8c0623f3f3a 100644
  	/*
  	 * We dont accurately track softirq state in e.g.
  	 * hardirq contexts (such as on 4KSTACKS), so only
-@@ -5306,6 +5307,7 @@ static void check_flags(unsigned long flags)
+@@ -5300,6 +5301,7 @@ static void check_flags(unsigned long flags)
  			DEBUG_LOCKS_WARN_ON(!current->softirqs_enabled);
  		}
  	}
@@ -14265,7 +16339,7 @@ index a0e6f746de6c4..0000000000000
 -	printk_safe_flush();
 -}
 diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 43d6179508d64..3075006d720e6 100644
+index 43d6179508d64..3f7156f06b6ce 100644
 --- a/kernel/ptrace.c
 +++ b/kernel/ptrace.c
 @@ -180,7 +180,14 @@ static bool ptrace_freeze_traced(struct task_struct *task)
@@ -14284,6 +16358,43 @@ index 43d6179508d64..3075006d720e6 100644
  		ret = true;
  	}
  	spin_unlock_irq(&task->sighand->siglock);
+@@ -190,8 +197,8 @@ static bool ptrace_freeze_traced(struct task_struct *task)
+ 
+ static void ptrace_unfreeze_traced(struct task_struct *task)
+ {
+-	if (task->state != __TASK_TRACED)
+-		return;
++	unsigned long flags;
++	bool frozen = true;
+ 
+ 	WARN_ON(!task->ptrace || task->parent != current);
+ 
+@@ -200,12 +207,19 @@ static void ptrace_unfreeze_traced(struct task_struct *task)
+ 	 * Recheck state under the lock to close this race.
+ 	 */
+ 	spin_lock_irq(&task->sighand->siglock);
+-	if (task->state == __TASK_TRACED) {
+-		if (__fatal_signal_pending(task))
+-			wake_up_state(task, __TASK_TRACED);
+-		else
+-			task->state = TASK_TRACED;
+-	}
++
++	raw_spin_lock_irqsave(&task->pi_lock, flags);
++	if (task->state == __TASK_TRACED)
++		task->state = TASK_TRACED;
++	else if (task->saved_state == __TASK_TRACED)
++		task->saved_state = TASK_TRACED;
++	else
++		frozen = false;
++	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
++
++	if (frozen && __fatal_signal_pending(task))
++		wake_up_state(task, __TASK_TRACED);
++
+ 	spin_unlock_irq(&task->sighand->siglock);
+ }
+ 
 diff --git a/kernel/rcu/Kconfig b/kernel/rcu/Kconfig
 index b71e21f73c403..a2534cd1765a4 100644
 --- a/kernel/rcu/Kconfig
@@ -14449,7 +16560,7 @@ index 916ea4f66e4b2..eb089d3035d5a 100644
  }
  
 diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 06895ef85d692..d45b59fd5b083 100644
+index 2a52f42f64b67..bc0d97fda578b 100644
 --- a/kernel/rcu/tree.c
 +++ b/kernel/rcu/tree.c
 @@ -100,8 +100,10 @@ static struct rcu_state rcu_state = {
@@ -14555,7 +16666,7 @@ index 39334d2d2b379..b95ae86c40a7d 100644
  
  #ifdef CONFIG_DEBUG_LOCK_ALLOC
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index d2003a7d5ab55..3fce6bbbeb5b7 100644
+index d2003a7d5ab55..1218f3ce1713a 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
 @@ -64,7 +64,11 @@ const_debug unsigned int sysctl_sched_features =
@@ -15016,7 +17127,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  
  	if (queued)
  		enqueue_task(rq, p, ENQUEUE_RESTORE | ENQUEUE_NOCLOCK);
-@@ -1859,6 +2141,206 @@ void do_set_cpus_allowed(struct task_struct *p, const struct cpumask *new_mask)
+@@ -1859,6 +2141,208 @@ void do_set_cpus_allowed(struct task_struct *p, const struct cpumask *new_mask)
  		set_next_task(rq, p);
  }
  
@@ -15160,8 +17271,10 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
 +	 *
 +	 * Either way, we really should have a @pending here.
 +	 */
-+	if (WARN_ON_ONCE(!pending))
++	if (WARN_ON_ONCE(!pending)) {
++		task_rq_unlock(rq, p, rf);
 +		return -EINVAL;
++	}
 +
 +	if (flags & SCA_MIGRATE_ENABLE) {
 +
@@ -15223,7 +17336,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  /*
   * Change a given task's CPU affinity. Migrate the thread to a
   * proper CPU and schedule it away if the CPU it's executing on
-@@ -1869,7 +2351,8 @@ void do_set_cpus_allowed(struct task_struct *p, const struct cpumask *new_mask)
+@@ -1869,7 +2353,8 @@ void do_set_cpus_allowed(struct task_struct *p, const struct cpumask *new_mask)
   * call is not atomic; no spinlocks may be held.
   */
  static int __set_cpus_allowed_ptr(struct task_struct *p,
@@ -15233,7 +17346,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  {
  	const struct cpumask *cpu_valid_mask = cpu_active_mask;
  	unsigned int dest_cpu;
-@@ -1880,9 +2363,14 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
+@@ -1880,9 +2365,14 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
  	rq = task_rq_lock(p, &rf);
  	update_rq_clock(rq);
  
@@ -15250,7 +17363,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  		 */
  		cpu_valid_mask = cpu_online_mask;
  	}
-@@ -1891,13 +2379,22 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
+@@ -1891,13 +2381,22 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
  	 * Must re-check here, to close a race against __kthread_bind(),
  	 * sched_setaffinity() is not guaranteed to observe the flag.
  	 */
@@ -15276,7 +17389,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  
  	/*
  	 * Picking a ~random cpu helps in cases where we are changing affinity
-@@ -1910,7 +2407,7 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
+@@ -1910,7 +2409,7 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
  		goto out;
  	}
  
@@ -15285,7 +17398,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  
  	if (p->flags & PF_KTHREAD) {
  		/*
-@@ -1922,23 +2419,8 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
+@@ -1922,23 +2421,8 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
  			p->nr_cpus_allowed != 1);
  	}
  
@@ -15310,7 +17423,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  out:
  	task_rq_unlock(rq, p, &rf);
  
-@@ -1947,7 +2429,7 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
+@@ -1947,7 +2431,7 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
  
  int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
  {
@@ -15319,7 +17432,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  }
  EXPORT_SYMBOL_GPL(set_cpus_allowed_ptr);
  
-@@ -1988,6 +2470,8 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
+@@ -1988,6 +2472,8 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
  	 * Clearly, migrating tasks to offline CPUs is a fairly daft thing.
  	 */
  	WARN_ON_ONCE(!cpu_online(new_cpu));
@@ -15328,7 +17441,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  #endif
  
  	trace_sched_migrate_task(p, new_cpu);
-@@ -2120,6 +2604,18 @@ int migrate_swap(struct task_struct *cur, struct task_struct *p,
+@@ -2120,6 +2606,18 @@ int migrate_swap(struct task_struct *cur, struct task_struct *p,
  }
  #endif /* CONFIG_NUMA_BALANCING */
  
@@ -15347,7 +17460,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  /*
   * wait_task_inactive - wait for a thread to unschedule.
   *
-@@ -2164,7 +2660,7 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
+@@ -2164,7 +2662,7 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
  		 * is actually now running somewhere else!
  		 */
  		while (task_running(rq, p)) {
@@ -15356,7 +17469,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  				return 0;
  			cpu_relax();
  		}
-@@ -2179,7 +2675,8 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
+@@ -2179,7 +2677,8 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
  		running = task_running(rq, p);
  		queued = task_on_rq_queued(p);
  		ncsw = 0;
@@ -15366,7 +17479,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  			ncsw = p->nvcsw | LONG_MIN; /* sets MSB */
  		task_rq_unlock(rq, p, &rf);
  
-@@ -2318,6 +2815,12 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
+@@ -2318,6 +2817,12 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
  			}
  			fallthrough;
  		case possible:
@@ -15379,7 +17492,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  			do_set_cpus_allowed(p, cpu_possible_mask);
  			state = fail;
  			break;
-@@ -2352,7 +2855,7 @@ int select_task_rq(struct task_struct *p, int cpu, int sd_flags, int wake_flags)
+@@ -2352,7 +2857,7 @@ int select_task_rq(struct task_struct *p, int cpu, int sd_flags, int wake_flags)
  {
  	lockdep_assert_held(&p->pi_lock);
  
@@ -15388,7 +17501,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  		cpu = p->sched_class->select_task_rq(p, cpu, sd_flags, wake_flags);
  	else
  		cpu = cpumask_any(p->cpus_ptr);
-@@ -2375,6 +2878,7 @@ int select_task_rq(struct task_struct *p, int cpu, int sd_flags, int wake_flags)
+@@ -2375,6 +2880,7 @@ int select_task_rq(struct task_struct *p, int cpu, int sd_flags, int wake_flags)
  
  void sched_set_stop_task(int cpu, struct task_struct *stop)
  {
@@ -15396,7 +17509,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
  	struct task_struct *old_stop = cpu_rq(cpu)->stop;
  
-@@ -2390,6 +2894,20 @@ void sched_set_stop_task(int cpu, struct task_struct *stop)
+@@ -2390,6 +2896,20 @@ void sched_set_stop_task(int cpu, struct task_struct *stop)
  		sched_setscheduler_nocheck(stop, SCHED_FIFO, &param);
  
  		stop->sched_class = &stop_sched_class;
@@ -15417,7 +17530,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	}
  
  	cpu_rq(cpu)->stop = stop;
-@@ -2403,15 +2921,23 @@ void sched_set_stop_task(int cpu, struct task_struct *stop)
+@@ -2403,15 +2923,23 @@ void sched_set_stop_task(int cpu, struct task_struct *stop)
  	}
  }
  
@@ -15444,7 +17557,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  
  static void
  ttwu_stat(struct task_struct *p, int cpu, int wake_flags)
-@@ -2824,7 +3350,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+@@ -2824,7 +3352,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
  	int cpu, success = 0;
  
  	preempt_disable();
@@ -15453,7 +17566,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  		/*
  		 * We're waking current, this means 'p->on_rq' and 'task_cpu(p)
  		 * == smp_processor_id()'. Together this means we can special
-@@ -2854,8 +3380,26 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+@@ -2854,8 +3382,26 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
  	 */
  	raw_spin_lock_irqsave(&p->pi_lock, flags);
  	smp_mb__after_spinlock();
@@ -15481,7 +17594,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  
  	trace_sched_waking(p);
  
-@@ -3045,6 +3589,18 @@ int wake_up_process(struct task_struct *p)
+@@ -3045,6 +3591,18 @@ int wake_up_process(struct task_struct *p)
  }
  EXPORT_SYMBOL(wake_up_process);
  
@@ -15500,7 +17613,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  int wake_up_state(struct task_struct *p, unsigned int state)
  {
  	return try_to_wake_up(p, state, 0);
-@@ -3098,6 +3654,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
+@@ -3098,6 +3656,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
  	init_numa_balancing(clone_flags, p);
  #ifdef CONFIG_SMP
  	p->wake_entry.u_flags = CSD_TYPE_TTWU;
@@ -15508,7 +17621,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  #endif
  }
  
-@@ -3291,6 +3848,9 @@ int sched_fork(unsigned long clone_flags, struct task_struct *p)
+@@ -3291,6 +3850,9 @@ int sched_fork(unsigned long clone_flags, struct task_struct *p)
  	p->on_cpu = 0;
  #endif
  	init_task_preempt_count(p);
@@ -15518,7 +17631,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  #ifdef CONFIG_SMP
  	plist_node_init(&p->pushable_tasks, MAX_PRIO);
  	RB_CLEAR_NODE(&p->pushable_dl_tasks);
-@@ -3485,6 +4045,90 @@ static inline void finish_task(struct task_struct *prev)
+@@ -3485,6 +4047,90 @@ static inline void finish_task(struct task_struct *prev)
  #endif
  }
  
@@ -15609,7 +17722,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  static inline void
  prepare_lock_switch(struct rq *rq, struct task_struct *next, struct rq_flags *rf)
  {
-@@ -3510,6 +4154,7 @@ static inline void finish_lock_switch(struct rq *rq)
+@@ -3510,6 +4156,7 @@ static inline void finish_lock_switch(struct rq *rq)
  	 * prev into current:
  	 */
  	spin_acquire(&rq->lock.dep_map, 0, 0, _THIS_IP_);
@@ -15617,7 +17730,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	raw_spin_unlock_irq(&rq->lock);
  }
  
-@@ -3525,6 +4170,22 @@ static inline void finish_lock_switch(struct rq *rq)
+@@ -3525,6 +4172,22 @@ static inline void finish_lock_switch(struct rq *rq)
  # define finish_arch_post_lock_switch()	do { } while (0)
  #endif
  
@@ -15640,7 +17753,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  /**
   * prepare_task_switch - prepare to switch tasks
   * @rq: the runqueue preparing to switch
-@@ -3547,6 +4208,7 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
+@@ -3547,6 +4210,7 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
  	perf_event_task_sched_out(prev, next);
  	rseq_preempt(prev);
  	fire_sched_out_preempt_notifiers(prev, next);
@@ -15648,7 +17761,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	prepare_task(next);
  	prepare_arch_switch(next);
  }
-@@ -3613,6 +4275,7 @@ static struct rq *finish_task_switch(struct task_struct *prev)
+@@ -3613,6 +4277,7 @@ static struct rq *finish_task_switch(struct task_struct *prev)
  	finish_lock_switch(rq);
  	finish_arch_post_lock_switch();
  	kcov_finish_switch(current);
@@ -15656,7 +17769,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  
  	fire_sched_in_preempt_notifiers(current);
  	/*
-@@ -3627,23 +4290,18 @@ static struct rq *finish_task_switch(struct task_struct *prev)
+@@ -3627,23 +4292,18 @@ static struct rq *finish_task_switch(struct task_struct *prev)
  	 *   provided by mmdrop(),
  	 * - a sync_core for SYNC_CORE.
  	 */
@@ -15685,7 +17798,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  		put_task_struct_rcu_user(prev);
  	}
  
-@@ -3651,43 +4309,6 @@ static struct rq *finish_task_switch(struct task_struct *prev)
+@@ -3651,43 +4311,6 @@ static struct rq *finish_task_switch(struct task_struct *prev)
  	return rq;
  }
  
@@ -15729,7 +17842,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  /**
   * schedule_tail - first thing a freshly forked thread must call.
   * @prev: the thread we just switched away from.
-@@ -3707,7 +4328,6 @@ asmlinkage __visible void schedule_tail(struct task_struct *prev)
+@@ -3707,7 +4330,6 @@ asmlinkage __visible void schedule_tail(struct task_struct *prev)
  	 */
  
  	rq = finish_task_switch(prev);
@@ -15737,7 +17850,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	preempt_enable();
  
  	if (current->set_child_tid)
-@@ -4402,7 +5022,7 @@ pick_next_task(struct rq *rq, struct task_struct *prev, struct rq_flags *rf)
+@@ -4402,7 +5024,7 @@ pick_next_task(struct rq *rq, struct task_struct *prev, struct rq_flags *rf)
   *
   * WARNING: must be called with preemption disabled!
   */
@@ -15746,7 +17859,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  {
  	struct task_struct *prev, *next;
  	unsigned long *switch_count;
-@@ -4455,7 +5075,7 @@ static void __sched notrace __schedule(bool preempt)
+@@ -4455,7 +5077,7 @@ static void __sched notrace __schedule(bool preempt)
  	 *  - ptrace_{,un}freeze_traced() can change ->state underneath us.
  	 */
  	prev_state = prev->state;
@@ -15755,7 +17868,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  		if (signal_pending_state(prev_state, prev)) {
  			prev->state = TASK_RUNNING;
  		} else {
-@@ -4490,6 +5110,7 @@ static void __sched notrace __schedule(bool preempt)
+@@ -4490,6 +5112,7 @@ static void __sched notrace __schedule(bool preempt)
  
  	next = pick_next_task(rq, prev, &rf);
  	clear_tsk_need_resched(prev);
@@ -15763,7 +17876,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	clear_preempt_need_resched();
  
  	if (likely(prev != next)) {
-@@ -4515,6 +5136,7 @@ static void __sched notrace __schedule(bool preempt)
+@@ -4515,6 +5138,7 @@ static void __sched notrace __schedule(bool preempt)
  		 */
  		++*switch_count;
  
@@ -15771,7 +17884,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  		psi_sched_switch(prev, next, !task_on_rq_queued(prev));
  
  		trace_sched_switch(preempt, prev, next);
-@@ -4523,10 +5145,11 @@ static void __sched notrace __schedule(bool preempt)
+@@ -4523,10 +5147,11 @@ static void __sched notrace __schedule(bool preempt)
  		rq = context_switch(rq, prev, next, &rf);
  	} else {
  		rq->clock_update_flags &= ~(RQCF_ACT_SKIP|RQCF_REQ_SKIP);
@@ -15786,7 +17899,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  }
  
  void __noreturn do_task_dead(void)
-@@ -4537,7 +5160,7 @@ void __noreturn do_task_dead(void)
+@@ -4537,7 +5162,7 @@ void __noreturn do_task_dead(void)
  	/* Tell freezer to ignore us: */
  	current->flags |= PF_NOFREEZE;
  
@@ -15795,7 +17908,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	BUG();
  
  	/* Avoid "noreturn function does return" - but don't continue if BUG() is a NOP: */
-@@ -4570,9 +5193,6 @@ static inline void sched_submit_work(struct task_struct *tsk)
+@@ -4570,9 +5195,6 @@ static inline void sched_submit_work(struct task_struct *tsk)
  		preempt_enable_no_resched();
  	}
  
@@ -15805,7 +17918,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	/*
  	 * If we are going to sleep and we have plugged IO queued,
  	 * make sure to submit it to avoid deadlocks.
-@@ -4598,7 +5218,7 @@ asmlinkage __visible void __sched schedule(void)
+@@ -4598,7 +5220,7 @@ asmlinkage __visible void __sched schedule(void)
  	sched_submit_work(tsk);
  	do {
  		preempt_disable();
@@ -15814,7 +17927,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  		sched_preempt_enable_no_resched();
  	} while (need_resched());
  	sched_update_worker(tsk);
-@@ -4626,7 +5246,7 @@ void __sched schedule_idle(void)
+@@ -4626,7 +5248,7 @@ void __sched schedule_idle(void)
  	 */
  	WARN_ON_ONCE(current->state);
  	do {
@@ -15823,7 +17936,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	} while (need_resched());
  }
  
-@@ -4679,7 +5299,7 @@ static void __sched notrace preempt_schedule_common(void)
+@@ -4679,7 +5301,7 @@ static void __sched notrace preempt_schedule_common(void)
  		 */
  		preempt_disable_notrace();
  		preempt_latency_start(1);
@@ -15832,7 +17945,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  		preempt_latency_stop(1);
  		preempt_enable_no_resched_notrace();
  
-@@ -4690,6 +5310,30 @@ static void __sched notrace preempt_schedule_common(void)
+@@ -4690,6 +5312,30 @@ static void __sched notrace preempt_schedule_common(void)
  	} while (need_resched());
  }
  
@@ -15863,7 +17976,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  #ifdef CONFIG_PREEMPTION
  /*
   * This is the entry point to schedule() from in-kernel preemption
-@@ -4703,12 +5347,26 @@ asmlinkage __visible void __sched notrace preempt_schedule(void)
+@@ -4703,12 +5349,26 @@ asmlinkage __visible void __sched notrace preempt_schedule(void)
  	 */
  	if (likely(!preemptible()))
  		return;
@@ -15891,7 +18004,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  /**
   * preempt_schedule_notrace - preempt_schedule called by tracing
   *
-@@ -4730,6 +5388,9 @@ asmlinkage __visible void __sched notrace preempt_schedule_notrace(void)
+@@ -4730,6 +5390,9 @@ asmlinkage __visible void __sched notrace preempt_schedule_notrace(void)
  	if (likely(!preemptible()))
  		return;
  
@@ -15901,7 +18014,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	do {
  		/*
  		 * Because the function tracer can trace preempt_count_sub()
-@@ -4752,7 +5413,7 @@ asmlinkage __visible void __sched notrace preempt_schedule_notrace(void)
+@@ -4752,7 +5415,7 @@ asmlinkage __visible void __sched notrace preempt_schedule_notrace(void)
  		 * an infinite recursion.
  		 */
  		prev_ctx = exception_enter();
@@ -15910,7 +18023,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  		exception_exit(prev_ctx);
  
  		preempt_latency_stop(1);
-@@ -4781,7 +5442,7 @@ asmlinkage __visible void __sched preempt_schedule_irq(void)
+@@ -4781,7 +5444,7 @@ asmlinkage __visible void __sched preempt_schedule_irq(void)
  	do {
  		preempt_disable();
  		local_irq_enable();
@@ -15919,7 +18032,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  		local_irq_disable();
  		sched_preempt_enable_no_resched();
  	} while (need_resched());
-@@ -4937,9 +5598,11 @@ void rt_mutex_setprio(struct task_struct *p, struct task_struct *pi_task)
+@@ -4937,9 +5600,11 @@ void rt_mutex_setprio(struct task_struct *p, struct task_struct *pi_task)
  out_unlock:
  	/* Avoid rq from going away on us: */
  	preempt_disable();
@@ -15933,7 +18046,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	preempt_enable();
  }
  #else
-@@ -5213,6 +5876,7 @@ static int __sched_setscheduler(struct task_struct *p,
+@@ -5213,6 +5878,7 @@ static int __sched_setscheduler(struct task_struct *p,
  	int retval, oldprio, oldpolicy = -1, queued, running;
  	int new_effective_prio, policy = attr->sched_policy;
  	const struct sched_class *prev_class;
@@ -15941,7 +18054,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	struct rq_flags rf;
  	int reset_on_fork;
  	int queue_flags = DEQUEUE_SAVE | DEQUEUE_MOVE | DEQUEUE_NOCLOCK;
-@@ -5451,6 +6115,7 @@ static int __sched_setscheduler(struct task_struct *p,
+@@ -5451,6 +6117,7 @@ static int __sched_setscheduler(struct task_struct *p,
  
  	/* Avoid rq from going away on us: */
  	preempt_disable();
@@ -15949,7 +18062,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	task_rq_unlock(rq, p, &rf);
  
  	if (pi) {
-@@ -5459,7 +6124,7 @@ static int __sched_setscheduler(struct task_struct *p,
+@@ -5459,7 +6126,7 @@ static int __sched_setscheduler(struct task_struct *p,
  	}
  
  	/* Run balance callbacks after we've adjusted the PI chain: */
@@ -15958,7 +18071,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	preempt_enable();
  
  	return 0;
-@@ -5954,7 +6619,7 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+@@ -5954,7 +6621,7 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
  	}
  #endif
  again:
@@ -15967,7 +18080,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  
  	if (!retval) {
  		cpuset_cpus_allowed(p, cpus_allowed);
-@@ -6537,7 +7202,7 @@ void init_idle(struct task_struct *idle, int cpu)
+@@ -6537,7 +7204,7 @@ void init_idle(struct task_struct *idle, int cpu)
  	 *
  	 * And since this is boot we can forgo the serialization.
  	 */
@@ -15976,7 +18089,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  #endif
  	/*
  	 * We're having a chicken and egg problem, even though we are
-@@ -6564,7 +7229,9 @@ void init_idle(struct task_struct *idle, int cpu)
+@@ -6564,7 +7231,9 @@ void init_idle(struct task_struct *idle, int cpu)
  
  	/* Set the preempt count _outside_ the spinlocks! */
  	init_idle_preempt_count(idle, cpu);
@@ -15987,7 +18100,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	/*
  	 * The idle tasks have their own, simple scheduling class:
  	 */
-@@ -6669,6 +7336,7 @@ void sched_setnuma(struct task_struct *p, int nid)
+@@ -6669,6 +7338,7 @@ void sched_setnuma(struct task_struct *p, int nid)
  #endif /* CONFIG_NUMA_BALANCING */
  
  #ifdef CONFIG_HOTPLUG_CPU
@@ -15995,7 +18108,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  /*
   * Ensure that the idle task is using init_mm right before its CPU goes
   * offline.
-@@ -6688,119 +7356,126 @@ void idle_task_exit(void)
+@@ -6688,119 +7358,126 @@ void idle_task_exit(void)
  	/* finish_cpu(), as ran on the BP, will clean up the active_mm state */
  }
  
@@ -16227,7 +18340,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  #endif /* CONFIG_HOTPLUG_CPU */
  
  void set_rq_online(struct rq *rq)
-@@ -6886,6 +7561,8 @@ int sched_cpu_activate(unsigned int cpu)
+@@ -6886,6 +7563,8 @@ int sched_cpu_activate(unsigned int cpu)
  	struct rq *rq = cpu_rq(cpu);
  	struct rq_flags rf;
  
@@ -16236,7 +18349,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  #ifdef CONFIG_SCHED_SMT
  	/*
  	 * When going up, increment the number of cores with SMT present.
-@@ -6921,6 +7598,8 @@ int sched_cpu_activate(unsigned int cpu)
+@@ -6921,6 +7600,8 @@ int sched_cpu_activate(unsigned int cpu)
  
  int sched_cpu_deactivate(unsigned int cpu)
  {
@@ -16245,7 +18358,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	int ret;
  
  	set_cpu_active(cpu, false);
-@@ -6933,6 +7612,16 @@ int sched_cpu_deactivate(unsigned int cpu)
+@@ -6933,6 +7614,16 @@ int sched_cpu_deactivate(unsigned int cpu)
  	 */
  	synchronize_rcu();
  
@@ -16262,7 +18375,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  #ifdef CONFIG_SCHED_SMT
  	/*
  	 * When going down, decrement the number of cores with SMT present.
-@@ -6946,6 +7635,7 @@ int sched_cpu_deactivate(unsigned int cpu)
+@@ -6946,6 +7637,7 @@ int sched_cpu_deactivate(unsigned int cpu)
  
  	ret = cpuset_cpu_inactive(cpu);
  	if (ret) {
@@ -16270,7 +18383,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  		set_cpu_active(cpu, true);
  		return ret;
  	}
-@@ -6969,6 +7659,41 @@ int sched_cpu_starting(unsigned int cpu)
+@@ -6969,6 +7661,41 @@ int sched_cpu_starting(unsigned int cpu)
  }
  
  #ifdef CONFIG_HOTPLUG_CPU
@@ -16312,7 +18425,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  int sched_cpu_dying(unsigned int cpu)
  {
  	struct rq *rq = cpu_rq(cpu);
-@@ -6978,12 +7703,7 @@ int sched_cpu_dying(unsigned int cpu)
+@@ -6978,12 +7705,7 @@ int sched_cpu_dying(unsigned int cpu)
  	sched_tick_stop(cpu);
  
  	rq_lock_irqsave(rq, &rf);
@@ -16326,7 +18439,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  	rq_unlock_irqrestore(rq, &rf);
  
  	calc_load_migrate(rq);
-@@ -7190,6 +7910,9 @@ void __init sched_init(void)
+@@ -7190,6 +7912,9 @@ void __init sched_init(void)
  
  		rq_csd_init(rq, &rq->nohz_csd, nohz_csd_func);
  #endif
@@ -16336,7 +18449,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  #endif /* CONFIG_SMP */
  		hrtick_rq_init(rq);
  		atomic_set(&rq->nr_iowait, 0);
-@@ -7230,7 +7953,7 @@ void __init sched_init(void)
+@@ -7230,7 +7955,7 @@ void __init sched_init(void)
  #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
  static inline int preempt_count_equals(int preempt_offset)
  {
@@ -16345,7 +18458,7 @@ index d2003a7d5ab55..3fce6bbbeb5b7 100644
  
  	return (nested == preempt_offset);
  }
-@@ -7327,6 +8050,39 @@ void __cant_sleep(const char *file, int line, int preempt_offset)
+@@ -7327,6 +8052,39 @@ void __cant_sleep(const char *file, int line, int preempt_offset)
  	add_taint(TAINT_WARN, LOCKDEP_STILL_OK);
  }
  EXPORT_SYMBOL_GPL(__cant_sleep);
@@ -17047,7 +19160,7 @@ index dd77702260869..c2d1d1ede0f4c 100644
  
  	init_dl_bw(&rd->dl_bw);
 diff --git a/kernel/signal.c b/kernel/signal.c
-index a38b3edc68511..c3d7abd1f6aea 100644
+index ef8f2a28d37c5..0be3c40c5662c 100644
 --- a/kernel/signal.c
 +++ b/kernel/signal.c
 @@ -20,6 +20,7 @@
@@ -17058,8 +19171,8 @@ index a38b3edc68511..c3d7abd1f6aea 100644
  #include <linux/file.h>
  #include <linux/fs.h>
  #include <linux/proc_fs.h>
-@@ -403,13 +404,30 @@ void task_join_group_stop(struct task_struct *task)
- 	}
+@@ -404,13 +405,30 @@ void task_join_group_stop(struct task_struct *task)
+ 	task_set_jobctl_pending(task, mask | JOBCTL_STOP_PENDING);
  }
  
 +static inline struct sigqueue *get_task_cache(struct task_struct *t)
@@ -17090,7 +19203,7 @@ index a38b3edc68511..c3d7abd1f6aea 100644
  {
  	struct sigqueue *q = NULL;
  	struct user_struct *user;
-@@ -431,7 +449,10 @@ __sigqueue_alloc(int sig, struct task_struct *t, gfp_t flags, int override_rlimi
+@@ -432,7 +450,10 @@ __sigqueue_alloc(int sig, struct task_struct *t, gfp_t flags, int override_rlimi
  	rcu_read_unlock();
  
  	if (override_rlimit || likely(sigpending <= task_rlimit(t, RLIMIT_SIGPENDING))) {
@@ -17102,7 +19215,7 @@ index a38b3edc68511..c3d7abd1f6aea 100644
  	} else {
  		print_dropped_signal(sig);
  	}
-@@ -448,6 +469,13 @@ __sigqueue_alloc(int sig, struct task_struct *t, gfp_t flags, int override_rlimi
+@@ -449,6 +470,13 @@ __sigqueue_alloc(int sig, struct task_struct *t, gfp_t flags, int override_rlimi
  	return q;
  }
  
@@ -17116,7 +19229,7 @@ index a38b3edc68511..c3d7abd1f6aea 100644
  static void __sigqueue_free(struct sigqueue *q)
  {
  	if (q->flags & SIGQUEUE_PREALLOC)
-@@ -457,6 +485,21 @@ static void __sigqueue_free(struct sigqueue *q)
+@@ -458,6 +486,21 @@ static void __sigqueue_free(struct sigqueue *q)
  	kmem_cache_free(sigqueue_cachep, q);
  }
  
@@ -17138,7 +19251,7 @@ index a38b3edc68511..c3d7abd1f6aea 100644
  void flush_sigqueue(struct sigpending *queue)
  {
  	struct sigqueue *q;
-@@ -469,6 +512,21 @@ void flush_sigqueue(struct sigpending *queue)
+@@ -470,6 +513,21 @@ void flush_sigqueue(struct sigpending *queue)
  	}
  }
  
@@ -17160,7 +19273,7 @@ index a38b3edc68511..c3d7abd1f6aea 100644
  /*
   * Flush all pending signals for this kthread.
   */
-@@ -593,7 +651,7 @@ static void collect_signal(int sig, struct sigpending *list, kernel_siginfo_t *i
+@@ -594,7 +652,7 @@ static void collect_signal(int sig, struct sigpending *list, kernel_siginfo_t *i
  			(info->si_code == SI_TIMER) &&
  			(info->si_sys_private);
  
@@ -17169,7 +19282,7 @@ index a38b3edc68511..c3d7abd1f6aea 100644
  	} else {
  		/*
  		 * Ok, it wasn't in the queue.  This must be
-@@ -630,6 +688,8 @@ int dequeue_signal(struct task_struct *tsk, sigset_t *mask, kernel_siginfo_t *in
+@@ -631,6 +689,8 @@ int dequeue_signal(struct task_struct *tsk, sigset_t *mask, kernel_siginfo_t *in
  	bool resched_timer = false;
  	int signr;
  
@@ -17178,7 +19291,7 @@ index a38b3edc68511..c3d7abd1f6aea 100644
  	/* We only dequeue private signals from ourselves, we don't let
  	 * signalfd steal them
  	 */
-@@ -1313,6 +1373,34 @@ force_sig_info_to_task(struct kernel_siginfo *info, struct task_struct *t)
+@@ -1314,6 +1374,34 @@ force_sig_info_to_task(struct kernel_siginfo *info, struct task_struct *t)
  	struct k_sigaction *action;
  	int sig = info->si_signo;
  
@@ -17213,7 +19326,7 @@ index a38b3edc68511..c3d7abd1f6aea 100644
  	spin_lock_irqsave(&t->sighand->siglock, flags);
  	action = &t->sighand->action[sig-1];
  	ignored = action->sa.sa_handler == SIG_IGN;
-@@ -1806,7 +1894,8 @@ EXPORT_SYMBOL(kill_pid);
+@@ -1807,7 +1895,8 @@ EXPORT_SYMBOL(kill_pid);
   */
  struct sigqueue *sigqueue_alloc(void)
  {
@@ -17223,7 +19336,7 @@ index a38b3edc68511..c3d7abd1f6aea 100644
  
  	if (q)
  		q->flags |= SIGQUEUE_PREALLOC;
-@@ -2202,16 +2291,8 @@ static void ptrace_stop(int exit_code, int why, int clear_code, kernel_siginfo_t
+@@ -2203,16 +2292,8 @@ static void ptrace_stop(int exit_code, int why, int clear_code, kernel_siginfo_t
  		if (gstop_done && ptrace_reparented(current))
  			do_notify_parent_cldstop(current, false, why);
  
@@ -17241,7 +19354,7 @@ index a38b3edc68511..c3d7abd1f6aea 100644
  		cgroup_leave_frozen(true);
  	} else {
 diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 09229ad822096..a02735d4d1e9f 100644
+index 09229ad822096..4406cdaa84670 100644
 --- a/kernel/softirq.c
 +++ b/kernel/softirq.c
 @@ -13,6 +13,7 @@
@@ -17252,22 +19365,33 @@ index 09229ad822096..a02735d4d1e9f 100644
  #include <linux/mm.h>
  #include <linux/notifier.h>
  #include <linux/percpu.h>
-@@ -92,15 +93,225 @@ static bool ksoftirqd_running(unsigned long pending)
+@@ -92,27 +93,231 @@ static bool ksoftirqd_running(unsigned long pending)
  		!__kthread_should_park(tsk);
  }
  
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+DEFINE_PER_CPU(int, hardirqs_enabled);
-+DEFINE_PER_CPU(int, hardirq_context);
-+EXPORT_PER_CPU_SYMBOL_GPL(hardirqs_enabled);
-+EXPORT_PER_CPU_SYMBOL_GPL(hardirq_context);
-+#endif
-+
- /*
+-/*
 - * preempt_count and SOFTIRQ_OFFSET usage:
 - * - preempt_count is changed by SOFTIRQ_OFFSET on entering or leaving
 - *   softirq processing.
 - * - preempt_count is changed by SOFTIRQ_DISABLE_OFFSET (= 2 * SOFTIRQ_OFFSET)
+- *   on local_bh_disable or local_bh_enable.
+- * This lets us distinguish between whether we are currently processing
+- * softirq and whether we just have bh disabled.
+- */
+-
+-/*
+- * This one is for softirq.c-internal use,
+- * where hardirqs are disabled legitimately:
+- */
+ #ifdef CONFIG_TRACE_IRQFLAGS
+-
+ DEFINE_PER_CPU(int, hardirqs_enabled);
+ DEFINE_PER_CPU(int, hardirq_context);
+ EXPORT_PER_CPU_SYMBOL_GPL(hardirqs_enabled);
+ EXPORT_PER_CPU_SYMBOL_GPL(hardirq_context);
++#endif
+ 
++/*
 + * SOFTIRQ_OFFSET usage:
 + *
 + * On !RT kernels 'count' is the preempt counter, on RT kernels this applies
@@ -17277,11 +19401,11 @@ index 09229ad822096..a02735d4d1e9f 100644
 + *   processing.
 + *
 + * - count is changed by SOFTIRQ_DISABLE_OFFSET (= 2 * SOFTIRQ_OFFSET)
-  *   on local_bh_disable or local_bh_enable.
++ *   on local_bh_disable or local_bh_enable.
 + *
-  * This lets us distinguish between whether we are currently processing
-  * softirq and whether we just have bh disabled.
-  */
++ * This lets us distinguish between whether we are currently processing
++ * softirq and whether we just have bh disabled.
++ */
 +#ifdef CONFIG_PREEMPT_RT
 +
 +/*
@@ -17325,7 +19449,7 @@ index 09229ad822096..a02735d4d1e9f 100644
 +	unsigned long flags;
 +	int newcnt;
 +
-+	WARN_ON_ONCE(in_irq());
++	WARN_ON_ONCE(in_hardirq());
 +
 +	/* First entry of a task into a BH disabled section? */
 +	if (!current->softirq_disable_cnt) {
@@ -17479,22 +19603,16 @@ index 09229ad822096..a02735d4d1e9f 100644
 +}
 +
 +#else /* CONFIG_PREEMPT_RT */
- 
- /*
-  * This one is for softirq.c-internal use,
-@@ -108,11 +319,6 @@ static bool ksoftirqd_running(unsigned long pending)
-  */
- #ifdef CONFIG_TRACE_IRQFLAGS
- 
--DEFINE_PER_CPU(int, hardirqs_enabled);
--DEFINE_PER_CPU(int, hardirq_context);
--EXPORT_PER_CPU_SYMBOL_GPL(hardirqs_enabled);
--EXPORT_PER_CPU_SYMBOL_GPL(hardirq_context);
--
++
++/*
++ * This one is for softirq.c-internal use, where hardirqs are disabled
++ * legitimately:
++ */
++#ifdef CONFIG_TRACE_IRQFLAGS
  void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
  {
  	unsigned long flags;
-@@ -203,6 +409,67 @@ void __local_bh_enable_ip(unsigned long ip, unsigned int cnt)
+@@ -203,6 +408,88 @@ void __local_bh_enable_ip(unsigned long ip, unsigned int cnt)
  }
  EXPORT_SYMBOL(__local_bh_enable_ip);
  
@@ -17529,6 +19647,11 @@ index 09229ad822096..a02735d4d1e9f 100644
 +	local_irq_enable();
 +}
 +
++static inline bool should_wake_ksoftirqd(void)
++{
++	return true;
++}
++
 +static inline void invoke_softirq(void)
 +{
 +	if (ksoftirqd_running(local_softirq_pending()))
@@ -17555,14 +19678,30 @@ index 09229ad822096..a02735d4d1e9f 100644
 +	}
 +}
 +
-+static inline bool should_wake_ksoftirqd(void) { return true; }
++asmlinkage __visible void do_softirq(void)
++{
++	__u32 pending;
++	unsigned long flags;
++
++	if (in_interrupt())
++		return;
++
++	local_irq_save(flags);
++
++	pending = local_softirq_pending();
++
++	if (pending && !ksoftirqd_running(pending))
++		do_softirq_own_stack();
++
++	local_irq_restore(flags);
++}
 +
 +#endif /* !CONFIG_PREEMPT_RT */
 +
  /*
   * We restart softirq processing for at most MAX_SOFTIRQ_RESTART times,
   * but break the loop if need_resched() is set or after 2 ms.
-@@ -272,7 +539,7 @@ asmlinkage __visible void __softirq_entry __do_softirq(void)
+@@ -272,7 +559,7 @@ asmlinkage __visible void __softirq_entry __do_softirq(void)
  	pending = local_softirq_pending();
  	account_irq_enter_time(current);
  
@@ -17571,7 +19710,7 @@ index 09229ad822096..a02735d4d1e9f 100644
  	in_hardirq = lockdep_softirq_start();
  
  restart:
-@@ -307,8 +574,10 @@ asmlinkage __visible void __softirq_entry __do_softirq(void)
+@@ -307,8 +594,10 @@ asmlinkage __visible void __softirq_entry __do_softirq(void)
  		pending >>= softirq_bit;
  	}
  
@@ -17583,7 +19722,7 @@ index 09229ad822096..a02735d4d1e9f 100644
  	local_irq_disable();
  
  	pending = local_softirq_pending();
-@@ -322,11 +591,11 @@ asmlinkage __visible void __softirq_entry __do_softirq(void)
+@@ -322,29 +611,10 @@ asmlinkage __visible void __softirq_entry __do_softirq(void)
  
  	lockdep_softirq_end(in_hardirq);
  	account_irq_exit_time(current);
@@ -17593,18 +19732,27 @@ index 09229ad822096..a02735d4d1e9f 100644
  	current_restore_flags(old_flags, PF_MEMALLOC);
  }
  
-+#ifndef CONFIG_PREEMPT_RT
- asmlinkage __visible void do_softirq(void)
- {
- 	__u32 pending;
-@@ -344,6 +613,7 @@ asmlinkage __visible void do_softirq(void)
- 
- 	local_irq_restore(flags);
- }
-+#endif
- 
+-asmlinkage __visible void do_softirq(void)
+-{
+-	__u32 pending;
+-	unsigned long flags;
+-
+-	if (in_interrupt())
+-		return;
+-
+-	local_irq_save(flags);
+-
+-	pending = local_softirq_pending();
+-
+-	if (pending && !ksoftirqd_running(pending))
+-		do_softirq_own_stack();
+-
+-	local_irq_restore(flags);
+-}
+-
  /**
   * irq_enter_rcu - Enter an interrupt context with RCU watching
+  */
 @@ -355,9 +625,9 @@ void irq_enter_rcu(void)
  		 * Prevent raise_softirq from needlessly waking up ksoftirqd
  		 * here, as softirq will be serviced on return from interrupt.
@@ -17734,7 +19882,7 @@ index 09229ad822096..a02735d4d1e9f 100644
  
  #ifdef CONFIG_HOTPLUG_CPU
 diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index 865bb0228ab66..fb05a9293d007 100644
+index 890b79cf0e7c3..dbf585cf4b9f8 100644
 --- a/kernel/stop_machine.c
 +++ b/kernel/stop_machine.c
 @@ -42,11 +42,23 @@ struct cpu_stopper {
@@ -17808,10 +19956,10 @@ index 865bb0228ab66..fb05a9293d007 100644
  			  "cpu_stop: %ps(%p) leaked preempt count\n", fn, arg);
  		goto repeat;
 diff --git a/kernel/time/hrtimer.c b/kernel/time/hrtimer.c
-index 3624b9b5835de..2b57057ea2f90 100644
+index 387b4bef7dd14..b8111d3e7d68f 100644
 --- a/kernel/time/hrtimer.c
 +++ b/kernel/time/hrtimer.c
-@@ -1828,7 +1828,7 @@ static void __hrtimer_init_sleeper(struct hrtimer_sleeper *sl,
+@@ -1823,7 +1823,7 @@ static void __hrtimer_init_sleeper(struct hrtimer_sleeper *sl,
  	 * expiry.
  	 */
  	if (IS_ENABLED(CONFIG_PREEMPT_RT)) {
@@ -17820,7 +19968,7 @@ index 3624b9b5835de..2b57057ea2f90 100644
  			mode |= HRTIMER_MODE_HARD;
  	}
  
-@@ -1993,6 +1993,36 @@ SYSCALL_DEFINE2(nanosleep_time32, struct old_timespec32 __user *, rqtp,
+@@ -1988,6 +1988,36 @@ SYSCALL_DEFINE2(nanosleep_time32, struct old_timespec32 __user *, rqtp,
  }
  #endif
  
@@ -17871,10 +20019,33 @@ index 81632cd5e3b72..308a98c28ee8e 100644
  			pr_warn("NOHZ tick-stop error: Non-RCU local softirq work is pending, handler #%02x!!!\n",
  				(unsigned int) local_softirq_pending());
 diff --git a/kernel/time/timer.c b/kernel/time/timer.c
-index de37e33a868dc..7edc9fba34bbd 100644
+index c3ad64fb9d8bd..7c4ac329711b4 100644
 --- a/kernel/time/timer.c
 +++ b/kernel/time/timer.c
-@@ -1762,6 +1762,8 @@ static __latent_entropy void run_timer_softirq(struct softirq_action *h)
+@@ -1283,7 +1283,7 @@ static void del_timer_wait_running(struct timer_list *timer)
+ 	u32 tf;
+ 
+ 	tf = READ_ONCE(timer->flags);
+-	if (!(tf & TIMER_MIGRATING)) {
++	if (!(tf & (TIMER_MIGRATING | TIMER_IRQSAFE))) {
+ 		struct timer_base *base = get_timer_base(tf);
+ 
+ 		/*
+@@ -1367,6 +1367,13 @@ int del_timer_sync(struct timer_list *timer)
+ 	 */
+ 	WARN_ON(in_irq() && !(timer->flags & TIMER_IRQSAFE));
+ 
++	/*
++	 * Must be able to sleep on PREEMPT_RT because of the slowpath in
++	 * del_timer_wait_running().
++	 */
++	if (IS_ENABLED(CONFIG_PREEMPT_RT) && !(timer->flags & TIMER_IRQSAFE))
++		lockdep_assert_preemption_enabled();
++
+ 	do {
+ 		ret = try_to_del_timer_sync(timer);
+ 
+@@ -1757,6 +1764,8 @@ static __latent_entropy void run_timer_softirq(struct softirq_action *h)
  {
  	struct timer_base *base = this_cpu_ptr(&timer_bases[BASE_STD]);
  
@@ -17884,7 +20055,7 @@ index de37e33a868dc..7edc9fba34bbd 100644
  	if (IS_ENABLED(CONFIG_NO_HZ_COMMON))
  		__run_timers(this_cpu_ptr(&timer_bases[BASE_DEF]));
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 528971714fc65..5bee6e060aa9a 100644
+index 410cfeb16db51..6bf160b478ff2 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
 @@ -2576,6 +2576,15 @@ enum print_line_t trace_handle_return(struct trace_seq *s)
@@ -17991,7 +20162,7 @@ index 528971714fc65..5bee6e060aa9a 100644
  }
  EXPORT_SYMBOL_GPL(ftrace_dump);
 diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index f3f5e77123ad7..6e1a2798ac8ce 100644
+index 1dadef445cd1e..4dac962694b85 100644
 --- a/kernel/trace/trace.h
 +++ b/kernel/trace/trace.h
 @@ -144,6 +144,7 @@ struct kretprobe_trace_entry_head {
@@ -18089,7 +20260,7 @@ index 437935e7a1991..c71da2a59e127 100644
  
  		/*
 diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index d7a7bc3b60982..74d39f0b968cb 100644
+index c789b39ed5271..e7d04eade8e07 100644
 --- a/lib/Kconfig.debug
 +++ b/lib/Kconfig.debug
 @@ -1330,7 +1330,7 @@ config DEBUG_ATOMIC_SLEEP
@@ -18378,7 +20549,7 @@ index 8abe1870dba4e..b09a490f5f706 100644
  	put_cpu();
  }
 diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-index 0a482ef988e56..70a6f4c599960 100644
+index a597789464043..907f590459983 100644
 --- a/lib/scatterlist.c
 +++ b/lib/scatterlist.c
 @@ -892,7 +892,7 @@ void sg_miter_stop(struct sg_mapping_iter *miter)
@@ -18442,11 +20613,11 @@ index f1a020bcc763e..864554e769738 100644
  	if ((wait_state != TASK_RUNNING ||
 diff --git a/localversion-rt b/localversion-rt
 new file mode 100644
-index 0000000000000..c3054d08a1129
+index 0000000000000..045478966e9f1
 --- /dev/null
 +++ b/localversion-rt
 @@ -0,0 +1 @@
-+-rt2
++-rt7
 diff --git a/mm/Kconfig b/mm/Kconfig
 index d42423f884a75..6fac2ca99f6a9 100644
 --- a/mm/Kconfig
@@ -18469,31 +20640,62 @@ index d42423f884a75..6fac2ca99f6a9 100644
 +
  endmenu
 diff --git a/mm/highmem.c b/mm/highmem.c
-index 1352a27951e3b..c62992c10d473 100644
+index 1352a27951e3b..72b9a2d95c72a 100644
 --- a/mm/highmem.c
 +++ b/mm/highmem.c
-@@ -30,10 +30,7 @@
- #include <linux/kgdb.h>
+@@ -31,10 +31,6 @@
  #include <asm/tlbflush.h>
  #include <linux/vmalloc.h>
--
+ 
 -#if defined(CONFIG_HIGHMEM) || defined(CONFIG_X86_32)
 -DEFINE_PER_CPU(int, __kmap_atomic_idx);
 -#endif
-+#include <asm/fixmap.h>
- 
+-
  /*
   * Virtual_count is not a pure "count".
-@@ -108,8 +105,6 @@ static inline wait_queue_head_t *get_pkmap_wait_queue_head(unsigned int color)
+  *  0 means that it is not mapped, and has not been mapped
+@@ -108,9 +104,7 @@ static inline wait_queue_head_t *get_pkmap_wait_queue_head(unsigned int color)
  atomic_long_t _totalhigh_pages __read_mostly;
  EXPORT_SYMBOL(_totalhigh_pages);
  
 -EXPORT_PER_CPU_SYMBOL(__kmap_atomic_idx);
 -
- unsigned int nr_free_highpages (void)
+-unsigned int nr_free_highpages (void)
++unsigned int __nr_free_highpages (void)
  {
  	struct zone *zone;
-@@ -367,9 +362,216 @@ void kunmap_high(struct page *page)
+ 	unsigned int pages = 0;
+@@ -147,7 +141,7 @@ pte_t * pkmap_page_table;
+ 		do { spin_unlock(&kmap_lock); (void)(flags); } while (0)
+ #endif
+ 
+-struct page *kmap_to_page(void *vaddr)
++struct page *__kmap_to_page(void *vaddr)
+ {
+ 	unsigned long addr = (unsigned long)vaddr;
+ 
+@@ -158,7 +152,7 @@ struct page *kmap_to_page(void *vaddr)
+ 
+ 	return virt_to_page(addr);
+ }
+-EXPORT_SYMBOL(kmap_to_page);
++EXPORT_SYMBOL(__kmap_to_page);
+ 
+ static void flush_all_zero_pkmaps(void)
+ {
+@@ -200,10 +194,7 @@ static void flush_all_zero_pkmaps(void)
+ 		flush_tlb_kernel_range(PKMAP_ADDR(0), PKMAP_ADDR(LAST_PKMAP));
+ }
+ 
+-/**
+- * kmap_flush_unused - flush all unused kmap mappings in order to remove stray mappings
+- */
+-void kmap_flush_unused(void)
++void __kmap_flush_unused(void)
+ {
+ 	lock_kmap();
+ 	flush_all_zero_pkmaps();
+@@ -367,9 +358,250 @@ void kunmap_high(struct page *page)
  	if (need_wakeup)
  		wake_up(pkmap_map_wait);
  }
@@ -18504,13 +20706,24 @@ index 1352a27951e3b..c62992c10d473 100644
 +
 +#ifdef CONFIG_KMAP_LOCAL
 +
++#include <asm/kmap_size.h>
++
++/*
++ * With DEBUG_HIGHMEM the stack depth is doubled and every second
++ * slot is unused which acts as a guard page
++ */
++#ifdef CONFIG_DEBUG_HIGHMEM
++# define KM_INCR	2
++#else
++# define KM_INCR	1
++#endif
++
 +static inline int kmap_local_idx_push(void)
 +{
-+	int idx = current->kmap_ctrl.idx++;
-+
 +	WARN_ON_ONCE(in_irq() && !irqs_disabled());
-+	BUG_ON(idx >= KM_TYPE_NR);
-+	return idx;
++	current->kmap_ctrl.idx += KM_INCR;
++	BUG_ON(current->kmap_ctrl.idx >= KM_MAX_IDX);
++	return current->kmap_ctrl.idx - 1;
 +}
 +
 +static inline int kmap_local_idx(void)
@@ -18520,7 +20733,7 @@ index 1352a27951e3b..c62992c10d473 100644
 +
 +static inline void kmap_local_idx_pop(void)
 +{
-+	current->kmap_ctrl.idx--;
++	current->kmap_ctrl.idx -= KM_INCR;
 +	BUG_ON(current->kmap_ctrl.idx < 0);
 +}
 +
@@ -18537,11 +20750,11 @@ index 1352a27951e3b..c62992c10d473 100644
 +#endif
 +
 +#ifndef arch_kmap_local_map_idx
-+#define arch_kmap_local_map_idx(type, pfn)	kmap_local_calc_idx(type)
++#define arch_kmap_local_map_idx(idx, pfn)	kmap_local_calc_idx(idx)
 +#endif
 +
 +#ifndef arch_kmap_local_unmap_idx
-+#define arch_kmap_local_unmap_idx(type, vaddr)	kmap_local_calc_idx(type)
++#define arch_kmap_local_unmap_idx(idx, vaddr)	kmap_local_calc_idx(idx)
 +#endif
 +
 +#ifndef arch_kmap_local_high_get
@@ -18552,17 +20765,20 @@ index 1352a27951e3b..c62992c10d473 100644
 +#endif
 +
 +/* Unmap a local mapping which was obtained by kmap_high_get() */
-+static inline void kmap_high_unmap_local(unsigned long vaddr)
++static inline bool kmap_high_unmap_local(unsigned long vaddr)
 +{
 +#ifdef ARCH_NEEDS_KMAP_HIGH_GET
-+	if (vaddr >= PKMAP_ADDR(0) && vaddr < PKMAP_ADDR(LAST_PKMAP))
++	if (vaddr >= PKMAP_ADDR(0) && vaddr < PKMAP_ADDR(LAST_PKMAP)) {
 +		kunmap_high(pte_page(pkmap_page_table[PKMAP_NR(vaddr)]));
++		return true;
++	}
 +#endif
++	return false;
 +}
 +
-+static inline int kmap_local_calc_idx(int type)
++static inline int kmap_local_calc_idx(int idx)
 +{
-+	return type + KM_TYPE_NR * smp_processor_id();
++	return idx + KM_MAX_IDX * smp_processor_id();
 +}
 +
 +static pte_t *__kmap_pte;
@@ -18580,6 +20796,11 @@ index 1352a27951e3b..c62992c10d473 100644
 +	unsigned long vaddr;
 +	int idx;
 +
++	/*
++	 * Disable migration so resulting virtual address is stable
++	 * accross preemption.
++	 */
++	migrate_disable();
 +	preempt_disable();
 +	idx = arch_kmap_local_map_idx(kmap_local_idx_push(), pfn);
 +	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
@@ -18618,10 +20839,14 @@ index 1352a27951e3b..c62992c10d473 100644
 +
 +	if (addr < __fix_to_virt(FIX_KMAP_END) ||
 +	    addr > __fix_to_virt(FIX_KMAP_BEGIN)) {
-+		WARN_ON_ONCE(addr < PAGE_OFFSET);
-+
-+		/* Handle mappings which were obtained by kmap_high_get() */
-+		kmap_high_unmap_local(addr);
++		/*
++		 * Handle mappings which were obtained by kmap_high_get()
++		 * first as the virtual address of such mappings is below
++		 * PAGE_OFFSET. Warn for all other addresses which are in
++		 * the user space part of the virtual address space.
++		 */
++		if (!kmap_high_unmap_local(addr))
++			WARN_ON_ONCE(addr < PAGE_OFFSET);
 +		return;
 +	}
 +
@@ -18635,6 +20860,7 @@ index 1352a27951e3b..c62992c10d473 100644
 +	current->kmap_ctrl.pteval[kmap_local_idx()] = __pte(0);
 +	kmap_local_idx_pop();
 +	preempt_enable();
++	migrate_enable();
 +}
 +EXPORT_SYMBOL(kunmap_local_indexed);
 +
@@ -18660,6 +20886,11 @@ index 1352a27951e3b..c62992c10d473 100644
 +		unsigned long addr;
 +		int idx;
 +
++		/* With debug all even slots are unmapped and act as guard */
++		if (IS_ENABLED(CONFIG_DEBUG_HIGHMEM) && !(i & 0x01)) {
++			WARN_ON_ONCE(!pte_none(pteval));
++			continue;
++		}
 +		if (WARN_ON_ONCE(pte_none(pteval)))
 +			continue;
 +
@@ -18691,6 +20922,11 @@ index 1352a27951e3b..c62992c10d473 100644
 +		unsigned long addr;
 +		int idx;
 +
++		/* With debug all even slots are unmapped and act as guard */
++		if (IS_ENABLED(CONFIG_DEBUG_HIGHMEM) && !(i & 0x01)) {
++			WARN_ON_ONCE(!pte_none(pteval));
++			continue;
++		}
 +		if (WARN_ON_ONCE(pte_none(pteval)))
 +			continue;
 +
@@ -18713,7 +20949,7 @@ index 1352a27951e3b..c62992c10d473 100644
  #if defined(HASHED_PAGE_VIRTUAL)
  
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3a24e3b619f56..6f92a18121a63 100644
+index 3dcbf24d2227a..58ac0aafe3516 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
 @@ -63,6 +63,7 @@
@@ -18869,7 +21105,7 @@ index 3a24e3b619f56..6f92a18121a63 100644
  }
  
  int obj_cgroup_charge(struct obj_cgroup *objcg, gfp_t gfp, size_t size)
-@@ -5713,12 +5724,12 @@ static int mem_cgroup_move_account(struct page *page,
+@@ -5724,12 +5735,12 @@ static int mem_cgroup_move_account(struct page *page,
  
  	ret = 0;
  
@@ -18884,7 +21120,7 @@ index 3a24e3b619f56..6f92a18121a63 100644
  out_unlock:
  	unlock_page(page);
  out:
-@@ -6789,10 +6800,10 @@ int mem_cgroup_charge(struct page *page, struct mm_struct *mm, gfp_t gfp_mask)
+@@ -6800,10 +6811,10 @@ int mem_cgroup_charge(struct page *page, struct mm_struct *mm, gfp_t gfp_mask)
  	css_get(&memcg->css);
  	commit_charge(page, memcg);
  
@@ -18897,7 +21133,7 @@ index 3a24e3b619f56..6f92a18121a63 100644
  
  	if (PageSwapCache(page)) {
  		swp_entry_t entry = { .val = page_private(page) };
-@@ -6836,11 +6847,11 @@ static void uncharge_batch(const struct uncharge_gather *ug)
+@@ -6847,11 +6858,11 @@ static void uncharge_batch(const struct uncharge_gather *ug)
  		memcg_oom_recover(ug->memcg);
  	}
  
@@ -18911,7 +21147,7 @@ index 3a24e3b619f56..6f92a18121a63 100644
  
  	/* drop reference from uncharge_page */
  	css_put(&ug->memcg->css);
-@@ -6994,10 +7005,10 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage)
+@@ -7005,10 +7016,10 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage)
  	css_get(&memcg->css);
  	commit_charge(newpage, memcg);
  
@@ -18924,7 +21160,7 @@ index 3a24e3b619f56..6f92a18121a63 100644
  }
  
  DEFINE_STATIC_KEY_FALSE(memcg_sockets_enabled_key);
-@@ -7117,9 +7128,13 @@ static int __init mem_cgroup_init(void)
+@@ -7128,9 +7139,13 @@ static int __init mem_cgroup_init(void)
  	cpuhp_setup_state_nocalls(CPUHP_MM_MEMCQ_DEAD, "mm/memctrl:dead", NULL,
  				  memcg_hotplug_cpu_dead);
  
@@ -18941,7 +21177,7 @@ index 3a24e3b619f56..6f92a18121a63 100644
  
  	for_each_node(node) {
  		struct mem_cgroup_tree_per_node *rtpn;
-@@ -7168,6 +7183,7 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
+@@ -7179,6 +7194,7 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
  	struct mem_cgroup *memcg, *swap_memcg;
  	unsigned int nr_entries;
  	unsigned short oldid;
@@ -18949,7 +21185,7 @@ index 3a24e3b619f56..6f92a18121a63 100644
  
  	VM_BUG_ON_PAGE(PageLRU(page), page);
  	VM_BUG_ON_PAGE(page_count(page), page);
-@@ -7213,9 +7229,13 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
+@@ -7224,9 +7240,13 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
  	 * important here to have the interrupts disabled because it is the
  	 * only synchronisation we have for updating the per-CPU variables.
  	 */
@@ -21194,7 +23430,7 @@ index 43cf8dbde898b..d5516102491b7 100644
  }
  EXPORT_SYMBOL_GPL(svc_xprt_do_enqueue);
 diff --git a/net/xfrm/xfrm_state.c b/net/xfrm/xfrm_state.c
-index bbd4643d7e824..a94d3951445ab 100644
+index a77da7aae6fe8..2c0d356f83050 100644
 --- a/net/xfrm/xfrm_state.c
 +++ b/net/xfrm/xfrm_state.c
 @@ -44,7 +44,7 @@ static void xfrm_state_gc_task(struct work_struct *work);
@@ -21218,7 +23454,7 @@ index bbd4643d7e824..a94d3951445ab 100644
  	spin_lock_bh(&net->xfrm.xfrm_state_lock);
  	write_seqcount_begin(&xfrm_state_hash_generation);
  
-@@ -2660,6 +2665,8 @@ int __net_init xfrm_state_init(struct net *net)
+@@ -2662,6 +2667,8 @@ int __net_init xfrm_state_init(struct net *net)
  	net->xfrm.state_num = 0;
  	INIT_WORK(&net->xfrm.state_hash_work, xfrm_hash_resize);
  	spin_lock_init(&net->xfrm.xfrm_state_lock);
