@@ -1,5 +1,11 @@
+2020-11-11
+Modernize process priority configuration. nabla.conf needs to be adapted. 
+
+2020-11-05
+Include e2fsprogs in root file system
+
 2020-10-30
-Implemented two machine configuration using NFS for mpd
+Implement two machine configuration using NFS for mpd
 
 2020-09-30
 Raspberry Pi 4B running on Kernel 4.9.y
