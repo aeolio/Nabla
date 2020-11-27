@@ -14,15 +14,15 @@ linux_branch = $(patsubst %.%,%,$(linux_version))
 # Use for Radxa Rock Pi 4 vendor tree only
 ifeq ($(target),rockpi4)
 ifeq ($(BR2_TOOLCHAIN_GCC_AT_LEAST_8),y)
-LINUX_MAKE_ENV += KCFLAGS='-Wno-packed-not-aligned \
- 	-Wno-attribute-alias \
-	-Wno-stringop-truncation \
-	-Wno-array-bounds \
-	-Wno-sizeof-pointer-memaccess \
-	-Wno-stringop-overflow \
-	-Wno-unused-function'
+	LINUX_MAKE_ENV += KCFLAGS='-Wno-packed-not-aligned \
+		-Wno-attribute-alias \
+		-Wno-stringop-truncation \
+		-Wno-array-bounds \
+		-Wno-sizeof-pointer-memaccess \
+		-Wno-stringop-overflow \
+		-Wno-unused-function'
 endif
-endif
+endif # rockpi4 && GCC 8
 
 # if patch directory exists, symbolic link should also be present
 define LINUX_PATCH_ASSURANCE
@@ -38,6 +38,7 @@ define LINUX_PATCH_ASSURANCE
 endef
 LINUX_PRE_PATCH_HOOKS += LINUX_PATCH_ASSURANCE
 
+# install dtb overlays
 ifeq ($(BR2_LINUX_KERNEL_DTB_OVERLAY_SUPPORT),y)
 define LINUX_INSTALL_OVERLAYS
 	$(foreach d,$(wildcard $(@D)/arch/arm64/boot/dts/*), \
