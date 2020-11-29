@@ -1,12 +1,15 @@
-# Configure Loopback
+# available interfaces
 auto lo
+auto eth0
+auto wlan0
+
+# interface configuration
+
 iface lo inet loopback
 
-# wired network
-auto eth0
 iface eth0 inet dhcp
+  hostname $HOSTNAME
 
-# Configure Wifi
-auto wlan0
 iface wlan0 inet dhcp
   wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf
+  hostname $HOSTNAME
