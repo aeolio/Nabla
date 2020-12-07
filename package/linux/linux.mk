@@ -4,14 +4,11 @@
 #
 ################################################################################
 
-target = $(findstring rockpi4,$(BR2_DEFCONFIG))
-linux_version = $(BR2_LINUX_KERNEL_VERSION)
-linux_branch = $(patsubst %.%,%,$(linux_version))
-
 # Compiling older releases of kernel sources with GCC 8 results in warnings that are treated 
 # as errors. To be able to build the standard kernel for RockPi4 without modification, some 
 # of these new compiler directives have to be removed. 
 # Use for Radxa Rock Pi 4 vendor tree only
+target = $(findstring rockpi4,$(BR2_DEFCONFIG))
 ifeq ($(target),rockpi4)
 ifeq ($(BR2_TOOLCHAIN_GCC_AT_LEAST_8),y)
 	LINUX_MAKE_ENV += KCFLAGS='-Wno-packed-not-aligned \
@@ -25,16 +22,19 @@ endif
 endif # rockpi4 && GCC 8
 
 # if patch directory exists, symbolic link should also be present
+# the 'custom' version must be explicitly excluded from this logic
 define LINUX_PATCH_ASSURANCE
 	patch_dirs=$(BR2_GLOBAL_PATCH_DIR); \
 	linux_version=$(BR2_LINUX_KERNEL_VERSION); \
-	linux_branch=$${linux_version%.*}; \
-	for p in $${patch_dirs}; do \
-		if [ -d "$$p/linux/$${linux_branch}" ] && [ ! -h "$$p/linux/$${linux_version}" ]; then \
-			echo "patch directory link missing"; \
-			exit -1; \
-		fi \
-	done
+	linux_series=$${linux_version%.*}; \
+	if [ $${linux_version} != $${linux_series} ]; then \
+		for p in $${patch_dirs}; do \
+			if [ -d "$$p/linux/$${linux_series}" ] && [ ! -h "$$p/linux/$${linux_version}" ]; then \
+				echo "patch directory link missing"; \
+				exit -1; \
+			fi \
+		done \
+	fi
 endef
 LINUX_PRE_PATCH_HOOKS += LINUX_PATCH_ASSURANCE
 
