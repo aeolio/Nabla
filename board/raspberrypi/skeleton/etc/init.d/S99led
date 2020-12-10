@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# led	Modifies LEDs on Raspberry Pi platform.
+#
+
+### initialize system variables
+[ -x /etc/nabla.conf ] && . /etc/nabla.conf
+
+# ACT is the green LED
+# PWR is the red LED
+# brightness control seems not to work
+
+start() {
+	echo heartbeat > /sys/class/leds/ACT/trigger
+	echo 32 > /sys/class/leds/PWR/brightness
+	echo timer > /sys/class/leds/PWR/trigger
+	echo 500  > /sys/class/leds/PWR/delay_on
+	echo 1500  > /sys/class/leds/PWR/delay_off
+} 
+
+stop() {
+	echo 0 > /sys/class/leds/ACT/brightness
+	echo 0 > /sys/class/leds/PWR/brightness
+}
+
+case "$1" in
+	start)
+		start
+		;;
+	stop) 
+		stop
+		;;
+	restart|reload) 
+		stop
+		start
+		;;
+	*)
+		echo "Usage: $0 {start|stop|reload}" 
+		exit 1
+esac
