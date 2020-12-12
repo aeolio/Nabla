@@ -3,6 +3,7 @@
 
 BOOT_FILE=${BINARIES_DIR}/rpi-firmware/cmdline.txt
 CONFIG_FILE=${BINARIES_DIR}/rpi-firmware/config.txt
+MAGIC_TEXT="^# System configuration parameters for Raspberry Pi 4$"
 
 ### modify cmdline.txt
 # remove root parameter
@@ -17,31 +18,29 @@ fi
 if ! grep -q 'isolcpus=' "${BOOT_FILE}"; then
 	sed -i 's/$/ isolcpus=3/' ${BOOT_FILE} 
 fi
-
 # append rcu_nocbs parameter
 if ! grep -q 'rcu_nocbs=' "${BOOT_FILE}"; then
 	sed -i 's/$/ rcu_nocbs=3/' ${BOOT_FILE} 
 fi
-
 # append nohz_full parameter
 if ! grep -q 'nohz_full=' "${BOOT_FILE}"; then
 	sed -i 's/$/ nohz_full=3/' ${BOOT_FILE} 
 fi
 
-### modify config.txt
-# enable initramfs
-if grep -q '^#initramfs' "${CONFIG_FILE}"; then
-	sed -i 's/#initramfs/initramfs/' ${CONFIG_FILE}
-fi
-# add optional interfaces
-if ! grep -q 'device tree' "${CONFIG_FILE}"; then
-	cat  >> "${CONFIG_FILE}" << EOF
-
-# device tree
-dtparam=i2c_arm=on
-dtparam=i2s=on
-dtparam=spi=on
-EOF
+### copy and modify config.txt
+# check if the config file is in place
+if ! [ -f ${CONFIG_FILE} ] || ! $(grep -q "${MAGIC_TEXT}" ${CONFIG_FILE}); then
+	board_directory="$(dirname $0)"
+	cp ${board_directory}/config.txt ${CONFIG_FILE}
+	firmware_variant=$(grep BR2_PACKAGE_RPI_FIRMWARE_[A-Z]*=y ${BR2_CONFIG})
+	firmware_variant=${firmware_variant%%=*}
+	firmware_variant=${firmware_variant##*_}
+	project_name="$(basename ${BASE_DIR})"
+	build_date=$(date +"%Y-%m-%d")
+	# replace placeolder strings
+	sed -i 's/{project_name}/'${project_name}'/' ${CONFIG_FILE}
+	sed -i 's/{build_date}/'${build_date}'/' ${CONFIG_FILE}
+	sed -i 's/{buildroot_firmware}/'${firmware_variant}'/' ${CONFIG_FILE}
 fi
 
 ### create missing nvram file for Raspberry Pi 4
