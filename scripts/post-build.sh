@@ -116,7 +116,25 @@ if [ $(grep -c "BR2_PACKAGE_NFS_UTILS=y" $BR2_CONFIG) -gt 0 ]; then
 	fi
 fi
 
-### fix annoying ld.so.conf behaviour in buildroot make script
+### libfuse3 selected
+### modify init.d startup file
+if [ $(grep -c "BR2_PACKAGE_LIBFUSE3=y" $BR2_CONFIG) -gt 0 ]; then
+	_ETC_INIT_D="${TARGET_DIR}/etc/init.d"
+	FUSE3_PROVIDED=${_ETC_INIT_D}/fuse3
+	FUSE3_STARTUP=${_ETC_INIT_D}/S22fuse3
+	if [ -f ${FUSE3_PROVIDED} ]; then
+		sed -i '/^# Define LSB log_\* functions.$/,+2d' $FUSE3_PROVIDED
+		mv ${FUSE3_PROVIDED} ${FUSE3_STARTUP}
+	fi
+fi
+
+### remove (hopefully) empty lib/udev/rules.d directory
+if [ -d ${TARGET_DIR}/lib/udev/rules.d ]; then
+	rmdir ${TARGET_DIR}/lib/udev/rules.d
+	rmdir ${TARGET_DIR}/lib/udev
+fi
+
+### work around annoying ld.so.conf behaviour in buildroot make script
 LD_CONF_FILE=$TARGET_DIR/etc/ld.so.conf
 LD_CONF_DIR=$TARGET_DIR/etc/ld.so.conf.d
 if test -f $LD_CONF_FILE; then rm -f $LD_CONF_FILE; fi
