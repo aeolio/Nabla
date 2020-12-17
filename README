@@ -1,4 +1,4 @@
-NABLA is a compact GNU/Linux image for a few selected hardware configurations. Currently PC Engines Alix2, Raspberry Pi 3, Intel 32 and 64 bit are supported. 
+NABLA is a compact GNU/Linux image for a few selected hardware configurations. Currently PC Engines Alix2, Raspberry Pi 4, Intel 32 and 64 bit are supported. Recommended hardware is Intel 64 bit and Raspberry Pi 4. 
 
 A Buildroot installation with out-of-tree build is required in addition to generate Nabla images. 
 
