@@ -1,3 +1,5 @@
+Description
+
 NABLA is a compact GNU/Linux image for a few selected hardware configurations. Currently PC Engines Alix2, Raspberry Pi 4, Intel 32 and 64 bit are supported. Recommended hardware is Intel 64 bit and Raspberry Pi 4. 
 
 A Buildroot installation with out-of-tree build is required in addition to generate Nabla images. 
@@ -5,3 +7,36 @@ A Buildroot installation with out-of-tree build is required in addition to gener
 Resulting firmware images can be started via syslinux or extlinux from a USB stick or SD card and run completely within a ram disk. Configurations will be read from /written back to a directory on the boot device. 
 
 Nabla uses mpd for music playback and can access local hard drives or remote directories via NFS or SMB. Filesystems must be mounted locally to be accessible. USB drives are recognized and mounted automatically. 
+
+
+Configuration
+
+Buildroot configurations exist for selected hardware platforms. The configs directory contains Buildroot defconfig files that can be used to initialize the build system with the cross-compile settings and kernel configurations for that hardware. 
+
+  Active configurations:
+  alix2_defconfig			PC Engines ALIX2 
+  generic_i386_defconfig	32-bit Intel boards, Core2 or newer
+  generic_x86-64_defconfig	64-bit Intel Boards, Core2 or newer
+  raspberrypi_defconfig		Raspberry 4 Model B
+
+
+Image build
+
+Download Buildroot from https://buildroot.org/download.html and unpack into ~/buildroot
+  $ wget https://buildroot.org/downloads/buildroot-2020.02.8.tar.bz2
+  $ tar xf buildroot-2020.02.8.tar.bz2 ./buildroot
+
+Clone Buildroot external tree
+  $ git checkout https://github.com/aeolio/Nabla.git br2-external
+
+Create output directory and initialize build system. 
+  $ mkdir nabla
+  $ make BR2_EXTERNAL=$PWD/br2-external/ -C $PWD/buildroot/ O=$PWD/nabla generic_x86-64_defconfig
+
+Build the firmware image
+  $ cd nabla
+  $ make
+
+Burn the final sdcard.img found in nabla/images to a USB stick. If the resulting device should not be bootable, re-install syslinux. Check for the USB stick's device file and replace sdX1 with the correct one. 
+  $ fdisk -l
+  $ syslinux --install /dev/sdX1
