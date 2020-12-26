@@ -22,13 +22,11 @@ read_label() {
 	if [ `expr match "$device" '/dev/.*'` != `expr length "$device"` ]; then device="/dev/$device"; fi
 	for s in `blkid $device`; do
 		case $s in
-		# MBR format
-		UUID=*)
-		# GPT format
-		PTUUID=*)
+		# MBR and GPT format use slightly different identifiers
+		UUID=* | PTUUID=* )
 			id=`expr match "$s" '.*=\"\(.*\)\"'`
 			;;
-		LABEL=*)
+		LABEL=* )
 			label=`expr match "$s" '.*=\"\(.*\)\"'`
 			;;
 		esac
@@ -69,6 +67,7 @@ get_options() {
 		options_out="$options_out,gid=$gid,uid=$uid"
 		# set dmask and fmask
 		options_out="$options_out,dmask=$dmask,fmask=$fmask"
+	fi
 	# finally, remove first extra ',' character
 	if [ -n "$options_out" ]; then options_out=${options_out:1}; fi
 	echo "$options_out"
