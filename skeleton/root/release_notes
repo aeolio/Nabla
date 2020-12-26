@@ -1,3 +1,6 @@
+2020-12-19
+Switched Raspberry Pi to mainline Linux kernel 5.10.y
+
 2020-11-11
 Modernize process priority configuration. nabla.conf needs to be adapted. 
 
