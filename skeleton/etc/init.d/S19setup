@@ -81,10 +81,10 @@ get_partition_label() {
 		if [ -n "${device##/dev/*}" ]; then device="/dev/$device"; fi
 		for s in `blkid $device`; do
 			case $s in
-			UUID=*)
+			UUID=* | PTUUID=* )
 				uid=`expr match "$s" '.*=\"\(.*\)\"'`
 				;;
-			LABEL=*)
+			LABEL=* )
 				label=`expr match "$s" '.*=\"\(.*\)\"'`
 				;;
 			esac
@@ -124,7 +124,7 @@ setup_prepare() {
 		if [ $device_writeable -eq 0 ]; then
 			# remount partition writable
 			mount -o remount,rw $blockdevice || return 1
-			echo "$script:  Remounted $blockdevice rw"
+			echo "$script:  Remounted $blockdevice r/w"
 		else
 			echo "$script:  $blockdevice already mounted on $mountpoint"
 		fi
@@ -249,7 +249,7 @@ setup_finish() {
 		if [ $device_writeable -eq 0 ]; then
 			# remount partition
 			mount -o remount,ro $blockdevice || return 1
-			echo "$script:  Remounted $blockdevice RO"
+			echo "$script:  Remounted $blockdevice r/o"
 		fi
 	else
 		umount $blockdevice || return 1
