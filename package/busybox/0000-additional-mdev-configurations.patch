@@ -1,5 +1,5 @@
-The original file is provided by Buildroot, and 
-can be found in Buildroot package directory. 
+The original file is provided by Busybox, and 
+can be found in the Buildroot package directory. 
 --- a/etc/mdev.conf
 +++ b/etc/mdev.conf
 @@ -21,6 +21,7 @@
