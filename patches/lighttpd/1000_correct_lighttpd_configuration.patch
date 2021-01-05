@@ -3,13 +3,13 @@
 @@ -16,7 +16,7 @@
  var.log_root    = "/var/log"
  var.server_root = "/var/www"
- var.state_dir   = "/var/run"
+ var.state_dir   = "/run"
 -var.home_dir    = "/var/lib/lighttpd"
 +var.home_dir    = "/usr/lib/lighttpd"
  var.conf_dir    = "/etc/lighttpd"
  
  ## 
-@@ -355,7 +355,7 @@
+@@ -398,7 +398,7 @@
  ##
  ## directory listing configuration
  ##
