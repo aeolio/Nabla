@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-FOLVE_VERSION = 2019-11
+FOLVE_VERSION = 2019.11
 FOLVE_SOURCE = folve-$(FOLVE_VERSION).tar.gz
 FOLVE_SITE = $(call github,hzeller,folve,master)
 FOLVE_INSTALL_STAGING = YES
