@@ -128,11 +128,25 @@ if [ $(grep -c "BR2_PACKAGE_LIBFUSE3=y" $BR2_CONFIG) -gt 0 ]; then
 	fi
 fi
 
-### remove (hopefully) empty lib/udev/rules.d directory
-if [ -d ${TARGET_DIR}/lib/udev/rules.d ]; then
-	rmdir ${TARGET_DIR}/lib/udev/rules.d
-	rmdir ${TARGET_DIR}/lib/udev
-fi
+### remove unnecessary items from target filesystem
+# empty directories
+remove_directories="lib/udev/rules.d usr/lib/ntfs-3g"
+for d in $remove_directories; do
+	[ -d ${TARGET_DIR}/$d ] && rmdir -p ${TARGET_DIR}/$d
+done
+# unused directories or single programs
+remove_files=""
+# installed by gpg-error
+remove_files="$remove_files usr/share/common-lisp"
+# helper files for valgrind, installed by libglib2
+remove_files="$remove_files usr/share/glib-2.0"
+# installed by mpd
+remove_files="$remove_files usr/share/icons usr/share/vala"
+# installed by libgcrypt
+remove_files="$remove_files usr/bin/dumpsexp usr/bin/hmac256 usr/bin/mpicalc"
+for f in $remove_files; do
+	rm -fr ${TARGET_DIR}/$f
+done
 
 ### work around annoying ld.so.conf behaviour in buildroot make script
 LD_CONF_FILE=$TARGET_DIR/etc/ld.so.conf
