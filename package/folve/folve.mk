@@ -4,9 +4,9 @@
 #
 ################################################################################
 
-FOLVE_VERSION = 874063e136a44d8f7a0066ced85c7793f44283d4
-FOLVE_SITE = https://github.com/hzeller/folve
-FOLVE_SITE_METHOD = git
+FOLVE_VERSION = 2019-11
+FOLVE_SOURCE = folve-$(FOLVE_VERSION).tar.gz
+FOLVE_SITE = $(call github,hzeller,folve,master)
 FOLVE_INSTALL_STAGING = YES
 FOLVE_DEPENDENCIES = flac libfuse3 libmicrohttpd libsndfile zita-convolver
 FOLVE_LICENSE = GPL3

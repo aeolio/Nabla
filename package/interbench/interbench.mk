@@ -4,10 +4,9 @@
 #
 ################################################################################
 
-INTERBENCH_VERSION = master
-# INTERBENCH_SOURCE = interbench-$(INTERBENCH_VERSION).tar.gz
-INTERBENCH_SITE = https://github.com/ckolivas/interbench.git
-INTERBENCH_SITE_METHOD = git
+INTERBENCH_VERSION = 0.31
+INTERBENCH_SOURCE = interbench-$(INTERBENCH_VERSION).tar.gz
+INTERBENCH_SITE = $(call github,ckolivas,interbench,master)
 INTERBENCH_LICENSE = GPLv2
 INTERBENCH_LICENSE_FILES = COPYING
 INTERBENCH_INSTALL_STAGING = NO
