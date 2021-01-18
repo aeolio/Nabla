@@ -1,9 +1,12 @@
 config BR2_PACKAGE_ESNIPER
 	bool "esniper"
-	select BR2_PACKAGE_LIBCURL
-	select BR2_PACKAGE_OPENSSL
+	depends on BR2_PACKAGE_LIBCURL
+	depends on BR2_PACKAGE_LIBCURL_OPENSSL
 	select BR2_PACKAGE_CA_CERTIFICATES
 	help
 	  esniper is a simple, lightweight tool for sniping ebay auctions. 
 
 	  http://esniper.sourceforge.net/
+
+comment "esniper needs libcurl w/ SSL support"
+	depends on !(BR2_PACKAGE_LIBCURL && BR2_PACKAGE_LIBCURL_OPENSSL && BR2_PACKAGE_CA_CERTIFICATES)

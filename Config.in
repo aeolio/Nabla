@@ -1,6 +1,5 @@
 menu "Audio and video applications"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/brutefir/Config.in"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/esniper/Config.in"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/folve/Config.in"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/zita-convolver/Config.in"
 endmenu
@@ -10,11 +9,13 @@ menu "Debugging, profiling and benchmark"
 endmenu
 
 menu "Hardware handling"
-menu "Firmware"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
+	menu "Firmware"
+		source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
+		source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
+	endmenu
 endmenu
-#menu "Staging drivers"
-#	source "$BR2_EXTERNAL_NABLA_PATH/package/rtl8723bs/Config.in"
-#endmenu
+
+menu "Shell and utilities"
+	comment "ebay is currently broken"
+	source "$BR2_EXTERNAL_NABLA_PATH/package/esniper/Config.in"
 endmenu
