@@ -9,4 +9,4 @@ config BR2_PACKAGE_ESNIPER
 	  http://esniper.sourceforge.net/
 
 comment "esniper needs libcurl w/ SSL support"
-	depends on !(BR2_PACKAGE_LIBCURL && BR2_PACKAGE_LIBCURL_OPENSSL && BR2_PACKAGE_CA_CERTIFICATES)
+	depends on !(BR2_PACKAGE_LIBCURL && BR2_PACKAGE_LIBCURL_OPENSSL)
