@@ -8,9 +8,9 @@ if [ -z "$_path" ]; then
 fi
 . "$_path/function_lib.sh"
 
-KERNEL_VERSION=`grep BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE ${BR2_CONFIG}`
+KERNEL_VERSION=$(grep BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE ${BR2_CONFIG})
 KERNEL_VERSION=${KERNEL_VERSION##*=}
-KERNEL_VERSION=`echo ${KERNEL_VERSION} | sed 's/^"\(.*\)"$/\1/'`
+KERNEL_VERSION=$(echo ${KERNEL_VERSION} | sed 's/^"\(.*\)"$/\1/')
 KERNEL_SOURCE=${BUILD_DIR}/linux-${KERNEL_VERSION}
 KERNEL_CONFIG=${KERNEL_SOURCE}/.config
 
@@ -89,20 +89,18 @@ if [ $(grep -c "^#HostKey /etc/ssh_host*_key$" $SSHD_CONFIG) -gt 0 ]; then
 	fi
 fi
 
+TARGET_HOSTNAME=$(grep BR2_TARGET_GENERIC_HOSTNAME ${BR2_CONFIG})
+TARGET_HOSTNAME=${TARGET_HOSTNAME##*=}
+TARGET_HOSTNAME=$(echo ${TARGET_HOSTNAME} | sed 's/^"\(.*\)"$/\1/')
+
 ### Avahi package selected
 ### modify avahi configuration file
 if [ $(grep -c "BR2_PACKAGE_AVAHI=y" $BR2_CONFIG) -gt 0 ]; then
 	_ETC_AVAHI="${TARGET_DIR}/etc/avahi"
 	AVAHI_CONFIG=${_ETC_AVAHI}/avahi-daemon.conf
-	if [ -f $AVAHI_CONFIG ] && [ $(grep -c "^#host-name=" $AVAHI_CONFIG) -gt 0 ]; then
+	if [ -f $AVAHI_CONFIG ] && [ $(grep -c "#host-name=" $AVAHI_CONFIG) -gt 0 ]; then
 		echo "patching $AVAHI_CONFIG"
-		sed '/^#/ s/#host-name=.*/host-name='"$BR2_TARGET_GENERIC_HOSTNAME"'/' < $AVAHI_CONFIG > ${AVAHI_CONFIG}_ 
-		# cleaning up
-		if [ $? -eq 0 ]; then
-			rm $AVAHI_CONFIG && mv ${AVAHI_CONFIG}_ $AVAHI_CONFIG
-		else
-			rm ${AVAHI_CONFIG}_ 
-		fi
+		sed -e 's/#host-name=.*/host-name='"$TARGET_HOSTNAME"'/' -i $AVAHI_CONFIG
 	fi
 fi
 
@@ -112,7 +110,7 @@ if [ $(grep -c "BR2_PACKAGE_NFS_UTILS=y" $BR2_CONFIG) -gt 0 ]; then
 	_ETC_INIT_D="${TARGET_DIR}/etc/init.d"
 	NFS_STARTUP=${_ETC_INIT_D}/S60nfs
 	if [ -f $NFS_STARTUP ] && [ $(grep -c "daemon:daemon" $NFS_STARTUP) -lt 1 ]; then
-		sed -i '/^mkdir.*sm.bak/a chown daemon:daemon \/run\/nfs\/sm*' $NFS_STARTUP
+		sed -e '/^mkdir.*sm.bak/a chown daemon:daemon \/run\/nfs\/sm*' -i $NFS_STARTUP
 	fi
 fi
 
@@ -125,6 +123,23 @@ if [ $(grep -c "BR2_PACKAGE_LIBFUSE3=y" $BR2_CONFIG) -gt 0 ]; then
 	if [ -f ${FUSE3_PROVIDED} ]; then
 		sed -i '/^# Define LSB log_\* functions.$/,+2d' $FUSE3_PROVIDED
 		mv ${FUSE3_PROVIDED} ${FUSE3_STARTUP}
+	fi
+fi
+
+### linuxptp selected
+### modify configuration
+if [ $(grep -c "BR2_PACKAGE_LINUXPTP=y" $BR2_CONFIG) -gt 0 ]; then
+	_ETC="${TARGET_DIR}/etc"
+	LINUXPTP_CONFIG=${_ETC}/linuxptp.cfg
+	if [ -f $LINUXPTP_CONFIG ] && [ $(grep -c "^time_stamping.*hardware" $LINUXPTP_CONFIG) -gt 0 ]; then
+		echo "patch $LINUXPTP_CONFIG"
+		sed -e '/^time_stamping/ s/hardware/software/' \
+			-e '/^slaveOnly/ s/1/0/' -i $LINUXPTP_CONFIG
+	fi
+	if [ -f $LINUXPTP_CONFIG ] && [ $(grep -c "^[lo]$" $LINUXPTP_CONFIG) -eq 0 ]; then
+		echo "add loopback interface to $LINUXPTP_CONFIG"
+		echo "" >> $LINUXPTP_CONFIG
+		echo "[lo]" >> $LINUXPTP_CONFIG
 	fi
 fi
 
