@@ -1,0 +1,31 @@
+--- a/driver/PTP.c
++++ b/driver/PTP.c
+@@ -306,12 +306,16 @@
+ 	}
+ 
+ 	// verify checksum
++	#if 0 // checksums never match
+ 	if (pUDPPacketBase->UDPHeader.usCheckSum != 0)
+ 	{
+-		uint16_t ui16CheckSum = MTAL_ComputeUDPChecksum(&pPTPPacketBase->UDPHeader, MTAL_SWAP16(pUDPPacketBase->UDPHeader.usLen), (unsigned short*)&pPTPPacketBase->IPV4Header.ui32SrcIP, (unsigned short*)&pPTPPacketBase->IPV4Header.ui32DestIP);
+-		if (ui16CheckSum != 0)
++		uint16_t ui16CheckSum = MTAL_ComputeUDPChecksum(&pPTPPacketBase->UDPHeader, 
++			MTAL_SWAP16(pUDPPacketBase->UDPHeader.usLen), 
++			(unsigned short*)&pPTPPacketBase->IPV4Header.ui32SrcIP, 
++			(unsigned short*)&pPTPPacketBase->IPV4Header.ui32DestIP);
++		if (ui16CheckSum != pUDPPacketBase->UDPHeader.usCheckSum)
+ 		{
+-			MTAL_DP("Bad checksum 0x%x\n", ui16CheckSum);
++			MTAL_DP("Bad checksum 0x%x (%x)\n", ui16CheckSum, pUDPPacketBase->UDPHeader.usCheckSum);
+ 			MTAL_DP("PTP type: 0%x seq_id: %u\n", pPTPPacketBase->V2MsgHeader.byTransportSpecificAndMessageType & 0x0F, pPTPPacketBase->V2MsgHeader.wSequenceId);
+ 			MTAL_DP("\n");
+ 
+@@ -319,6 +323,7 @@
+ 			return DR_PACKET_ERROR;
+ 		}
+ 	}
++	#endif
+ 
+ 	//DumpPTPV2MsgHeader(&pPTPPacketBase->V2MsgHeader);
+ 
+

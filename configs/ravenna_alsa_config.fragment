@@ -1,0 +1,6 @@
+### Ravenna ALSA driver needs additional kernel configurations
+CONFIG_NETFILTER=y
+CONFIG_NETLINK_DIAG=y
+# precision timestamping
+CONFIG_NETWORK_PHY_TIMESTAMPING=y
+CONFIG_PTP_1588_CLOCK=y

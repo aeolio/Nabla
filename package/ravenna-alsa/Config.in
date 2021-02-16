@@ -1,0 +1,8 @@
+config BR2_PACKAGE_RAVENNA_ALSA
+	bool "ravenna-alsa"
+	depends on BR2_LINUX_KERNEL
+	depends on !BR2_STATIC_LIBS # kmod
+	help
+	  Merging Technologies' implementation of a Ravenna/AES67 ALSA kernel module. 
+
+	  https://www.merging.com/products/alsa_ravenna_aes67_driver/

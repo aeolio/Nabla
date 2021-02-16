@@ -1,0 +1,82 @@
+Kernel log output in file PTP.c 
+
+  function ProcessT1()		fix typo in message format string
+  function timerProcess		this section is marked as debug, so change log level to DEBUG
+
+Kernel log output in file PTP.c
+
+Since other modules use 100us as a time base, change the values in this location also. Log level is adapted to reflect occurrence frequency and severity of the event. The return value of hrtimer_forward_now() measures number of overruns in terms of the supplied period, so calculate the overrun in terms of the base period and warn only if the new period is more than half over. 
+
+These modifications allow a reasonable use of the Ravenna ALSA driver even in a virtual machine. 
+
+--- a/driver/PTP.c
++++ b/driver/PTP.c
+@@ -621,7 +626,7 @@
+ 
+ 					self->m_dTIC_CurrentPeriod = (self->m_dTIC_BasePeriod * self->m_ui64DeltaT2) / ui64DeltaT1; // [ps]
+ 					//MTAL_DP("self->m_ui64DeltaT2 = %I64u, ui64DeltaT1 = %I64u\n", self->m_ui64DeltaT2 , ui64DeltaT1);
+-					MTAL_DP("self->m_dTIC_CurrentPeriod = %ull , self->m_dTIC_BasePeriod = %ull\n", self->m_dTIC_CurrentPeriod , self->m_dTIC_BasePeriod);
++					MTAL_DP("self->m_dTIC_CurrentPeriod = %llu , self->m_dTIC_BasePeriod = %llu\n", self->m_dTIC_CurrentPeriod , self->m_dTIC_BasePeriod);
+ 
+ 					self->m_ui64TIC_NextAbsoluteTime = self->m_ui64TIC_LastRTXClockTimeAtT2 + i32DeltaTICFrame + (5 * self->m_dTIC_CurrentPeriod / PS_2_REF_UNIT);
+ 					self->m_dTIC_NextAbsoluteTime_frac = 0;
+@@ -903,7 +908,7 @@
+ 	/////// debug
+ 	if (abs((int)((signed)self->m_ui64TIC_NextAbsoluteTime - (signed)ui64CurrentRTXClockTime)) > self->m_dTIC_CurrentPeriod / 2 / PS_2_REF_UNIT)
+ 	{
+-		MTAL_DP("Wake up late of 1/2 period. Now(%llu), Asked(%llu), Diff(%i) [100us] neg means earlier\n", ui64CurrentRTXClockTime, self->m_ui64TIC_NextAbsoluteTime, (int)((signed)ui64CurrentRTXClockTime - (signed)self->m_ui64TIC_NextAbsoluteTime));
++		MTAL_DP_DEBUG("Wake up late of 1/2 period. Now(%llu), Asked(%llu), Diff(%i) [100us] neg means earlier\n", ui64CurrentRTXClockTime, self->m_ui64TIC_NextAbsoluteTime, (int)((signed)ui64CurrentRTXClockTime - (signed)self->m_ui64TIC_NextAbsoluteTime));
+ 	}
+ 
+ 	// Atomicity
+--- a/driver/module_timer.c
++++ b/driver/module_timer.c
+@@ -47,6 +47,7 @@
+ static uint64_t min_period_allowed;
+ static int stop_;
+ 
++#define NS_TO_100US(x) ((x) / 100000ULL)
+ 
+ enum hrtimer_restart timer_callback(struct hrtimer *timer)
+ {
+@@ -61,17 +62,17 @@
+         get_clock_time(&now);
+         period = ktime_set(0, next_wakeup - now);
+ 
+-        if (now > next_wakeup)
++        if (now > next_wakeup || next_wakeup - now < hrtimer_resolution /2)
+         {
+-            printk(KERN_INFO "Timer won't sleep, clock_timer is recall instantly\n");
+-            period = ktime_set(0, 0);
++            printk(KERN_DEBUG "Timer won't sleep, clock_timer is recall instantly\n");
++            period = ktime_set(0, 0); // force loop
+         }
+         else if (ktime_to_ns(period) > max_period_allowed || ktime_to_ns(period) < min_period_allowed)
+         {
+-            printk(KERN_INFO "Timer period out of range: %lld [ms]. Target period = %lld\n", ktime_to_ns(period) / 1000000, base_period_ / 1000000);
++            printk(KERN_INFO "Timer period out of range: %lld [100 us]. Target period = %lld [100 us]\n", NS_TO_100US(ktime_to_ns(period)), NS_TO_100US(base_period_));
+             if (ktime_to_ns(period) > (unsigned long)5E9L)
+             {
+-                printk(KERN_ERR "Timer period greater than 5s, set it to 1s!\n");
++                printk(KERN_WARNING "Timer period greater than 5s, set it to 1s!\n");
+                 period = ktime_set(0,((unsigned long)1E9L)); //1s
+             }
+         }
+@@ -83,13 +84,12 @@
+     }
+     while (ktime_to_ns(period) == 0); // this able to be rarely true
+ 
+-    ///ret_overrun = hrtimer_forward(timer, kt_now, period);
+     ret_overrun = hrtimer_forward_now(timer, period);
+-    // comment it when running in VM
+-    if(ret_overrun > 1)
+-        printk(KERN_INFO "Timer overrun ! (%d times)\n", ret_overrun);
++    // only warn if a base period was skipped completely
++    if(unlikely(ret_overrun && ktime_to_ns(period) * ret_overrun > base_period_ *3 /2))
++        printk(KERN_INFO "Timer overrun ! (%d frames)\n", (int) (ktime_to_ns(period) * ret_overrun /base_period_));
++
+     return HRTIMER_RESTART;
+-
+ }
+ 
+ int init_clock_timer(void)

@@ -1,0 +1,63 @@
+Introduce some definitions for magic values used in various worker threads to determine 
+the next period. This makes debugging a bit easier ... 
+
+--- a/daemon/constants.hpp	1970-01-01 01:00:00.000000000 +0100
++++ b/daemon/constants.hpp	2021-02-12 08:14:06.861652000 +0100
+@@ -0,0 +1,10 @@
++//
++//  constants.hpp
++//
++
++
++// loop intervals
++#define AES67_MAIN_INTERVAL 10
++#define AES67_PTP_STATUS_INTERVAL 30
++// AES67_SAP_INTERVAL is defined in config file
++#define AES67_SESSION_INTERVAL 10
+--- a/daemon/main.cpp
++++ b/daemon/main.cpp
+@@ -21,6 +21,7 @@
+ #include <iostream>
+ #include <thread>
+ 
++#include "constants.hpp"
+ #include "browser.hpp"
+ #include "config.hpp"
+ #include "driver_manager.hpp"
+@@ -160,7 +161,7 @@
+           break;
+         }
+ 
+-        std::this_thread::sleep_for(std::chrono::seconds(1));
++        std::this_thread::sleep_for(std::chrono::seconds(AES67_MAIN_INTERVAL));
+       }
+ 
+       /* save session status to file */
+--- a/daemon/session_manager.cpp
++++ b/daemon/session_manager.cpp
+@@ -31,6 +31,7 @@
+ #include <map>
+ #include <set>
+ 
++#include "constants.hpp"
+ #include "json.hpp"
+ #include "log.hpp"
+ #include "rtsp_client.hpp"
+@@ -1039,7 +1040,7 @@
+           on_update_sources();
+         }
+       }
+-      ptp_interval = 10;
++      ptp_interval = AES67_PTP_STATUS_INTERVAL;
+     }
+ 
+     // check if it's time to send sap announcements
+@@ -1064,7 +1065,7 @@
+                               << sap_interval << " secs";
+     }
+ 
+-    std::this_thread::sleep_for(std::chrono::seconds(1));
++    std::this_thread::sleep_for(std::chrono::seconds(AES67_SESSION_INTERVAL));
+   }
+ 
+   // at end, send deletion for all announced sources

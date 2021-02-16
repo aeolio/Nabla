@@ -1,4 +1,5 @@
 menu "Audio and video applications"
+	source "$BR2_EXTERNAL_NABLA_PATH/package/aes67-daemon/Config.in"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/brutefir/Config.in"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/folve/Config.in"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/zita-convolver/Config.in"
@@ -12,6 +13,13 @@ menu "Hardware handling"
 	menu "Firmware"
 		source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
 		source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
+	endmenu
+	source "$BR2_EXTERNAL_NABLA_PATH/package/ravenna-alsa/Config.in"
+endmenu
+
+menu "Libraries"
+	menu "Networking"
+		source "$BR2_EXTERNAL_NABLA_PATH/package/cpp-httplib/Config.in"
 	endmenu
 endmenu
 

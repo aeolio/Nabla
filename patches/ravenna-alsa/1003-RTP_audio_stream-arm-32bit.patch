@@ -1,0 +1,79 @@
+This patch was adapted from https://github.com/bondagit/aes67-linux-daemon ravenna-alsa-lkm-arm-32bit.patch and contains the 32bit patches to RTP_audio_stream.c only
+
+diff --git a/driver/RTP_audio_stream.c b/driver/RTP_audio_stream.c
+index 5a160e4..a5c84e4 100644
+--- a/driver/RTP_audio_stream.c
++++ b/driver/RTP_audio_stream.c
+@@ -40,6 +40,7 @@
+ 
+ #include "RTP_audio_stream.h"
+ #include "MTAL_DP.h"
++#include "c_wrapper_lib.h"
+ 
+ #define DEBUG_TRACE(x) MTAL_DP("[RTP Stream] "); MTAL_DP x
+ #define ASSERT(x) {if(!(x)) { MTAL_DP("Assert in %s line %i\n", __FILE__, __LINE__); }}
+@@ -377,7 +378,7 @@ int Create(TRTP_audio_stream* self, TRTP_stream_info* pRTP_stream_info, rtp_audi
+ 		// if audio data format was changed we have to mute channels with the proper mute pattern; for now, we always mute
+ 		for(us = 0; us < pRTP_stream_info->m_byNbOfChannels; us++)
+ 		{
+-			//MTAL_DP("[%u] m_pvLivesInCircularBuffer[us] = 0x%x buffer length = %u wordlength = %u\n", us, m_pvLivesInCircularBuffer[us], pManager->get_live_in_jitter_buffer_length(pManager->user), m_usAudioEngineSampleWordLength);
++			//MTAL_DP("[%u] m_pvLivesInCircularBuffer[us] = 0x%x buffer length = %u wordlength = %u\n", us, self->m_pvLivesInCircularBuffer[us], pManager->get_live_in_jitter_buffer_length(pManager->user), self->m_usAudioEngineSampleWordLength);
+ 
+ 			if(self->m_pvLivesInCircularBuffer[us])
+ 			{	// mute
+@@ -413,7 +414,7 @@ int Destroy(TRTP_audio_stream* self)
+ 		unsigned short us;
+ 		for(us = 0; us < pRTP_stream_info->m_byNbOfChannels; us++)
+ 		{
+-			//MTAL_DP("[%u] m_pvLivesInCircularBuffer[us] = 0x%x buffer length = %u wordlength = %u\n", us, m_pvLivesInCircularBuffer[us], pManager->get_live_in_jitter_buffer_length(pManager->user), m_usAudioEngineSampleWordLength);
++			//MTAL_DP("[%u] m_pvLivesInCircularBuffer[us] = 0x%x buffer length = %u wordlength = %u\n", us, self->m_pvLivesInCircularBuffer[us], self->m_pManager->get_live_in_jitter_buffer_length(self->m_pManager->user), self->m_usAudioEngineSampleWordLength);
+ 
+ 			if(self->m_pvLivesInCircularBuffer[us])
+ 			{	// mute
+@@ -782,7 +783,7 @@ int ProcessRTPAudioPacket(TRTP_audio_stream* self, TRTPPacketBase* pRTPPacketBas
+ 
+ 		//MTAL_DP("ui32RTPSAC %u  perfcounter %I64u\n", ui32RTPSAC, MTAL_LK_GetCounterTime());
+ 		// ui32UsedSAC is the first frame SAC when this packet will be used
+-		ui64UsedSAC = (ui64RTPSAC - (ui64RTPSAC % pManager->get_frame_size(pManager->user)));
++		ui64UsedSAC = (ui64RTPSAC - (CW_ll_modulo(ui64RTPSAC, pManager->get_frame_size(pManager->user))));
+ 
+ 		i64DeltaSAC =  ui64UsedSAC - ui64GlobalSAC;
+ 		//MTAL_DP("i64DeltaSAC %I64u playout delay %u, frame size: %u\n", i64DeltaSAC, pRTP_stream_info->m_ui32PlayOutDelay, pManager->get_frame_size(pManager->user));
+diff --git a/driver/manager.c b/driver/manager.c
+index 5a90eca..8023708 100644
+--- a/driver/manager.c
++++ b/driver/manager.c
+@@ -1272,10 +1272,10 @@ uint32_t get_live_in_jitter_buffer_offset(void* user, const uint64_t ui64Current
+     struct TManager* self = (struct TManager*)user;
+ 
+     #if defined(MT_TONE_TEST) || defined (MT_RAMP_TEST) || defined (MTLOOPBACK) || defined (MTTRANSPARENCY_CHECK)
+-        return (uint32_t)(ui64CurrentSAC % get_live_in_jitter_buffer_length(self));
++        return (uint32_t)CW_ll_modulo(ui64CurrentSAC, get_live_in_jitter_buffer_length(self));
+     #else
+         uint32_t live_in_jitter_buffer_length = self->m_alsa_driver_frontend->get_capture_buffer_size_in_frames(self->m_pALSAChip);
+-        return (uint32_t)(ui64CurrentSAC % live_in_jitter_buffer_length);
++        return (uint32_t)CW_ll_modulo(ui64CurrentSAC, live_in_jitter_buffer_length);
+     #endif
+ }
+ 
+@@ -1298,7 +1298,7 @@ uint32_t get_live_out_jitter_buffer_offset(void* user, const uint64_t ui64Curren
+     struct TManager* self = (struct TManager*)user;
+ 
+     #if defined(MT_TONE_TEST) || defined (MT_RAMP_TEST) || defined (MTLOOPBACK) || defined (MTTRANSPARENCY_CHECK)
+-        return (uint32_t)(ui64CurrentSAC % get_live_out_jitter_buffer_length(self));
++        return (uint32_t)CW_ll_modulo(ui64CurrentSAC, get_live_out_jitter_buffer_length(self));
+     #else
+         uint32_t offset = self->m_alsa_driver_frontend->get_playback_buffer_offset(self->m_pALSAChip);
+         const uint32_t sacOffset = (uint32_t)(get_global_SAC(self) - get_frame_size(self) - ui64CurrentSAC);
+@@ -1432,9 +1432,9 @@ void AudioFrameTIC(void* user)
+                     {
+                         #if defined(MT_TONE_TEST)
+                         unsigned long p = (self->m_tone_test_phase * self->m_SampleRate) / LUTSampleRate;
+-                        int16_t val16 = LUT[(p + 4 * chIdx) % LUTnbPoints]/* >> 1*/;
++                        int16_t val16 = LUT[CW_ll_modulo((p + 4 * chIdx), LUTnbPoints)]/* >> 1*/;
+                         int32_t val24 = val16 << 8;
+-                        self->m_tone_test_phase = (self->m_tone_test_phase + 1) % (LUTnbPoints * 100);
++                        self->m_tone_test_phase = CW_ll_modulo((self->m_tone_test_phase + 1), (LUTnbPoints * 100));
+                         #elif defined(MT_RAMP_TEST)
+                         int32_t val24 = self->m_ramp_test_phase;
+                         if(val24 >= 8388608) // 2^23

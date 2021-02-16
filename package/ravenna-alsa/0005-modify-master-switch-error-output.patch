@@ -1,0 +1,31 @@
+In case an error occured when retrieving the master switch, the error code should be printed also. 
+Since this is unexpected, but not a serious situation, use KERN_NOTICE for the message. 
+Use same format in both functions mr_alsa_audio_pcm_open() and mr_alsa_audio_create_controls(). 
+
+--- a/driver/audio_driver.c
++++ b/driver/audio_driver.c
+@@ -2185,9 +2151,9 @@
+         chip->mr_alsa_audio_ops->get_master_volume_value(chip->ravenna_peer, (int)substream->stream, &chip->current_playback_volume);
+         err = chip->mr_alsa_audio_ops->get_master_switch_value(chip->ravenna_peer, (int)substream->stream, &chip->current_playback_switch);
+         if(err != 0)
+-            printk(KERN_WARNING "mr_alsa_audio_pcm_open: get_master_switch_value error\n");
++            printk(KERN_NOTICE "mr_alsa_audio_pcm_open: get_master_switch_value error %d\n", abs(err));
+         /*else
+-            printk("mr_alsa_audio_pcm_open: get_master_switch_value returns %d\n", chip->current_playback_switch);*/
++            printk(KERN_INFO "mr_alsa_audio_pcm_open: get_master_switch_value returns %d\n", chip->current_playback_switch);*/
+         snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE, &chip->playback_volume_control->id);
+         snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE, &chip->playback_switch_control->id);
+     }
+@@ -2400,10 +2360,9 @@
+     {
+         err = chip->mr_alsa_audio_ops->get_master_switch_value(chip->ravenna_peer, (int)SNDRV_PCM_STREAM_PLAYBACK, &chip->current_playback_switch);
+         if(err != 0)
+-
+-            printk("mr_alsa_audio_pcm_open: get_master_switch_value error\n");
++            printk(KERN_NOTICE "mr_alsa_audio_create_controls: get_master_switch_value error %d\n", abs(err));
+         else
+-            printk(KERN_INFO "mr_alsa_audio_pcm_open: get_master_switch_value returns %d\n", chip->current_playback_switch);
++            printk(KERN_INFO "mr_alsa_audio_create_controls: get_master_switch_value returns %d\n", chip->current_playback_switch);
+         chip->playback_switch_control = snd_ctl_new1(&mr_alsa_audio_ctrl_output_switch, chip);
+         err = snd_ctl_add(card, chip->playback_switch_control);
+     }

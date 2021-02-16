@@ -1,0 +1,44 @@
+Redefining new breaks compilation of kernels > 5.0.y
+./arch/x86/include/asm/atomic.h: In function ‘arch_atomic_try_cmpxchg’:
+./arch/x86/include/asm/atomic.h:202:2: error: undefined named operand ‘new’
+  202 |  return try_cmpxchg(&v->counter, old, new);
+      |  ^~~~~~
+
+--- a/driver/MTAL_stdint.h
++++ b/driver/MTAL_stdint.h
+@@ -62,11 +62,13 @@
+             typedef bool _Bool;
+             #define _LINUX_STDDEF_H
+         }
++        #define new new_value
++        #endif // __cplusplus
++        #include <linux/types.h>
++        #include <linux/string.h>
++        #if defined(__cplusplus)
++        #undef new
+         #endif // __cplusplus
+-    #include <linux/types.h>
+-    #define new NEW
+-    #include <linux/string.h>
+-    #undef new
+     #else
+         #include <stdint.h>
+     #endif
+--- a/driver/RTP_stream_info.c
++++ b/driver/RTP_stream_info.c
+@@ -32,9 +32,13 @@
+ #include "MTAL_TargetPlatform.h"
+ 
+ #if (defined(MTAL_LINUX) && defined(MTAL_KERNEL))
+-    #define new NEW
++    #if defined(__cplusplus)
++    #define new new_value
++    #endif
+     #include <linux/string.h>
++    #if defined(__cplusplus)
+     #undef new
++    #endif
+ #else
+     #include <string.h>
+ #endif
+ 

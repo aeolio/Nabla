@@ -1,0 +1,12 @@
+config BR2_PACKAGE_AES67_DAEMON
+	bool "aes67-daemon"
+	select BR2_PACKAGE_AVAHI
+	select BR2_PACKAGE_AVAHI_DAEMON
+	select BR2_PACKAGE_BOOST
+	select BR2_PACKAGE_BOOST_LOG
+	select BR2_PACKAGE_BOOST_PROGRAM_OPTIONS
+	select BR2_PACKAGE_CPP_HTTPLIB
+	select BR2_PACKAGE_RAVENNA_ALSA
+	help
+	  AES67 Daemon is a Linux implementation of AES67 interoperability standard 
+	  used to distribute and synchronize real time audio over Ethernet.

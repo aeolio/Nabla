@@ -1,0 +1,23 @@
+--- a/daemon/http_server.cpp
++++ b/daemon/http_server.cpp
+@@ -303,14 +303,17 @@
+     }
+   });
+ 
++  /* listen on all adapters */
++  const std::string ip_adr{"0.0.0.0"};
++	
+   /* start http server on a separate thread */
+   res_ = std::async(std::launch::async, [&]() {
+     try {
+-      svr_.listen(config_->get_ip_addr_str().c_str(), config_->get_http_port());
++      svr_.listen(ip_adr.c_str(), config_->get_http_port());
+     } catch (...) {
+       BOOST_LOG_TRIVIAL(fatal)
+           << "http_server:: "
+-          << "failed to listen to " << config_->get_ip_addr_str() << ":"
++          << "failed to listen to " << ip_adr << ":"
+           << config_->get_http_port();
+       return false;
+     }
+

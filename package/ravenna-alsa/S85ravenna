@@ -1,0 +1,48 @@
+#!/bin/sh
+#
+# Ravenna	Load the ALSA driver.
+#
+
+start() {
+	printf "Loading Ravenna driver: "
+	modprobe -s MergingRavennaALSA
+	# first startup is slow
+	sleep 1
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	return $status
+}
+
+stop() {
+	printf "Removing Ravenna driver: "
+	modprobe -q -r MergingRavennaALSA
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	return $status
+}
+
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  restart|reload)
+	stop
+	start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

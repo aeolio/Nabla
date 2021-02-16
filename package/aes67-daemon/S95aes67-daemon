@@ -1,0 +1,57 @@
+#!/bin/sh
+#
+# Start aes67-daemon
+#
+
+DAEMON="aes67-daemon"
+
+PIDFILE="/var/run/$DAEMON.pid"
+
+AES67_ARGS="-c /etc/aes67-daemon.conf"
+
+# shellcheck source=/dev/null
+[ -r "/etc/default/aes67-daemon.cfg" ] && . "/etc/default/aes67-daemon.cfg"
+
+start() {
+	printf "Starting aes67 daemon: "
+	start-stop-daemon -S -b -q -m -p $PIDFILE \
+		-x /usr/sbin/$DAEMON -- $AES67_ARGS
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	return $status
+}
+
+stop() {
+	printf "Stopping aes67 daemon: "
+	start-stop-daemon -K -q -p $PIDFILE
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		rm -f "$PIDFILE"
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	return $status
+}
+
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  restart|reload)
+	stop
+	start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

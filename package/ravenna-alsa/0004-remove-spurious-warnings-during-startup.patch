@@ -1,0 +1,55 @@
+--- a/driver/RTP_audio_stream.c
++++ b/driver/RTP_audio_stream.c
+@@ -589,8 +598,9 @@
+ 		return 0;
+ 	}
+ 
+-	// Sequence number check
+-	if((unsigned short)(self->m_tRTPStream.m_usIncomingSeqNum + 1) != MTAL_SWAP16(pRTPPacketBase->RTPHeader.usSeqNum))
++	// Sequence number check, ignore the first time with uninitialized m_usIncomingSeqNum
++	if( self->m_tRTPStream.m_usIncomingSeqNum != 0 &&
++		(unsigned short)(self->m_tRTPStream.m_usIncomingSeqNum + 1) != MTAL_SWAP16(pRTPPacketBase->RTPHeader.usSeqNum))
+ 	{
+ 		self->m_ui32WrongRTPSeqIdCounter++;
+ 
+@@ -630,8 +640,9 @@
+ 	ui32RTPTimeStamp -= pRTP_stream_info->m_ui32RTPTimestampOffset;
+ 
+ #ifdef DEBUG_CHECK
+-	// Time stamp check
+-	if(ui32RTPTimeStamp != self->m_tRTPStream.m_ui32LastRTPSAC + self->m_tRTPStream.m_ui32LastRTPLengthInSamples)
++	// Time stamp check, ignore after restart
++	if( self->m_tRTPStream.m_ui32LastRTPLengthInSamples > 0 &&
++		ui32RTPTimeStamp != self->m_tRTPStream.m_ui32LastRTPSAC + self->m_tRTPStream.m_ui32LastRTPLengthInSamples)
+ 	{
+ 		self->m_ui32WrongRTPSACCounter++;
+ 
+@@ -1032,12 +1043,18 @@
+ 			if(self->m_ulLivesInDMCounter < pManager->get_live_in_jitter_buffer_length(pManager->user) / pManager->get_frame_size(pManager->user))
+ 			{
+ 				unsigned short us;
++				static uint64_t ui64LastFrame;
++				uint64_t ui64thisFrame = pManager->get_global_time(pManager);
+ 				int64_t delta = self->m_tRTPStream.m_ui64LastAudioSampleReceivedSAC - pManager->get_global_SAC(pManager->user);
++				if (ui64LastFrame < ui64thisFrame) {
+ 				#ifndef WIN32
+ 					MTAL_DP("sink %s: is muted at globalSAC = %llu (delta = %lld)\n", pRTP_stream_info->m_cName, pManager->get_global_SAC(pManager->user), delta);
+ 				#else
+ 					MTAL_DP("sink %s: is muted at globalSAC = %I64u (delta = %I64)\n", pRTP_stream_info->m_cName, pManager->get_global_SAC(pManager->user), delta);
+ 				#endif
++					ui64LastFrame = ui64thisFrame;
++				}
++
+ 				self->m_ulLivesInDMCounter++;
+ 
+ 				for(us = 0; us < pRTP_stream_info->m_byNbOfChannels; us++)
+@@ -1105,6 +1122,9 @@
+ 			if(bWrongRTPSAC)
+ 				self->m_StreamStatus.u.bit_fields.sink_RTP_SAC_error = 1;
+ 		}
++	// reset the received samples counter to suppress 
++	// spurious warning about SAC counter mismatch
++	self->m_tRTPStream.m_ui32LastRTPLengthInSamples = 0;
+ 	}
+ }
+ 
