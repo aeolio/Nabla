@@ -3,9 +3,16 @@ Kernel log output in file PTP.c
   function ProcessT1()		fix typo in message format string
   function timerProcess		this section is marked as debug, so change log level to DEBUG
 
-Kernel log output in file PTP.c
+Calculation of TICCount in PTP.c
 
-Since other modules use 100us as a time base, change the values in this location also. Log level is adapted to reflect occurrence frequency and severity of the event. The return value of hrtimer_forward_now() measures number of overruns in terms of the supplied period, so calculate the overrun in terms of the base period and warn only if the new period is more than half over. 
+  function timerProcess		m_i64TIC_PTPToRTXClockOffset is a ps value, scale it with PS_2_REF_UNIT
+
+Kernel log output in file module_timer.c
+
+Since other modules use 100us as a time base, change the values in this location also. 
+Log level is adapted to reflect occurrence frequency and severity of the event. 
+The immediate restart of the timer loop will be initiated not only for events that have already expired, but also if the next event is only a few microseconds away. 
+The return value of hrtimer_forward_now() measures number of overruns in terms of the supplied period, so calculate the overrun in terms of the base period and warn only if the next period is skipped completely. 
 
 These modifications allow a reasonable use of the Ravenna ALSA driver even in a virtual machine. 
 
@@ -29,22 +36,37 @@ These modifications allow a reasonable use of the Ravenna ALSA driver even in a 
  	}
  
  	// Atomicity
+@@ -926,8 +931,9 @@
+         computeNextAbsoluteTime(self, 1);
+         {
+             //MTAL_DP("self->m_ui64TIC_NextAbsoluteTime %llu\n", self->m_ui64TIC_NextAbsoluteTime);
+-            uint64_t ui64Q = (uint64_t)((ui64CurrentRTXClockTime - self->m_i64TIC_PTPToRTXClockOffset) * (self->m_ui32SamplingRate / 100) / 100) / self->m_ui32FrameSize; // [frame count]
+-            uint32_t ui32R = CW_ll_modulo((uint64_t)((ui64CurrentRTXClockTime - self->m_i64TIC_PTPToRTXClockOffset) * (self->m_ui32SamplingRate / 100) / 100), self->m_ui32FrameSize);
++            uint64_t ui64NextFrameTime = ui64CurrentRTXClockTime - self->m_i64TIC_PTPToRTXClockOffset / PS_2_REF_UNIT + self->m_dTIC_CurrentPeriod / PS_2_REF_UNIT;
++            uint64_t ui64Q = (uint64_t)(ui64NextFrameTime * (self->m_ui32SamplingRate / 100) / 100) / self->m_ui32FrameSize; // [frame count]
++            uint32_t ui32R = CW_ll_modulo((uint64_t)(ui64NextFrameTime * (self->m_ui32SamplingRate / 100) / 100), self->m_ui32FrameSize);
+             //uint32_t ui32R = (uint64_t)(CInt128(ui64CurrentRTXClockTime - self->m_i64TIC_PTPToRTXClockOffset) * CInt128(self->m_ui32SamplingRate / 100) / CInt128(100000)) % self->m_ui32FrameSize;
+ 
+             //if (print_coutner % 1000 == 0)
 --- a/driver/module_timer.c
 +++ b/driver/module_timer.c
-@@ -47,6 +47,7 @@
+@@ -45,8 +45,10 @@
+ static uint64_t base_period_;
+ static uint64_t max_period_allowed;
  static uint64_t min_period_allowed;
++static uint64_t timer_resolution;
  static int stop_;
  
 +#define NS_TO_100US(x) ((x) / 100000ULL)
  
  enum hrtimer_restart timer_callback(struct hrtimer *timer)
  {
-@@ -61,17 +62,17 @@
+@@ -61,17 +63,17 @@
          get_clock_time(&now);
          period = ktime_set(0, next_wakeup - now);
  
 -        if (now > next_wakeup)
-+        if (now > next_wakeup || next_wakeup - now < hrtimer_resolution /2)
++        if (now > next_wakeup || next_wakeup - now < timer_resolution)
          {
 -            printk(KERN_INFO "Timer won't sleep, clock_timer is recall instantly\n");
 -            period = ktime_set(0, 0);
@@ -62,7 +84,7 @@ These modifications allow a reasonable use of the Ravenna ALSA driver even in a 
                  period = ktime_set(0,((unsigned long)1E9L)); //1s
              }
          }
-@@ -83,13 +84,12 @@
+@@ -83,13 +85,13 @@
      }
      while (ktime_to_ns(period) == 0); // this able to be rarely true
  
@@ -71,12 +93,23 @@ These modifications allow a reasonable use of the Ravenna ALSA driver even in a 
 -    // comment it when running in VM
 -    if(ret_overrun > 1)
 -        printk(KERN_INFO "Timer overrun ! (%d times)\n", ret_overrun);
-+    // only warn if a base period was skipped completely
-+    if(unlikely(ret_overrun && ktime_to_ns(period) * ret_overrun > base_period_ *3 /2))
-+        printk(KERN_INFO "Timer overrun ! (%d frames)\n", (int) (ktime_to_ns(period) * ret_overrun /base_period_));
++    // only warn for completely lost periods
++	// the 50% overrun is monitored in timerProcess() 
++    if(unlikely(ret_overrun && ktime_to_ns(period) * ret_overrun > base_period_ * 2))
++        printk(KERN_INFO "Timer overrun ! (%d frames)\n", (int) (ktime_to_ns(period) * ret_overrun / base_period_));
 +
      return HRTIMER_RESTART;
 -
  }
  
  int init_clock_timer(void)
+@@ -161,5 +163,9 @@
+     base_period_ = base_period;
+     min_period_allowed = base_period_ / 7;
+     max_period_allowed = (base_period_ * 10) / 6;
++	/* the granularity of the timer loop */
++	timer_resolution = min(min_period_allowed / 2, 2000ULL);
++	if( timer_resolution < hrtimer_resolution )
++		timer_resolution = hrtimer_resolution;
+     printk(KERN_INFO "Base period set to %lld ns\n", base_period_);
+ }
