@@ -20,11 +20,11 @@ AES67_DAEMON_CONF_OPTS += -DCMAKE_PREFIX_PATH="$(STAGING_DIR);$(STAGING_DIR)/usr
 AES67_DAEMON_CONF_OPTS += -DRAVENNA_ALSA_LKM_DIR="$(BUILD_DIR)/ravenna-alsa-$(RAVENNA_ALSA_VERSION)"
 
 define AES67_DAEMON_MODIFY_CONFIG
-	sed -e '/http_base_dir/ s/\.\.\//\/var\/ravenna\//' \
+	sed -e '/http_base_dir/ s/\.\.\//\/var\/lib\/ravenna\//' \
 		-e '/log_severity/ s/[0-9]/2/' \
 		-e '/tic_frame_size_at_1fs/ s/[0-9]*,/192,/' \
 		-e '/syslog_proto/ s/none/local/' \
-		-e '/status_file/ s/\.\/status.json/\/var\/ravenna\/status.json/' \
+		-e '/status_file/ s/\.\/status.json/\/var\/lib\/ravenna\/status.json/' \
 		-i $(@D)/$(AES67_DAEMON_SUBDIR)/daemon.conf
 endef
 
@@ -34,8 +34,8 @@ AES67_DAEMON_POST_BUILD_HOOKS += AES67_DAEMON_MODIFY_CONFIG
 define AES67_DAEMON_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 $(@D)/$(AES67_DAEMON_SUBDIR)/aes67-daemon $(TARGET_DIR)/usr/sbin
 	$(INSTALL) -D -m 0644 $(@D)/$(AES67_DAEMON_SUBDIR)/daemon.conf $(TARGET_DIR)/etc/aes67-daemon.conf
-	$(INSTALL) -d -m 0755 $(TARGET_DIR)/var/ravenna
-	$(INSTALL) -D -m 0644 $(@D)/demo/status.json $(TARGET_DIR)/var/ravenna
+	$(INSTALL) -d -m 0755 $(TARGET_DIR)/var/lib/ravenna
+	$(INSTALL) -D -m 0644 $(@D)/demo/status.json $(TARGET_DIR)/var/lib/ravenna
 endef
 
 define AES67_DAEMON_INSTALL_INIT_SYSV
