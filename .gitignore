@@ -4,6 +4,8 @@ _backup
 *.sh
 # build log files
 board/*/*.txt
+# backup files
+*.tar.gz
 # experiments with xenomai
 board/alix.2/configs/kernel_5.4_xeno_defconfig
 configs/alix2_xeno_defconfig
