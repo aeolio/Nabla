@@ -1,5 +1,7 @@
 # backup directory
 _backup
+#backup files
+*.bak
 # shell scripts
 *.sh
 # build log files
