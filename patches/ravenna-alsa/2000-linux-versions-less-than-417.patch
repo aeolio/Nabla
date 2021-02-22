@@ -1,0 +1,54 @@
+--- a/driver/audio_driver.c
++++ b/driver/audio_driver.c
+@@ -183,6 +183,7 @@
+ 
+ /// channel mappings (NADAC only)
+ // This should be removed from the open source version
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
+ static const struct snd_pcm_chmap_elem mr_alsa_audio_nadac_playback_ch_map[9] = {
+     { .channels = 1,
+       .map = { SNDRV_CHMAP_MONO } },
+@@ -202,6 +203,7 @@
+       .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_FC, SNDRV_CHMAP_LFE, SNDRV_CHMAP_RL, SNDRV_CHMAP_RR, SNDRV_CHMAP_RLC, SNDRV_CHMAP_RRC} }, // 7.1 smpte
+     { }
+ };
++#endif
+ 
+ 
+ /// NADAC Master Output controls definitions
+@@ -2450,7 +2452,9 @@
+     strcpy(pcm->name, CARD_NAME);
+ 
+     snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &mr_alsa_audio_pcm_playback_ops);
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
+     snd_pcm_add_chmap_ctls(pcm, SNDRV_PCM_STREAM_PLAYBACK, mr_alsa_audio_nadac_playback_ch_map, 8, 0, NULL);
++#endif
+     snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,  &mr_alsa_audio_pcm_capture_ops);
+     pcm->info_flags = SNDRV_PCM_INFO_JOINT_DUPLEX;
+ 
+# this is included in 0006 linux kernel loglevel patch
+#--- a/driver/module_timer.c
+#+++ b/driver/module_timer.c
+#@@ -122,8 +122,10 @@
+     ktime_t period = ktime_set(0, base_period_); //100 ms
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,2,0)
+     hrtimer_start(&my_hrtimer_, period, HRTIMER_MODE_ABS);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,16,0)
++    tasklet_hrtimer_start(&my_hrtimer_, period, HRTIMER_MODE_ABS_SOFT);
+ #else
+-    tasklet_hrtimer_start(&my_hrtimer_, period, HRTIMER_MODE_ABS_SOFT);
++    tasklet_hrtimer_start(&my_hrtimer_, period, HRTIMER_MODE_ABS);
+ #endif
+ 
+     return 0;
+#@@ -158,6 +160,10 @@
+     // *clock_time = monotime.tv_sec * 1000000000L + monotime.tv_nsec;
+ }
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4,2,0)
++#define hrtimer_resolution LOW_RES_NSEC
++#endif
++
+ void set_base_period(uint64_t base_period)
+ {
+     base_period_ = base_period;
