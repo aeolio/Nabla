@@ -1,0 +1,108 @@
+Restructure the definitions for MTALLINUX && MTAL_KERNAL to allow compiling for kernels from version 3.2 onwards. 
+Introduce a variable (set as module parameter) that allows filtering the log level. Using the /sys interface, the value can be set at runtime: 
+
+	# echo "7" > /sys/module/MergingRavennaALSA/parameters/log_verbosity
+
+Default setting is KERN_WARNING (4), corresponding to the default console level in a production system. 
+
+--- a/driver/MTAL_DP.h
++++ b/driver/MTAL_DP.h
+@@ -112,45 +112,47 @@
+         #endif
+ 	#elif defined (MTAL_LINUX)
+ 		#if defined(MTAL_KERNEL)
+-            //#include <linux/printk.h>
+-            //#include <linux/kern_levels.h>
+-            /*#define MTAL_DP(...) //printk(KERN_INFO __VA_ARGS__)
+-            #define MTAL_DP_EMRG(...) //printk(KERN_EMERG  __VA_ARGS__)
+-            #define MTAL_DP_ALERT(...) //printk(KERN_ALERT __VA_ARGS__)
+-            #define MTAL_DP_CRIT(...) //printk(KERN_CRIT __VA_ARGS__)
+-            #define MTAL_DP_ERR(...) //printk(KERN_ERR __VA_ARGS__)
+-            #define MTAL_DP_WARN(...) //printk(KERN_WARNING __VA_ARGS__)
+-            #define MTAL_DP_NOTICE(...) //printk(KERN_NOTICE __VA_ARGS__)
+-            #define MTAL_DP_INFO(...) //printk(KERN_INFO __VA_ARGS__)
+-            #define MTAL_DP_DEBUG(...) //printk(KERN_DEBUG __VA_ARGS__)*/
+-
++            #include <linux/version.h>
+             // for some protability issue (arm linux 3.2), we cannot include printk which would do job
+             #include "MTAL_LKernelAPI.h"
+-            #include <linux/version.h>
+-            #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
++
++            #if LINUX_VERSION_CODE < KERNEL_VERSION(3,6,0)
++                #define KERN_DEFAULT    "<d>"   /* Use the default kernel loglevel */
++                #define KERN_EMERG  "<0>"	/* system is unusable			*/
++                #define KERN_ALERT  "<1>"	/* action must be taken immediately	*/
++                #define KERN_CRIT   "<2>"	/* critical conditions			*/
++                #define KERN_ERR    "<3>"	/* error conditions			*/
++                #define KERN_WARNING    "<4>"	/* warning conditions			*/
++                #define KERN_NOTICE "<5>"	/* normal but significant condition	*/
++                #define KERN_INFO   "<6>"	/* informational			*/
++                #define KERN_DEBUG  "<7>"	/* debug-level messages			*/
++            #else
+                 #include <linux/kern_levels.h>
+-                #define MTAL_DP(...) MTAL_LK_print(KERN_INFO __VA_ARGS__)
+-                #define MTAL_DP_EMRG(...) MTAL_LK_print(KERN_EMERG  __VA_ARGS__)
+-                #define MTAL_DP_ALERT(...) MTAL_LK_print(KERN_ALERT __VA_ARGS__)
+-                #define MTAL_DP_CRIT(...) MTAL_LK_print(KERN_CRIT __VA_ARGS__)
+-                #define MTAL_DP_ERR(...) MTAL_LK_print(KERN_ERR __VA_ARGS__)
+-                #define MTAL_DP_WARN(...) MTAL_LK_print(KERN_WARNING __VA_ARGS__)
+-                #define MTAL_DP_NOTICE(...) MTAL_LK_print(KERN_NOTICE __VA_ARGS__)
+-                #define MTAL_DP_INFO(...) MTAL_LK_print(KERN_INFO __VA_ARGS__)
+-                #define MTAL_DP_DEBUG(...) MTAL_LK_print(KERN_DEBUG __VA_ARGS__)
+-            #else
+-                //#include <linux/kernel.h>
+-                #define MTAL_DP(...) MTAL_LK_print("<d>"__VA_ARGS__)
+-                #define MTAL_DP_EMRG(...) MTAL_LK_print("<>"__VA_ARGS__)
+-                #define MTAL_DP_ALERT(...) MTAL_LK_print("<1>"__VA_ARGS__)
+-                #define MTAL_DP_CRIT(...) MTAL_LK_print("<2>"__VA_ARGS__)
+-                #define MTAL_DP_ERR(...) MTAL_LK_print("<3>"__VA_ARGS__)
+-                #define MTAL_DP_WARN(...) MTAL_LK_print("<4>"__VA_ARGS__)
+-                #define MTAL_DP_NOTICE(...) MTAL_LK_print("<5>"__VA_ARGS__)
+-                #define MTAL_DP_INFO(...) MTAL_LK_print("<6>"__VA_ARGS__)
+-                #define MTAL_DP_DEBUG(...) MTAL_LK_print("<7>"__VA_ARGS__)
+             #endif
+ 
++            #if LINUX_VERSION_CODE < KERNEL_VERSION(3,19,0)
++                #define LOGLEVEL_EMERG		0	/* system is unusable */
++                #define LOGLEVEL_ALERT		1	/* action must be taken immediately */
++                #define LOGLEVEL_CRIT		2	/* critical conditions */
++                #define LOGLEVEL_ERR		3	/* error conditions */
++                #define LOGLEVEL_WARNING	4	/* warning conditions */
++                #define LOGLEVEL_NOTICE		5	/* normal but significant condition */
++                #define LOGLEVEL_INFO		6	/* informational */
++                #define LOGLEVEL_DEBUG		7	/* debug-level messages */
++            #endif
++
++            // limit output verbosity
++            extern volatile int log_verbosity;
++
++            #define MTAL_DP             MTAL_DP_DEBUG
++            #define MTAL_DP_EMRG(...)	if(log_verbosity >= LOGLEVEL_EMERG) MTAL_LK_print(KERN_EMERG __VA_ARGS__)
++            #define MTAL_DP_ALERT(...)	if(log_verbosity >= LOGLEVEL_ALERT) MTAL_LK_print(KERN_ALERT __VA_ARGS__)
++            #define MTAL_DP_CRIT(...)	if(log_verbosity >= LOGLEVEL_CRIT) MTAL_LK_print(KERN_CRIT __VA_ARGS__)
++            #define MTAL_DP_ERR(...)	if(log_verbosity >= LOGLEVEL_ERR) MTAL_LK_print(KERN_ERR __VA_ARGS__)
++            #define MTAL_DP_WARN(...)	if(log_verbosity >= LOGLEVEL_WARNING) MTAL_LK_print(KERN_WARNING __VA_ARGS__)
++            #define MTAL_DP_NOTICE(...)	if(log_verbosity >= LOGLEVEL_NOTICE) MTAL_LK_print(KERN_NOTICE __VA_ARGS__)
++            #define MTAL_DP_INFO(...)	if(log_verbosity >= LOGLEVEL_INFO) MTAL_LK_print(KERN_INFO __VA_ARGS__)
++            #define MTAL_DP_DEBUG(...)	if(log_verbosity >= LOGLEVEL_DEBUG) MTAL_LK_print(KERN_DEBUG __VA_ARGS__)
+ 
+             #define MTAL_DPW
+ 		#else
+
+--- a/audio_driver.c
++++ b/driver/audio_driver.c
+@@ -90,7 +84,12 @@
+ module_param(enable, bool, 0444);
+ MODULE_PARM_DESC(enable, "Enable " CARD_NAME " soundcard.");
+ module_param(pcm_devs, int, 0444);
+-MODULE_PARM_DESC(pcm_devs, "PCM devices # (1) for Merging RAVENNA Audio driver.");
++MODULE_PARM_DESC(pcm_devs, "PCM devices # (1) for " CARD_NAME " Audio driver.");
++
++// log output verbosity
++int log_verbosity = LOGLEVEL_WARNING;
++module_param(log_verbosity, int, 0664);
++MODULE_PARM_DESC(log_verbosity, "Set verbosity of " CARD_NAME " kernel log output");
+ 
+ #define SUB_ALLOC_OUT_OF_SPACE -1
+ #define SUB_ALLOC_ADDED 1

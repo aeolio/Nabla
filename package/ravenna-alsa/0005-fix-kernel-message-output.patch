@@ -11,10 +11,11 @@ Kernel log output in file module_timer.c
 
 Since other modules use 100us as a time base, change the values in this location also. 
 Log level is adapted to reflect occurrence frequency and severity of the event. 
+Logging is done using the MTAL_DP* macros, this allows filtering the output in the future. 
 The immediate restart of the timer loop will be initiated not only for events that have already expired, but also if the next event is only a few microseconds away. 
 The return value of hrtimer_forward_now() measures number of overruns in terms of the supplied period, so calculate the overrun in terms of the base period and warn only if the next period is skipped completely. 
 
-These modifications allow a reasonable use of the Ravenna ALSA driver even in a virtual machine. 
+Additional version dependencies for kernels < 3.10 have been introduced to enable compilation down to version 3.2. 
 
 --- a/driver/PTP.c
 +++ b/driver/PTP.c
@@ -70,17 +71,17 @@ These modifications allow a reasonable use of the Ravenna ALSA driver even in a 
          {
 -            printk(KERN_INFO "Timer won't sleep, clock_timer is recall instantly\n");
 -            period = ktime_set(0, 0);
-+            printk(KERN_DEBUG "Timer won't sleep, clock_timer is recall instantly\n");
++            MTAL_DP_DEBUG("Timer won't sleep, clock_timer is recall instantly\n");
 +            period = ktime_set(0, 0); // force loop
          }
          else if (ktime_to_ns(period) > max_period_allowed || ktime_to_ns(period) < min_period_allowed)
          {
 -            printk(KERN_INFO "Timer period out of range: %lld [ms]. Target period = %lld\n", ktime_to_ns(period) / 1000000, base_period_ / 1000000);
-+            printk(KERN_INFO "Timer period out of range: %lld [100 us]. Target period = %lld [100 us]\n", NS_TO_100US(ktime_to_ns(period)), NS_TO_100US(base_period_));
++            MTAL_DP_DEBUG("Timer period out of range: %lld [100 us]. Target period = %lld [100 us]\n", NS_TO_100US(ktime_to_ns(period)), NS_TO_100US(base_period_));
              if (ktime_to_ns(period) > (unsigned long)5E9L)
              {
 -                printk(KERN_ERR "Timer period greater than 5s, set it to 1s!\n");
-+                printk(KERN_WARNING "Timer period greater than 5s, set it to 1s!\n");
++                MTAL_DP_DEBUG("Timer period greater than 5s, set it to 1s!\n");
                  period = ktime_set(0,((unsigned long)1E9L)); //1s
              }
          }
@@ -96,20 +97,42 @@ These modifications allow a reasonable use of the Ravenna ALSA driver even in a 
 +    // only warn for completely lost periods
 +	// the 50% overrun is monitored in timerProcess() 
 +    if(unlikely(ret_overrun && ktime_to_ns(period) * ret_overrun > base_period_ * 2))
-+        printk(KERN_INFO "Timer overrun ! (%d frames)\n", (int) (ktime_to_ns(period) * ret_overrun / base_period_));
++        MTAL_DP_INFO("Timer overrun ! (%d frames)\n", (int) (ktime_to_ns(period) * ret_overrun / base_period_));
 +
      return HRTIMER_RESTART;
 -
  }
  
  int init_clock_timer(void)
-@@ -161,5 +163,9 @@
+@@ -120,8 +122,10 @@
+     ktime_t period = ktime_set(0, base_period_); //100 ms
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,2,0)
+     hrtimer_start(&my_hrtimer_, period, HRTIMER_MODE_ABS);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,16,0)
++    tasklet_hrtimer_start(&my_hrtimer_, period, HRTIMER_MODE_ABS_SOFT);
+ #else
+-    tasklet_hrtimer_start(&my_hrtimer_, period, HRTIMER_MODE_ABS_SOFT);
++    tasklet_hrtimer_start(&my_hrtimer_, period, HRTIMER_MODE_ABS);
+ #endif
+ 
+     return 0;
+@@ -156,10 +160,18 @@
+     // *clock_time = monotime.tv_sec * 1000000000L + monotime.tv_nsec;
+ }
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4,2,0)
++#define hrtimer_resolution LOW_RES_NSEC
++#endif
++
+ void set_base_period(uint64_t base_period)
+ {
      base_period_ = base_period;
      min_period_allowed = base_period_ / 7;
      max_period_allowed = (base_period_ * 10) / 6;
+-    printk(KERN_INFO "Base period set to %lld ns\n", base_period_);
 +	/* the granularity of the timer loop */
 +	timer_resolution = min(min_period_allowed / 2, 2000ULL);
 +	if( timer_resolution < hrtimer_resolution )
 +		timer_resolution = hrtimer_resolution;
-     printk(KERN_INFO "Base period set to %lld ns\n", base_period_);
++    MTAL_DP_INFO("Base period set to %lld ns\n", base_period_);
  }

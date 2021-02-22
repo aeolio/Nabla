@@ -5,7 +5,7 @@
 
 start() {
 	printf "Loading Ravenna driver: "
-	modprobe -s MergingRavennaALSA
+	modprobe -s MergingRavennaALSA log_verbosity=4
 	# first startup is slow
 	sleep 1
 	status=$?
