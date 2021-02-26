@@ -1,4 +1,4 @@
-This patch was adapted from https://github.com/bondagit/aes67-linux-daemon ravenna-alsa-lkm-arm-32bit.patch and contains the 32bit patches to RTP_audio_stream.c only
+This patch was adapted from https://github.com/bondagit/aes67-linux-daemon ravenna-alsa-lkm-arm-32bit.patch and contains the 32bit patches to RTP_audio_stream.c and driver_manager.c only
 
 diff --git a/driver/RTP_audio_stream.c b/driver/RTP_audio_stream.c
 index 5a160e4..a5c84e4 100644
