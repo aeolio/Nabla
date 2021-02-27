@@ -1,5 +1,6 @@
 Logging should not occur inside a critical section. 
 
+Next absolute time calculation should not try to adjust by more than one time unit when fractions sum up. 
 Adapt timestamping to only use rounding. This significantly reduces errors later in the "Report drop" section of this function. 
 
 --- a/driver/PTP.c
@@ -19,43 +20,72 @@ Adapt timestamping to only use rounding. This significantly reduces errors later
  		self->m_dTIC_IGR = 0;
  		self->m_usTICLockCounter = TIC_LOCK_HYSTERESIS;
  	}
-@@ -945,12 +950,18 @@
+@@ -844,20 +848,20 @@
+     return &self->m_csSAC_Time_Lock;
+ }*/
+ 
+-
+ ///////////////////////////////////////////////////////////////////////////////
+ void computeNextAbsoluteTime(TClock_PTP* self, uint32_t ui32FrameCount)
+ {
+-	uint64_t ui64Period = self->m_dTIC_CurrentPeriod / PS_2_REF_UNIT; // [ps -> 100us]
+-
+-	self->m_ui64TIC_NextAbsoluteTime += ui64Period * ui32FrameCount;
+-	self->m_dTIC_NextAbsoluteTime_frac += CW_ll_modulo(self->m_dTIC_CurrentPeriod, PS_2_REF_UNIT) * ui32FrameCount;
+-	if (self->m_dTIC_NextAbsoluteTime_frac > PS_2_REF_UNIT)
+-	{
+-		uint32_t ui32EpsilonCount = (uint32_t)(self->m_dTIC_NextAbsoluteTime_frac) / PS_2_REF_UNIT;
+-		self->m_dTIC_NextAbsoluteTime_frac -= PS_2_REF_UNIT * ui32EpsilonCount;
+-		self->m_ui64TIC_NextAbsoluteTime += ui32EpsilonCount;
+-	}
++    uint64_t ui64Period = self->m_dTIC_CurrentPeriod / PS_2_REF_UNIT; // [ps -> 100us]
++    uint64_t ui64Fraction = CW_ll_modulo(self->m_dTIC_CurrentPeriod, PS_2_REF_UNIT); // [ps -> 100us]
++
++    self->m_ui64TIC_NextAbsoluteTime += ui64Period * ui32FrameCount;
++    self->m_dTIC_NextAbsoluteTime_frac += ui64Fraction * ui32FrameCount;
++    if (self->m_dTIC_NextAbsoluteTime_frac > PS_2_REF_UNIT)
++    {
++        // do not correct by more than one time unit in one loop
++        self->m_dTIC_NextAbsoluteTime_frac -= PS_2_REF_UNIT;
++        self->m_ui64TIC_NextAbsoluteTime += 1;
++    }
+ 
+ 	/* Orignial code with a loop :
+ 	uint64_t ui64Period = self->m_dTIC_CurrentPeriod / PS_2_REF_UNIT; // [ps -> 100us]
+@@ -945,26 +950,17 @@
              //MTAL_DP("2.ui64Q = %I64u \n", ui64Q);
  
              //MTAL_DP("Q : %I64u R: %u ", ui64Q, ui32R);
 -            if(ui32R < 4 * self->m_ui32SamplingRate / 44100) // to avoid using timestamps outside 80us of theoretical time
-+#if 0
-+			// edge detection window, initially 80 us, rounded
-+			uint32_t ui32Window = (uint32_t) ((((uint64_t) self->m_ui32FrameSize) +self->m_dTIC_BasePeriod /2) *80000ULL /self->m_dTIC_BasePeriod);
-+			if( ui32Window > self->m_ui32FrameSize / 2 )
-+				ui32Window = self->m_ui32FrameSize / 2;
-+			ui32Window = max(self->m_ui32FrameSize /100, 1);
-+            if(ui32R < ui32Window) // to avoid using timestamps outside 80us of theoretical time
-             {
-                 ui64CurrentTICCount = ui64Q + 1; // we add 1 because ui64Q is the count for the previous frame
-                 //iTICCountUpdateMethod = 1;
-             }
+-            {
+-                ui64CurrentTICCount = ui64Q + 1; // we add 1 because ui64Q is the count for the previous frame
+-                //iTICCountUpdateMethod = 1;
+-            }
 -            else if(ui32R > self->m_ui32FrameSize - 4 * self->m_ui32SamplingRate / 44100)
-+            else if(ui32R > self->m_ui32FrameSize - ui32Window)
-             {
-                 ui64CurrentTICCount = ui64Q + 1 + 1; // we add 1 because ui64Q is the count for the previous frame
-                 //iTICCountUpdateMethod = 2;
-@@ -965,6 +976,18 @@
- 				ui64CurrentTICCount = self->m_ui64LastTIC_Count + 1;
-                 //iTICCountUpdateMethod = 3;
-             }
-+#else
-+            // round the timestamp
+-            {
+-                ui64CurrentTICCount = ui64Q + 1 + 1; // we add 1 because ui64Q is the count for the previous frame
+-                //iTICCountUpdateMethod = 2;
+-            }
++
++            // just arithmetically round the timestamp
 +            if(ui32R < self->m_ui32FrameSize /2)
 +                ui64CurrentTICCount = ui64Q;
-+            else
+             else
+-            {
+-                // For debug
+-                /*if (self->m_ui64LastTIC_Count != ui64Q)
+-                {
+-                    MTAL_DP("self->m_ui64LastTIC_Count(%llu) != ui64Q(%llu) | ui32R[%llu]\n", self->m_ui64LastTIC_Count, ui64Q, ui32R);
+-                }*/
+-				ui64CurrentTICCount = self->m_ui64LastTIC_Count + 1;
+-                //iTICCountUpdateMethod = 3;
+-            }
 +                ui64CurrentTICCount = ui64Q + 1;
 +            // slight overshoots may happen due to variations in the timer loop
 +            if (ui64CurrentTICCount == self->m_ui64LastTIC_Count)
 +                ui64CurrentTICCount += 1;
 +            else if (ui64CurrentTICCount == self->m_ui64LastTIC_Count + 2)
 +                ui64CurrentTICCount -= 1;
-+#endif
          }
  
  		ui64AbsoluteTime = self->m_ui64TIC_NextAbsoluteTime;

@@ -1,0 +1,45 @@
+--- a/driver/module_timer.c
++++ b/driver/module_timer.c
+@@ -85,11 +85,11 @@
+     }
+     while (ktime_to_ns(period) == 0); // this able to be rarely true
+ 
+-    ret_overrun = hrtimer_forward_now(timer, period);
++    ret_overrun = hrtimer_forward(timer, now, period);
+     // only warn for completely lost periods
+ 	// the 50% overrun is monitored in timerProcess() 
+     if(unlikely(ret_overrun && ktime_to_ns(period) * ret_overrun > base_period_ * 2))
+-        MTAL_DP_INFO("Timer overrun ! (%d frames)\n", (int) (ktime_to_ns(period) * ret_overrun / base_period_));
++        MTAL_DP_DEBUG("Timer overrun ! (%d frames)", (int) (ktime_to_ns(period) * ret_overrun / base_period_));
+ 
+     return HRTIMER_RESTART;
+ }
+@@ -98,7 +98,7 @@
+ {
+     stop_ = 0;
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,2,0)
+-    hrtimer_init(&my_hrtimer_, CLOCK_MONOTONIC, HRTIMER_MODE_ABS_SOFT);
++    hrtimer_init(&my_hrtimer_, CLOCK_MONOTONIC, HRTIMER_MODE_REL_SOFT);
+     my_hrtimer_.function = &timer_callback;
+ #else
+     tasklet_hrtimer_init(&my_hrtimer_, timer_callback, CLOCK_MONOTONIC/*_RAW*/, HRTIMER_MODE_PINNED/*HRTIMER_MODE_ABS*/);
+@@ -120,12 +120,12 @@
+ int start_clock_timer(void)
+ {
+     ktime_t period = ktime_set(0, base_period_); //100 ms
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,2,0)
+-    hrtimer_start(&my_hrtimer_, period, HRTIMER_MODE_ABS);
+-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,16,0)
+-    tasklet_hrtimer_start(&my_hrtimer_, period, HRTIMER_MODE_ABS_SOFT);
+-#else
+-    tasklet_hrtimer_start(&my_hrtimer_, period, HRTIMER_MODE_ABS);
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,2,0) // tasklet code deprecated
++    hrtimer_start(&my_hrtimer_, period, HRTIMER_MODE_REL_SOFT);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,16,0) // integrated soft interrupt context
++    tasklet_hrtimer_start(&my_hrtimer_, period, HRTIMER_MODE_REL_SOFT);
++#else // soft interrupt context provided by tasklet
++    tasklet_hrtimer_start(&my_hrtimer_, period, HRTIMER_MODE_REL);
+ #endif
+ 
+     return 0;
+
