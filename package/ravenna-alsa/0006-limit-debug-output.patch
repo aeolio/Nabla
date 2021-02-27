@@ -100,7 +100,7 @@ Default setting is KERN_WARNING (4), corresponding to the default console level 
 +MODULE_PARM_DESC(pcm_devs, "PCM devices # (1) for " CARD_NAME " Audio driver.");
 +
 +// log output verbosity
-+int log_verbosity = LOGLEVEL_WARNING;
++int log_verbosity = 4;
 +module_param(log_verbosity, int, 0664);
 +MODULE_PARM_DESC(log_verbosity, "Set verbosity of " CARD_NAME " kernel log output");
  

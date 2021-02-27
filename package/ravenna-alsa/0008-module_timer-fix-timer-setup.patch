@@ -5,7 +5,7 @@
      while (ktime_to_ns(period) == 0); // this able to be rarely true
  
 -    ret_overrun = hrtimer_forward_now(timer, period);
-+    ret_overrun = hrtimer_forward(timer, now, period);
++    ret_overrun = hrtimer_forward(timer, ns_to_ktime(now), period);
      // only warn for completely lost periods
  	// the 50% overrun is monitored in timerProcess() 
      if(unlikely(ret_overrun && ktime_to_ns(period) * ret_overrun > base_period_ * 2))
