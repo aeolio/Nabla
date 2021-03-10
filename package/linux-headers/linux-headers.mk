@@ -12,3 +12,7 @@ endif
 ifeq ($(BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_3_18),y)
 LINUX_HEADERS_EXCLUDES += samples
 endif
+# RT patch for 4.19 kernel has patches in arm/configs
+ifeq ($(BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_4_19),y)
+LINUX_HEADERS_EXCLUDES = *.bmp
+endif
