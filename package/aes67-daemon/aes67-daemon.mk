@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-AES67_DAEMON_VERSION = af2538076371
+AES67_DAEMON_VERSION = v1.1
 AES67_DAEMON_SOURCE = aes67-daemon-$(AES67_DAEMON_VERSION).tar.gz
 AES67_DAEMON_SITE = https://github.com/bondagit/aes67-linux-daemon.git
 AES67_DAEMON_SITE_METHOD = git
@@ -35,7 +35,7 @@ define AES67_DAEMON_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 $(@D)/$(AES67_DAEMON_SUBDIR)/aes67-daemon $(TARGET_DIR)/usr/sbin
 	$(INSTALL) -D -m 0644 $(@D)/$(AES67_DAEMON_SUBDIR)/daemon.conf $(TARGET_DIR)/etc/aes67-daemon.conf
 	$(INSTALL) -d -m 0755 $(TARGET_DIR)/var/lib/ravenna
-	$(INSTALL) -D -m 0644 $(@D)/demo/status.json $(TARGET_DIR)/var/lib/ravenna
+	$(INSTALL) -D -m 0644 $(@D)/test/status.json $(TARGET_DIR)/var/lib/ravenna
 endef
 
 define AES67_DAEMON_INSTALL_INIT_SYSV
