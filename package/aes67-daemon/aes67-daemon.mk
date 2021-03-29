@@ -4,10 +4,8 @@
 #
 ################################################################################
 
-AES67_DAEMON_VERSION = v1.1
-AES67_DAEMON_SOURCE = aes67-daemon-$(AES67_DAEMON_VERSION).tar.gz
-AES67_DAEMON_SITE = https://github.com/bondagit/aes67-linux-daemon.git
-AES67_DAEMON_SITE_METHOD = git
+AES67_DAEMON_VERSION = 1.1
+AES67_DAEMON_SITE = $(call github,bondagit,aes67-linux-daemon,v$(AES67_DAEMON_VERSION))
 AES67_DAEMON_LICENSE = GPLv3
 AES67_DAEMON_LICENSE_FILES = LICENSE
 AES67_DAEMON_INSTALL_STAGING = NO
