@@ -2,9 +2,15 @@
 # function library. These functions are used in S89rtopt and S95mpd
 #
 
-# process priority groups
-SOFTIRQ_PRIORITY=1
-NETWORK_PRIORITY=2
+# this list is an abbreviation of a map found in RedHat's tuning guide
+#   access.redhat.com/documentation/en-us/red_hat_enterprise_linux_for_real_time/8/html/tuning_guide/index
+
+# list of process priorities
+PRIORITY_LIST="SOFTIRQ_PRIORITY NETWORK_PRIORITY HARDIRQ_PRIORITY"
+
+# process priority values
+SOFTIRQ_PRIORITY=2
+NETWORK_PRIORITY=3
 HARDIRQ_PRIORITY=51
 
 # the name of the configuration directory on the boot device
