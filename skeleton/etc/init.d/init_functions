@@ -29,9 +29,9 @@ _chrt_policy() {
 }
 
 # retrieve a process's pid from a partial match
-_get_pid() {
+_pidof() {
 	local process=$1
-	ps | grep $process | awk '$5!="grep" {print $1}'
+	ps | awk '$5~/'$process'/ {print $1}'
 }
 
 # convert an integer number into a hexadecimal mask value

@@ -24,13 +24,13 @@ for cpu in $available_cpus; do
 	fi
 done
 
-# adjust configured processes' priority 
+# adjust configured processes' priority
 for priority in $PRIORITY_LIST; do
 	process_list=$(eval echo \$${priority}_LIST)
 	priority_value=$(eval echo \$${priority})
 	for process in $process_list; do
 		echo $process $priority_value
-		for pid in $(_get_pid $process); do chrt $(_chrt_policy) -p $priority_value $pid; done
+		for pid in $(_pidof $process); do chrt $(_chrt_policy) -p $priority_value $pid; done
 	done
 done
 
@@ -61,7 +61,7 @@ echo $(_get_nrt_cpumask) > /sys/bus/workqueue/devices/writeback/cpumask
 # set processor affinity to partitioned cpu
 rt_id=$(_get_rt_cpuid)
 for process in $CPU_AFFINITY_LIST; do
-	for pid in $(_get_pid $process); do
+	for pid in $(_pidof $process); do
 		taskset -p $(_get_cpumask $rt_id) $pid
 	done
 done
