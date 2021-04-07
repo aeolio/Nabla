@@ -22,14 +22,14 @@ Buildroot configurations exist for selected hardware platforms. The configs dire
 
 Image build
 
-Download Buildroot from https://buildroot.org/download.html and unpack into ~/buildroot
+Download Buildroot from https://buildroot.org/download.html and unpack into ./buildroot
   $ wget https://buildroot.org/downloads/buildroot-2020.02.8.tar.bz2
   $ tar xf buildroot-2020.02.8.tar.bz2 ./buildroot
 
 Clone Buildroot external tree
   $ git checkout https://github.com/aeolio/Nabla.git br2-external
 
-Create output directory and initialize build system. 
+Create output directory and initialize build system. Select the defconfig file from the list in 'Configuration'
   $ mkdir nabla
   $ make BR2_EXTERNAL=$PWD/br2-external/ -C $PWD/buildroot/ O=$PWD/nabla generic_x86-64_defconfig
 
@@ -37,6 +37,23 @@ Build the firmware image
   $ cd nabla
   $ make
 
-Burn the final sdcard.img found in nabla/images to a USB stick. If the resulting device should not be bootable, re-install syslinux. Check for the USB stick's device file and replace sdX1 with the correct one. 
+
+Installation
+
+Write the final sdcard.img found in nabla/images to a USB stick. If the resulting device should not be bootable, re-install syslinux. Check for the USB stick's device file and replace sdX1 with the correct one. 
   $ fdisk -l
   $ syslinux --install /dev/sdX1
+
+Raspberry Pi does not use image files; instead transfer the files in the folder rpi-firmware plus the files bcm2711-rpi-4-b.dtb, Image, rootfs.cpio.gz to a microSD card. 
+
+
+Upgrade
+
+Using a terminal, connect via ssh to the embedded system and make the boot partition writeable:
+  $ ssh nabla
+  [nabla]# mount -o remount,rw /media/boot
+
+Using a file browser, connect via sftp to the embedded system and copy bzImage (for Raspberry Pi: Image and rootfs.cpio.gz) to the boot partition mounted on /media/boot. 
+
+Now reboot the machine from the terminal session:
+  [nabla]# reboot
