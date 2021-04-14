@@ -76,16 +76,12 @@ fi
 ### patch sshd configuration files in /etc/ssh
 ### openssh 7.x changed default behaviour, but leave in place for documentation
 ### root login behaviour also changed, this is handled by patch in package folder
-_ETC_SSH="$TARGET_DIR/etc/ssh"
-SSHD_CONFIG=${_ETC_SSH}/sshd_config
-if [ $(grep -c "^#HostKey /etc/ssh_host*_key$" $SSHD_CONFIG) -gt 0 ]; then
-	echo "patching $SSHD_CONFIG"
-	sed '/^#/ s/#HostKey \/etc\/ssh_host/HostKey \/etc\/ssh\/ssh_host/' < $SSHD_CONFIG > ${SSHD_CONFIG}_ 
-	# cleaning up
-	if [ $? -eq 0 ]; then
-		rm $SSHD_CONFIG && mv ${SSHD_CONFIG}_ $SSHD_CONFIG
-	else
-		rm ${SSHD_CONFIG}_ 
+if [ $(grep -c "BR2_PACKAGE_OPENSSH_SERVER=y" $BR2_CONFIG) -gt 0 ]; then
+	_ETC_SSH="$TARGET_DIR/etc/ssh"
+	SSHD_CONFIG=${_ETC_SSH}/sshd_config
+	if [ $(grep -c "^#HostKey /etc/ssh_host*_key$" $SSHD_CONFIG) -gt 0 ]; then
+		echo "patching $SSHD_CONFIG"
+		sed -e '/^#/ s/#HostKey \/etc\/ssh_host/HostKey \/etc\/ssh\/ssh_host/' -i $SSHD_CONFIG
 	fi
 fi
 
@@ -136,7 +132,7 @@ if [ $(grep -c "BR2_PACKAGE_LINUXPTP=y" $BR2_CONFIG) -gt 0 ]; then
 		sed -e '/^time_stamping/ s/hardware/software/' \
 			-e '/^slaveOnly/ s/1/0/' -i $LINUXPTP_CONFIG
 	fi
-	if [ -f $LINUXPTP_CONFIG ] && [ $(grep -c "^[lo]$" $LINUXPTP_CONFIG) -eq 0 ]; then
+	if [ -f $LINUXPTP_CONFIG ] && [ $(grep -c "^\[lo\]$" $LINUXPTP_CONFIG) -eq 0 ]; then
 		echo "add loopback interface to $LINUXPTP_CONFIG"
 		echo "" >> $LINUXPTP_CONFIG
 		echo "[lo]" >> $LINUXPTP_CONFIG
