@@ -1,3 +1,34 @@
+menu "Automatic settings"
+	if BR2_PACKAGE_MPD
+		config BR2_PACKAGE_MPD_DEFAULTS
+			bool "mpd webserver"
+			default y
+			select BR2_PACKAGE_LIGHTTPD
+			help 
+			  "mpd needs a web server"
+	endif
+
+	# this does not work, unfortunately
+	# config item must be set manually
+	if BR2_PACKAGE_LIBMAD
+		config BR2_PACKAGE_LIBMAD_DEFAULTS
+			bool "libmad defaults"
+			default y
+			select BR2_PACKAGE_LIBMAD_OPTIMIZATION_ACCURACY
+			help 
+			  "prefer accuracy over speed"
+	endif
+
+	if BR2_PACKAGE_ALSA_UTILS_ALSALOOP
+		config BR2_PACKAGE_ALSA_UTILS_ALSALOOP_DEFAULTS
+			bool "alsaloop defaults"
+			default y
+			select BR2_PACKAGE_LIBSAMPLERATE
+			help 
+			  "alsaloop depends on libsamplerate"
+	endif
+endmenu
+
 menu "Audio and video applications"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/brutefir/Config.in"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/folve/Config.in"
