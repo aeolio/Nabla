@@ -3,7 +3,9 @@
 # wpa_supplicant	Starts wireless connection handler.
 #
 
-script=$(basename $0)
+DAEMON=wpa_supplicant
+PIDFILE="/var/run/$DAEMON.pid"
+bin_file=/usr/sbin/wpa_supplicant
 cfg_file="/etc/wpa_supplicant/wpa_supplicant.conf"
 log_file="/var/log/wpa_supplicant.log"
 
@@ -17,21 +19,29 @@ for i in /sys/class/net/wlan?; do
 	config="${config} -i`basename $i` -Dnl80211,wext -c${cfg_file}"
 done
 
+start() {
+	echo -n "Starting $DAEMON... "
+	start-stop-daemon -S -b -m -p $PIDFILE -x /usr/sbin/wpa_supplicant -- -B -f${log_file} ${config}
+	[ ! -z $(pidof $DAEMON) ] && echo "OK" || echo "FAIL"
+}
+
+stop() {
+	echo -n "Stopping $DAEMON... "
+	start-stop-daemon -K -p $PIDFILE
+	[ $? -eq 0 ] && echo "OK" || echo "ERROR"
+}
+
+restart() {
+	stop
+	start
+}
+
 case "$1" in
-  start)
-	echo "$script: Starting wpa_supplicant..."
-	/usr/sbin/wpa_supplicant -B -f${log_file} ${config}
-	;;
-  stop)
-	echo -n "Stopping wpa_supplicant..."
-	kill -9 $(ps -w | grep wpa_supplicant | awk '{print $1; exit}')
-	;;
-  restart)
-	"$0" stop
-	"$0" start
+  start|stop|restart)
+	"$1"
 	;;
   *)
-	echo "Usage: $script {start|stop|restart}"
+	echo "Usage: $0 {start|stop|restart}"
 	exit 1
 esac
 

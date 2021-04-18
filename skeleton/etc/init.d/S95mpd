@@ -75,43 +75,31 @@ start() {
 	unmute
 	# mpd priority is below default hard interrupt priority (50)
 	ulimit -HS -r 50
-	# mpd needs a pid_file entry in mpd.conf corresponding to $PIDFILE
-	# using the start-stop-daemon --make-pidfile option does not work
+	# mpd creates its own $PIDFILE, do not use --make-pidfile 
 	start-stop-daemon --start --quiet --background --exec /usr/bin/mpd
-	status=$?
-	if [ "$status" -eq 0 ]; then
-		echo "OK"
-	else
-		echo "FAIL"
-	fi
-	return "$status"
+	[ ! -z $(pidof mpd) ] && echo "OK" || echo "FAIL"
 } 
 
 stop() {
 	echo -n "Stopping mpd: "
 	start-stop-daemon --stop --quiet --pidfile $PIDFILE
 	status=$?
-	if [ "$status" -eq 0 ]; then
-		echo "OK"
-	else
-		echo "FAIL"
-	fi
-	return "$status"
+	[ $? = 0 ] && echo "OK" || echo "FAIL"
 } 
 
+restart() {
+	stop
+	sleep 1
+	start
+}
+
 case "$1" in
-	start)
-		start
-		;;
-	stop) 
-		stop
-		;;
-	restart|reload) 
-		stop
-		sleep 1 
-		start
-		;;
-	*)
-		echo "Usage: $0 {start|stop|restart}" 
-		exit 1
+  start|stop|restart)
+	"$1"
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
 esac
+
+exit $?
