@@ -56,8 +56,10 @@ Netzwerk einrichten
   https://wiki.debian.org/NetworkConfiguration#Configuring_the_interface_manually
 /etc/wpa_supplicant/wpa_supplicant.conf
   http://w1.fi/wpa_supplicant/
-  
-Sowohl eth0 als auch wlan0 sind mit DHCP konfiguriert, wlan0 wird über WPA 
+
+Das Programm wpa_supplicant verfügt über kein Socket Interface, deswegen den Eintrag ctrl_interface= unbedingt weglassen, sont startet der Dienst nicht. 
+
+Sowohl eth0 als auch wlan0 sind mit DHCP konfiguriert; wlan0 wird über WPA2
 authentisiert, die nötigen Einstellungen nimmt man in der Datei wpa_supplicant.conf 
 vor. Normalerweise ist es ausreichend, SSID, Benutzername und Kennwort in diese 
 Datei einzutragen. Wenn man statische IP Adressen benutzen möchte, ist etwas 
@@ -73,7 +75,7 @@ muss der Ausgang an die verwendete Hardware angepasst werden.
 audio_output {
 	type		"alsa"
 	name		"USB 2.0"
-	device		"hw:0,0" ## change here
+	device		"hw:0,0" # <-- change here
 	period_time	"20000"
 	buffer_time	"500000"
 	mixer_type	"none"

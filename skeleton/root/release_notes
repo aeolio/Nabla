@@ -1,3 +1,9 @@
+2021-04-17
+Reduce Raspberry Pi 4B overclocking to 1.8 GHz.
+
+2021-04-12
+New wpa_supplicant now without control interface. Configuration entry 'ctrl_interface' removed. Individual wpa_supplicant.conf files need to be adapted.  
+
 2020-12-19
 Switched Raspberry Pi to mainline Linux kernel 5.10.y
 
