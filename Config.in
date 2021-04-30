@@ -8,6 +8,15 @@ menu "Automatic settings"
 			  "mpd needs a web server"
 	endif
 
+	if BR2_PACKAGE_MPD_MAD || BR2_PACKAGE_MPD_MPG123
+		config BR2_PACKAGE_MPD_MP3
+			bool "mpd mp3 support"
+			default y
+			select BR2_PACKAGE_MPD_ID3TAG
+			help 
+				"mp3 needs id3 tags enabled"
+		endif
+
 	# this does not work, unfortunately
 	# config item must be set manually
 	if BR2_PACKAGE_LIBMAD
