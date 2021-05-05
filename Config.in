@@ -1,42 +1,37 @@
-menu "Automatic settings"
-	if BR2_PACKAGE_MPD
-		config BR2_PACKAGE_MPD_DEFAULTS
-			bool "mpd webserver"
-			default y
-			select BR2_PACKAGE_LIGHTTPD
-			help 
-			  "mpd needs a web server"
-	endif
+#
+# automatic configuration
+#
 
-	if BR2_PACKAGE_MPD_MAD || BR2_PACKAGE_MPD_MPG123
-		config BR2_PACKAGE_MPD_MP3
-			bool "mpd mp3 support"
-			default y
-			select BR2_PACKAGE_MPD_ID3TAG
-			help 
-				"mp3 needs id3 tags enabled"
-		endif
+# mpd needs a web server for cover art
+config BR2_PACKAGE_MPD_DEFAULTS
+	bool
+	default y if BR2_PACKAGE_MPD
+	select BR2_PACKAGE_LIGHTTPD
 
-	# this does not work, unfortunately
-	# config item must be set manually
-	if BR2_PACKAGE_LIBMAD
-		config BR2_PACKAGE_LIBMAD_DEFAULTS
-			bool "libmad defaults"
-			default y
-			select BR2_PACKAGE_LIBMAD_OPTIMIZATION_ACCURACY
-			help 
-			  "prefer accuracy over speed"
-	endif
+# mp3 playback depends on id3tag
+config BR2_PACKAGE_MPD_MP3
+	bool
+	default y if BR2_PACKAGE_MPD_MAD || BR2_PACKAGE_MPD_MPG123
+	select BR2_PACKAGE_MPD_ID3TAG
 
-	if BR2_PACKAGE_ALSA_UTILS_ALSALOOP
-		config BR2_PACKAGE_ALSA_UTILS_ALSALOOP_DEFAULTS
-			bool "alsaloop defaults"
-			default y
-			select BR2_PACKAGE_LIBSAMPLERATE
-			help 
-			  "alsaloop depends on libsamplerate"
-	endif
-endmenu
+# for libmad, prefer accuracy over speed
+#	this does not work, unfortunately; 
+#	config item needs to be set manually
+config BR2_PACKAGE_LIBMAD_DEFAULTS
+	bool
+	default y if BR2_PACKAGE_LIBMAD
+	select BR2_PACKAGE_LIBMAD_OPTIMIZATION_ACCURACY
+
+# alsaloop depends on libsamplerate
+config BR2_PACKAGE_ALSA_UTILS_ALSALOOP_DEFAULTS
+	bool
+	default y if BR2_PACKAGE_ALSA_UTILS_ALSALOOP
+	select BR2_PACKAGE_LIBSAMPLERATE
+
+
+#
+# external options menu
+#
 
 menu "Audio and video applications"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/brutefir/Config.in"
