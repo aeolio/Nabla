@@ -30,7 +30,7 @@ isp_freq=360
 v3d_freq=360
 hevc_freq=360
 
-# 2GHz CPU frequency
+# 1.8GHz CPU frequency
 over_voltage=2
 arm_freq=1800
 #arm_freq_min=600
