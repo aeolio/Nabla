@@ -1,4 +1,0 @@
-2020-06-16
-raspberrypi/linux kernel tree is at 5.4.45
-
-no changes to RT patch set
