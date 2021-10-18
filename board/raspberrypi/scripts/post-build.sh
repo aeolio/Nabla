@@ -3,7 +3,7 @@
 
 BOOT_FILE=${BINARIES_DIR}/rpi-firmware/cmdline.txt
 CONFIG_FILE=${BINARIES_DIR}/rpi-firmware/config.txt
-MAGIC_TEXT="^# System configuration parameters for Raspberry Pi 4$"
+TEMPLATE_TEXT="{.*}"
 
 ### modify cmdline.txt
 # remove root parameter
@@ -27,28 +27,18 @@ if ! grep -q 'nohz_full=' "${BOOT_FILE}"; then
 	sed -i 's/$/ nohz_full=3/' ${BOOT_FILE} 
 fi
 
-### copy and modify config.txt
-# check if the config file is in place
-if ! [ -f ${CONFIG_FILE} ] || ! $(grep -q "${MAGIC_TEXT}" ${CONFIG_FILE}); then
-	board_directory="$(dirname $0)"
-	cp ${board_directory}/config.txt ${CONFIG_FILE}
-	firmware_variant=$(grep BR2_PACKAGE_RPI_FIRMWARE_[A-Z]*=y ${BR2_CONFIG})
+### modify config.txt
+# check if the config file contains template strings
+if $(grep -q "${TEMPLATE_TEXT}" ${CONFIG_FILE}); then
+	firmware_variant=$(grep BR2_PACKAGE_RPI_FIRMWARE_VARIANT_.*=y ${BR2_CONFIG})
 	firmware_variant=${firmware_variant%%=*}
-	firmware_variant=${firmware_variant##*_}
+	firmware_variant=${firmware_variant##BR2_PACKAGE_RPI_FIRMWARE_VARIANT_}
 	project_name="$(basename ${BASE_DIR})"
 	build_date=$(date +"%Y-%m-%d")
-	# replace placeolder strings
+	# replace placeholder strings
 	sed -i 's/{project_name}/'${project_name}'/' ${CONFIG_FILE}
 	sed -i 's/{build_date}/'${build_date}'/' ${CONFIG_FILE}
 	sed -i 's/{buildroot_firmware}/'${firmware_variant}'/' ${CONFIG_FILE}
-fi
-
-### create missing nvram file for Raspberry Pi 4
-_TARGET_DIR="${TARGET_DIR}/lib/firmware"
-src_file=brcm/brcmfmac43455-sdio.txt
-dst_file=brcm/brcmfmac43455-sdio.raspberrypi,4-model-b.txt
-if [ -f ${_TARGET_DIR}/${src_file} ] && ! [ -h ${_TARGET_DIR}/${dst_file} ]; then
-	ln -rs ${_TARGET_DIR}/${src_file} ${_TARGET_DIR}/${dst_file}
 fi
 
 ### copy basic configuration files
