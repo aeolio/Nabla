@@ -13,8 +13,8 @@
  ##
  ## directory listing configuration
  ##
--include "conf.d/dirlisting.conf"
-+#include "conf.d/dirlisting.conf"
+-include conf_dir + "/conf.d/dirlisting.conf"
++#include conf_dir + "/conf.d/dirlisting.conf"
  
  ##
  ## Should lighttpd follow symlinks?
