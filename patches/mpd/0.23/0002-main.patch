@@ -1,0 +1,35 @@
+--- a/src/Main.cxx
++++ b/src/Main.cxx
+@@ -63,6 +63,10 @@
+ #include "util/RuntimeError.hxx"
+ #include "util/ScopeExit.hxx"
+ 
++#ifdef ENABLE_RTOPT
++#include "thread/RealtimeOption.hxx"
++#endif
++
+ #ifdef ENABLE_DAEMON
+ #include "unix/Daemon.hxx"
+ #endif
+@@ -391,6 +395,11 @@
+ 
+ 	log_init(raw_config, options.verbose, options.log_stderr);
+ 
++#ifdef ENABLE_RTOPT
++	RealtimeOption::Initialize(raw_config);
++	RealtimeOption::ChangeThreadPriority("main");
++#endif
++
+ 	Instance instance;
+ 	global_instance = &instance;
+ 
+@@ -434,6 +443,9 @@
+ 	spl_global_init(raw_config);
+ #ifdef ENABLE_ARCHIVE
+ 	const ScopeArchivePluginsInit archive_plugins_init;
++#endif
++#ifdef ENABLE_RTOPT
++        RealtimeOption::LockMemory();
+ #endif
+ 
+ 	pcm_convert_global_init(raw_config);

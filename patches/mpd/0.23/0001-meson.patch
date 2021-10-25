@@ -1,0 +1,36 @@
+--- a/meson.build
++++ b/meson.build
+@@ -231,6 +231,9 @@
+ conf.set('ENABLE_INOTIFY', enable_inotify)
+ 
+ conf.set('ENABLE_DSD', get_option('dsd'))
++
++enable_rtopt = get_option('rtopt')
++conf.set('ENABLE_RTOPT', enable_rtopt)
+ 
+ inc = include_directories(
+   'src',
+@@ -359,6 +362,12 @@
+   ]
+ endif
+ 
++if enable_rtopt
++  sources += [
++    'src/thread/RealtimeOption.cxx',
++  ]
++endif
++
+ if not is_android
+   sources += [
+     'src/CommandLine.cxx',
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -11,6 +11,8 @@
+ 
+ option('systemd_system_unit_dir', type: 'string', description: 'systemd system service directory')
+ option('systemd_user_unit_dir', type: 'string', description: 'systemd user service directory')
++
++option('rtopt', type: 'boolean', value: false, description: 'Yan\'s RT patch')
+ 
+ #
+ # Options for developers
