@@ -23,8 +23,8 @@ Buildroot configurations exist for selected hardware platforms. The configs dire
 Image build
 
 Download Buildroot from https://buildroot.org/download.html and unpack into ./buildroot
-  $ wget https://buildroot.org/downloads/buildroot-2020.02.8.tar.bz2
-  $ tar xf buildroot-2020.02.8.tar.bz2 ./buildroot
+  $ wget https://buildroot.org/downloads/buildroot-2021.02.6.tar.bz2
+  $ tar xf buildroot-2021.02.6.tar.bz2 ./buildroot
 
 Clone Buildroot external tree
   $ git checkout https://github.com/aeolio/Nabla.git br2-external
