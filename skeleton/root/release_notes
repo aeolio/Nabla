@@ -1,3 +1,9 @@
+2021-10-25
+mpd version 0.23.y
+
+2021-04-27
+Use libmpg123 on server, libmad on client machine
+
 2021-04-17
 Reduce Raspberry Pi 4B overclocking to 1.8 GHz.
 
@@ -14,7 +20,10 @@ Modernize process priority configuration. nabla.conf needs to be adapted.
 Include e2fsprogs in root file system
 
 2020-10-30
-Implement two machine configuration using NFS for mpd
+Implement two-machine configuration using NFS for mpd
+
+2020-10-23
+mpd version 0.22.y
 
 2020-09-30
 Raspberry Pi 4B running on Kernel 4.9.y
