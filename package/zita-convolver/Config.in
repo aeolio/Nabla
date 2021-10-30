@@ -2,6 +2,7 @@ config BR2_PACKAGE_ZITA_CONVOLVER
 	bool "zita-convolver"
 	select BR2_PACKAGE_FFTW_DOUBLE
 	help
-	  zita-convolver is a C++ library implementing a real-time convolution matrix.
+	  zita-convolver is a C++ library imple-
+	  menting a real-time convolution matrix.
 
 	  http://kokkinizita.linuxaudio.org/linuxaudio/downloads

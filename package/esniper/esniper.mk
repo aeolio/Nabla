@@ -10,8 +10,6 @@ ESNIPER_SITE = https://sourceforge.net/projects/esniper/files/esniper/2.35.0
 ESNIPER_DEPENDENCIES = libcurl openssl ca-certificates
 ESNIPER_LICENSE = GPLv2+
 ESNIPER_LICENSE_FILES = COPYING
-ESNIPER_INSTALL_STAGING = NO
-ESNIPER_INSTALL_TARGET = YES
 
 ESNIPER_CONF_OPTS += --with-curl-config=$(STAGING_DIR)/usr/bin/curl-config
 

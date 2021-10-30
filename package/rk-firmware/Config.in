@@ -4,7 +4,7 @@ config BR2_PACKAGE_RK_FIRMWARE
 	help
 	  Rockchip Firmware for Radxa boards
 
-	  Pre-compiled binaries of the bootloader and trusted 
+	  Pre-compiled binaries of the bootloader and trusted
 	  firmware as well as tools for generating boot images
 
 	  https://github.com/radxa/rkbin
@@ -14,8 +14,8 @@ config BR2_PACKAGE_RK_FIRMWARE_CHIP_NAME
 	default ""
 	depends on BR2_PACKAGE_RK_FIRMWARE
 	help
-	  Specify the name of the SoC here. This string is used in selecting corresponding 
-	  configurations from the package directories RKBOOT and RKTRUST, and must 
-	  be UPPERCASE. 
+	  Specify the name of the SoC here. This string is used in
+	  selecting corresponding configurations from the package
+	  directories RKBOOT and RKTRUST, and must be UPPERCASE.
 
-	  Radxa Rock Pi 4 uses RK3399. 
+	  Radxa Rock Pi 4 uses RK3399.

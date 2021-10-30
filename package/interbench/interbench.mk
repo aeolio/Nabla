@@ -5,16 +5,13 @@
 ################################################################################
 
 INTERBENCH_VERSION = 0.31
-INTERBENCH_SOURCE = interbench-$(INTERBENCH_VERSION).tar.gz
 INTERBENCH_SITE = $(call github,ckolivas,interbench,master)
 INTERBENCH_LICENSE = GPLv2
 INTERBENCH_LICENSE_FILES = COPYING
-INTERBENCH_INSTALL_STAGING = NO
-INTERBENCH_INSTALL_TARGET = YES
 
 # interbench comes with precompiled binaries
 define INTERBENCH_REMOVE_OBJECTS
-    $(RM) -fr $(@D)/*.o interbench
+	$(RM) -fr $(@D)/*.o interbench
 endef
 INTERBENCH_POST_EXTRACT_HOOKS += INTERBENCH_REMOVE_OBJECTS
 
