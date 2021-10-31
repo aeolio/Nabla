@@ -1,6 +1,6 @@
 --- interbench-master/interbench.c
 +++ interbench-next/interbench.c
-@@ -1408,10 +1408,10 @@
+@@ -1406,10 +1406,10 @@
  	wait_on(m2b[0]);
  	stop_thread(thi);
  

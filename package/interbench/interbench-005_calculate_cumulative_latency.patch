@@ -56,7 +56,7 @@
 +		Print cumulative latency value. This assumes that number of samples N in 
 +		each set is fairly equal (which should be given by the nature of the data)
 +		mu_total = Sigma(i=1..k) [mu(i) * N(i)] / Sigma(i=1..k) [N(i)]
-+		variance = {Sigma(j=1..k) [N(j) * s(j)^2] + Sigma(j=1..k) [N(j) * (mu(j) - mu_average)^2]} / Sigma(j=1..k) [N(j)]
++		variance = Sigma(j=1..k) [N(i) * s(i)^2] + Sigma(j=1..k) [N(j) * (mu(j) - mu_total)^2]
 +		with k the number of samples, mu and s mean value and standard derivation of each set
 +	*/
 +	if (pl->samples) {

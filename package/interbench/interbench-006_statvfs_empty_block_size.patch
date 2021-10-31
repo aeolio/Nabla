@@ -17,5 +17,5 @@
 +		if(fiData.f_bsize == 0)
 +			fiData.f_bsize = MIN_BLK_SIZE;
  		ud.filesize = fiData.f_bavail * fiData.f_bsize / KB;	/* blocks to kilobytes */
- 		ud.filesize = ud.filesize * 45L /100L;	/* two files must co-exist, leave 5% margin */
+ 		ud.filesize = ud.filesize * 49L /100L;	/* two files must co-exist, leave 2% margin */
  		if( ud.ram > 0 && ud.filesize > ud.ram )
