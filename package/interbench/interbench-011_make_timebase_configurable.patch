@@ -1,0 +1,187 @@
+diff -Naur interbench-master/interbench.c interbench-next/interbench.c
+--- interbench-master/interbench.c	2021-10-31 11:09:36.312443674 +0100
++++ interbench-next/interbench.c	2021-10-31 10:58:08.029138026 +0100
+@@ -23,8 +23,6 @@
+ #define _GNU_SOURCE
+ #define _FILE_OFFSET_BITS 64	/* Large file support */
+ #define INTERBENCH_VERSION	"0.31"
+-#define STANDARD_GRANULARITY 1000.0L /* ms */
+-#define REALTIME_GRANULARITY 1.0L /* us */
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -159,6 +157,16 @@
+ #define CLOCK_MONOTONIC_RAW CLOCK_MONOTONIC
+ #endif
+ 
++/* macros for time interval calculation */
++#define SEC_TO_KTIME(v)	((v) * 10000000)
++#define MS_TO_KTIME(v)	((v) * 10000)
++#define NS_TO_KTIME(v)	((v) / 100)
++#define KTIME_TO_NS(v)	((v) * 100)
++#define KTIME_TO_US(v)	((v) / 10)
++#define KTIME_TO_MS(v)	((v) / 10000)
++#define PERIODIC_INTERVAL(v)	(SEC_TO_KTIME(1) / (v))  
++#define DECASECOND_DEADLINES(v)	(SEC_TO_KTIME(1) / (v) * 10)  
++
+ unsigned long long get_nsecs(struct timespec *myts)
+ {
+ 	if (clock_gettime(CLOCK_MONOTONIC_RAW, myts))
+@@ -170,7 +178,7 @@
+ {
+ 	if (clock_gettime(CLOCK_MONOTONIC_RAW, myts))
+ 		terminal_error("clock_gettime");
+-	return (myts->tv_sec * 1000000 + myts->tv_nsec / 1000 );
++	return (SEC_TO_KTIME(myts->tv_sec) + NS_TO_KTIME(myts->tv_nsec) );
+ }
+ 
+ void set_fifo(int prio)
+@@ -293,7 +301,7 @@
+ {
+ 	unsigned long ms_loops;
+ 
+-	ms_loops = ud.loops_per_ms / 1000 * usecs;
++	ms_loops = ud.loops_per_ms * usecs / MS_TO_KTIME(1);
+ 	burn_loops(ms_loops);
+ }
+ 
+@@ -303,8 +311,9 @@
+ 
+ 	rem.tv_sec = rem.tv_nsec = 0;
+ 
+-	req.tv_sec = usecs / 1000000;
+-	req.tv_nsec = (usecs - (req.tv_sec * 1000000)) * 1000;
++	req.tv_sec = usecs / SEC_TO_KTIME(1);
++	usecs -= SEC_TO_KTIME(req.tv_sec);
++	req.tv_nsec = KTIME_TO_NS(usecs);
+ continue_sleep:
+ 	if ((nanosleep(&req, &rem)) == -1) {
+ 		if (errno == EINTR) {
+@@ -499,8 +508,8 @@
+ 	wait_sem(s);
+ }
+ 
+-#define AUDIO_INTERVAL	(50000)
+-#define AUDIO_RUN	(AUDIO_INTERVAL / 20)
++#define AUDIO_INTERVAL	MS_TO_KTIME(50)
++#define AUDIO_RUN	(AUDIO_INTERVAL * 5 / 100)
+ /* We emulate audio by using 5% cpu and waking every 50ms */
+ void emulate_audio(struct thread *th)
+ {
+@@ -508,7 +517,7 @@
+ 	sem_t *s = &th->sem.stop;
+ 	struct timespec myts;
+ 
+-	th->decasecond_deadlines = 1000000 / AUDIO_INTERVAL * 10;
++	th->decasecond_deadlines = DECASECOND_DEADLINES(AUDIO_INTERVAL);
+ 	deadline = get_usecs(&myts);
+ 
+ 	while (1) {
+@@ -520,7 +529,7 @@
+ }
+ 
+ /* We emulate video by using 40% cpu and waking for 60fps */
+-#define VIDEO_INTERVAL	(1000000 / 60)
++#define VIDEO_INTERVAL	PERIODIC_INTERVAL(60)
+ #define VIDEO_RUN	(VIDEO_INTERVAL * 40 / 100)
+ void emulate_video(struct thread *th)
+ {
+@@ -528,7 +537,7 @@
+ 	sem_t *s = &th->sem.stop;
+ 	struct timespec myts;
+ 
+-	th->decasecond_deadlines = 1000000 / VIDEO_INTERVAL * 10;
++	th->decasecond_deadlines = DECASECOND_DEADLINES(VIDEO_INTERVAL);
+ 	deadline = get_usecs(&myts);
+ 
+ 	while (1) {
+@@ -541,7 +550,7 @@
+ 
+ /*
+  * We emulate X by running for a variable percentage of cpu from 0-100% 
+- * in 1ms chunks.
++ * in 100 ms chunks.
+  */
+ void emulate_x(struct thread *th)
+ {
+@@ -556,9 +565,9 @@
+ 		int i, j;
+ 		for (i = 0 ; i <= 100 ; i++) {
+ 			j = 100 - i;
+-			deadline = periodic_schedule(th, i * 1000, j * 1000,
++			deadline = periodic_schedule(th, MS_TO_KTIME(i), MS_TO_KTIME(j),
+ 				deadline);
+-			deadline += i * 1000;
++			deadline += MS_TO_KTIME(i);
+ 			if (!trywait_sem(s))
+ 				return;
+ 		}
+@@ -571,7 +580,7 @@
+  * unlocked frame rates. We do not use periodic schedule because for
+  * this load because this never wants to sleep.
+  */
+-#define GAME_INTERVAL	(100000)
++#define GAME_INTERVAL	MS_TO_KTIME(100)
+ #define GAME_RUN	(GAME_INTERVAL)
+ void emulate_game(struct thread *th)
+ {
+@@ -581,7 +590,7 @@
+ 	struct data_table *tb;
+ 
+ 	tb = th->dt;
+-	th->decasecond_deadlines = 1000000 / GAME_INTERVAL * 10;
++	th->decasecond_deadlines = DECASECOND_DEADLINES(GAME_INTERVAL);
+ 
+ 	while (1) {
+ 		deadline = get_usecs(&myts) + GAME_INTERVAL;
+@@ -878,14 +887,14 @@
+ }
+ 
+ #define CUSTOM_INTERVAL	(ud.custom_interval)
+-#define CUSTOM_RUN	(ud.custom_run)
++#define CUSTOM_RUN	(ud.custom_interval * ud.custom_run / 100)
+ void emulate_custom(struct thread *th)
+ {
+ 	unsigned long long deadline;
+ 	sem_t *s = &th->sem.stop;
+ 	struct timespec myts;
+ 
+-	th->decasecond_deadlines = 1000000 / CUSTOM_INTERVAL * 10;
++	th->decasecond_deadlines = DECASECOND_DEADLINES(CUSTOM_INTERVAL);
+ 	deadline = get_usecs(&myts);
+ 
+ 	while (1) {
+@@ -1123,11 +1132,11 @@
+ 	else
+ 		samples_met = 0.0;
+ 	max_latency = tbj->max_latency;
+-	/* When benchmarking rt we represent the data in us */
++	/* When benchmarking rt the data is represented raw */
+ 	if (!ud.do_rt) {
+-		average_latency /= STANDARD_GRANULARITY;
+-		sd /= STANDARD_GRANULARITY;
+-		max_latency /= STANDARD_GRANULARITY;
++		average_latency = KTIME_TO_US(average_latency);
++		sd = KTIME_TO_US(sd);
++		max_latency = KTIME_TO_US(max_latency);
+ 	}
+ 	if (tbj->deadlines_met == 0)
+ 		deadlines_met = 0;
+@@ -1466,7 +1475,7 @@
+ 
+ 	/* Bench tells it has received the first message and is running */
+ 	wait_on(b2m[0]);
+-	microsleep(ud.duration * 1000000);
++	microsleep(SEC_TO_KTIME(ud.duration));
+ 
+ 	/* Tell the benched process to stop its threads and output results */
+ 	wakeup_with(m2b[1]);
+@@ -1828,6 +1837,8 @@
+ 			log_output("nice %d ", ud.load_nice);
+ 		log_output("---\n");
+ 
++		char *str_time = ud.do_rt ? "100" : "us";
++
+ 		log_output("Load");
+ 		if (ud.do_rt)
+ 			log_output("\tLatency +/- SD (us)");
