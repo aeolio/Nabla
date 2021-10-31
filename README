@@ -27,7 +27,7 @@ Download Buildroot from https://buildroot.org/download.html and unpack into ./bu
   $ tar xf buildroot-2021.02.6.tar.bz2 ./buildroot
 
 Clone Buildroot external tree
-  $ git checkout https://github.com/aeolio/Nabla.git br2-external
+  $ git clone https://github.com/aeolio/Nabla.git br2-external
 
 Create output directory and initialize build system. Select the defconfig file from the list in 'Configuration'
   $ mkdir nabla
