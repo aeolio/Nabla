@@ -1,6 +1,9 @@
 2021-10-25
 mpd version 0.23.y
 
+2021-10-07
+Adapt Raspberry Pi 4 kernel configuration to enable cpufreq interface; due to better latencies the constant frequency setting stays in use. Integrate all modules that get loaded anyway into kernel. Remove EHCI and OHCI drivers. 
+
 2021-04-27
 Use libmpg123 on server, libmad on client machine
 
