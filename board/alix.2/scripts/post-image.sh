@@ -6,6 +6,7 @@ BOARD_DIR="$(dirname $0)"
 BOARD_NAME="$(basename $(dirname ${BOARD_DIR}))"
 GENIMAGE_CFG="${BOARD_DIR}/genimage-${BOARD_NAME}.cfg"
 GENIMAGE_TMP="${BUILD_DIR}/genimage.tmp"
+GENIMAGE_INC="${BR2_EXTERNAL_NABLA_PATH}/board/genimage.layout"
 
 for arg in "$@"
 do
@@ -25,7 +26,7 @@ SERIAL 0 38400
 
 DEFAULT nabla
 TIMEOUT 10
-SAY Booting Nabla music player ... 
+SAY Booting Nabla music player ...
 
 LABEL nabla
 KERNEL /boot/bzImage
