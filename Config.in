@@ -2,11 +2,17 @@
 # automatic configuration
 #
 
-# mpd needs a web server for cover art
-config BR2_PACKAGE_MPD_DEFAULTS
+# mpd needs a web server for album art
+config BR2_PACKAGE_MPD_ALBUMART
 	bool
 	default y if BR2_PACKAGE_MPD
 	select BR2_PACKAGE_LIGHTTPD
+
+# mpd needs libmpdclient for access to a remote database
+config BR2_PACKAGE_MPD_CLIENT
+	bool
+	default y if BR2_PACKAGE_MPD_LIBNFS || BR2_PACKAGE_MPD_LIBSMBCLIENT
+	select BR2_PACKAGE_MPD_LIBMPDCLIENT
 
 # mp3 playback depends on id3tag
 config BR2_PACKAGE_MPD_MP3
@@ -15,7 +21,7 @@ config BR2_PACKAGE_MPD_MP3
 	select BR2_PACKAGE_MPD_ID3TAG
 
 # for libmad, prefer accuracy over speed
-#	this does not work, unfortunately; 
+#	this does not work, unfortunately;
 #	config item needs to be set manually
 config BR2_PACKAGE_LIBMAD_DEFAULTS
 	bool
