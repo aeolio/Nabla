@@ -22,11 +22,13 @@ config BR2_PACKAGE_MPD_MP3
 
 # for libmad, prefer accuracy over speed
 #	this does not work, unfortunately;
-#	config item needs to be set manually
+#	choice item needs to be set manually
+# use architecture-specific optimizations
 config BR2_PACKAGE_LIBMAD_DEFAULTS
 	bool
 	default y if BR2_PACKAGE_LIBMAD
 	select BR2_PACKAGE_LIBMAD_OPTIMIZATION_ACCURACY
+	select BR2_PACKAGE_LIBMAD_ASO
 
 # alsaloop depends on libsamplerate
 config BR2_PACKAGE_ALSA_UTILS_ALSALOOP_DEFAULTS
