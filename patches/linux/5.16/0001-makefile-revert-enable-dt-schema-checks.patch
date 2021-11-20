@@ -1,0 +1,28 @@
+Revert patch "kbuild: Enable DT schema checks for %.dtb targets"
+https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?h=v5.16-rc1&id=53182e81f47d4ea0c727c49ad23cb782173ab849
+
+--- a/Makefile	2021-11-14 22:56:52.000000000 +0100
++++ b/linux-5.16-rc1/Makefile	2021-11-20 08:32:02.434579280 +0100
+@@ -1374,17 +1374,17 @@
+ 
+ ifneq ($(dtstree),)
+ 
+-%.dtb: dt_binding_check include/config/kernel.release scripts_dtc
+-	$(Q)$(MAKE) $(build)=$(dtstree) $(dtstree)/$@ $(dtstree)/$*.dt.yaml
++%.dtb: include/config/kernel.release scripts_dtc
++	$(Q)$(MAKE) $(build)=$(dtstree) $(dtstree)/$@
+ 
+-%.dtbo: dt_binding_check include/config/kernel.release scripts_dtc
+-	$(Q)$(MAKE) $(build)=$(dtstree) $(dtstree)/$@ $(dtstree)/$*.dt.yaml
++%.dtbo: include/config/kernel.release scripts_dtc
++	$(Q)$(MAKE) $(build)=$(dtstree) $(dtstree)/$@
+ 
+ PHONY += dtbs dtbs_install dtbs_check
+ dtbs: include/config/kernel.release scripts_dtc
+ 	$(Q)$(MAKE) $(build)=$(dtstree)
+ 
+-ifneq ($(filter dtbs_check %.dtb %.dtbo, $(MAKECMDGOALS)),)
++ifneq ($(filter dtbs_check, $(MAKECMDGOALS)),)
+ export CHECK_DTBS=y
+ dtbs: dt_binding_check
+ endif
