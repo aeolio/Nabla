@@ -25,7 +25,7 @@ BR2_ROOTFS_POST_SCRIPT_ARGS="--genimage-cfg=$(BR2_EXTERNAL_NABLA_PATH)/board/ras
 BR2_LINUX_KERNEL=y
 BR2_LINUX_KERNEL_CUSTOM_VERSION=y
 BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="5.10.79"
-BR2_LINUX_KERNEL_PATCH="https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/5.10/patch-5.10.78-rt55.patch.xz"
+BR2_LINUX_KERNEL_PATCH="https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/5.10/patch-5.10.78-rt56-rc2.patch.xz"
 BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
 BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="$(BR2_EXTERNAL_NABLA_PATH)/board/raspberrypi/configs/bcm2711_defconfig"
 BR2_LINUX_KERNEL_ZSTD=y
