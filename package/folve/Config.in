@@ -7,6 +7,7 @@ config BR2_PACKAGE_FOLVE
 	select BR2_PACKAGE_ZITA_CONVOLVER
 
 	help
-	  Folve is a FUSE file system that convolves audio files on the fly.
+	  Folve is a FUSE file system that
+	  convolves audio files on the fly.
 
 	  https://github.com/hzeller/folve

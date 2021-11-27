@@ -40,7 +40,7 @@ define UBOOT_INSTALL_IMAGES_TRUST_IMAGE
 endef
 
 UBOOT_POST_INSTALL_IMAGES_HOOKS += UBOOT_INSTALL_IMAGES_UBOOT_IMAGE
-# uboot trusted images are never used 
+# uboot trusted images are never used
 # UBOOT_POST_INSTALL_IMAGES_HOOKS += UBOOT_INSTALL_IMAGES_TRUST_IMAGE
 
 endif # Rockchip modifications
