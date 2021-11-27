@@ -1,3 +1,7 @@
+Fix make variables to be used in a Buildroot environment
+
+Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+
 --- a/source/Makefile.orig	2018-08-26 15:35:37.000000000 +0100
 +++ b/source/Makefile	2020-11-02 06:19:00.000000000 +0100
 @@ -20,23 +20,26 @@
