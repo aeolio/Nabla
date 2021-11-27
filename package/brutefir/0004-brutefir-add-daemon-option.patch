@@ -1,3 +1,7 @@
+Adds daemon mode to enable running Brutefir as background process
+
+Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+
 --- brutefir.orig/brutefir.c
 +++ brutefir-1.0o/brutefir.c
 @@ -62,7 +62,7 @@

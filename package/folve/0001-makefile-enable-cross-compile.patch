@@ -1,3 +1,7 @@
+Fix make variables to be used in a Buildroot environment
+
+Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+
 --- a/Makefile
 +++ b/Makefile
 @@ -1,15 +1,15 @@

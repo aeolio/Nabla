@@ -1,3 +1,8 @@
+Fixes library and include paths, and prevents 
+inclusion of unused libraries in build. 
+
+Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+
 --- brutefir.orig/Makefile
 +++ brutefir-1.0o/Makefile
 @@ -9,8 +9,8 @@

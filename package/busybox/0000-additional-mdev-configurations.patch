@@ -1,5 +1,12 @@
 The original file is provided by Busybox, and 
 can be found in the Buildroot package directory. 
+
+This adds devices found on arm64 hardware and 
+rules for fuse and crda as well as automount 
+options
+
+Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+
 --- a/etc/mdev.conf
 +++ b/etc/mdev.conf
 @@ -21,6 +21,7 @@
