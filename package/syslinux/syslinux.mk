@@ -4,9 +4,6 @@
 #
 ################################################################################
 
-# needed for GCC 10 to prevent 'multiple definition' errors
-HOST_CFLAGS += -fcommon
-
 # ldlinux.sys is needed to create a bootable disk image
 # copy the file ldlinux.sys to the image directory
 ifeq ($(BR2_TARGET_SYSLINUX_LEGACY_BIOS),y)
