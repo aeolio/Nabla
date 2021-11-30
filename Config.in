@@ -36,12 +36,6 @@ config BR2_PACKAGE_ALSA_UTILS_ALSALOOP_DEFAULTS
 	default y if BR2_PACKAGE_ALSA_UTILS_ALSALOOP
 	select BR2_PACKAGE_LIBSAMPLERATE
 
-# USB Audio needs libusb
-config BR2_PACKAGE_MPD_ALSA_USB
-	bool
-	default y if BR2_PACKAGE_MPD_ALSA
-	select BR2_PACKAGE_LIBUSB
-
 # wpa-supplicant needs crda
 config BR2_PACKAGE_WPA_SUPPLICANT_CRDA
 	bool
