@@ -2,12 +2,9 @@
 _backup
 # shell scripts
 *.sh
-# build log files
+# development log files
 board/*/*.txt
 # experiments with xenomai
-board/alix.2/configs/kernel_5.4_xeno_defconfig
-configs/alix2_xeno_defconfig
-package/xenomai
-patches/__syslinux
+configs/generic_x86_64_xeno_defconfig
+configs/xeno_defconfig.fragment
 patches/xenomai
-
