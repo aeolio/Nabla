@@ -81,6 +81,31 @@ probe_filesystem() {
 	device_name=$1
 	# check for empty device name
 	if [ -z ${device_name} ] ; then exit 1 ; fi
+
+	# try fdisk first. Match full path to prevent partial matches 
+	id=$(fdisk -l | awk '/\/dev\/'$device_name' / {print $0}')
+	case "$id" in
+
+		# FAT filesystems
+		*FAT16* | *FAT32*)
+		echo "vfat"
+		return 0
+		;;
+
+		# NTFS filesystems
+		*NTFS*)
+		echo "ntfs"
+		return 0
+		;;
+
+		# Linux filesystems
+		*Linux*)
+		echo "ext2"
+		return 0
+		;;
+	esac
+
+	# try magic numbers (unreliable)
 	# fat filesystems have the string "FATnn   " at offset 82 into device
 	id=$(dd if=/dev/${device_name} bs=1 count=8 skip=82 2>/dev/null)
 	if [ "$id" = "FAT16   " -o  "$id" = "FAT32   " ]; then
