@@ -252,7 +252,7 @@ setup_finish() {
 			echo "$script:  Remounted $blockdevice r/o"
 		fi
 	else
-		umount $blockdevice || return 1
+		umount $mountpoint || return 1
 		echo "$script:  unmounted $blockdevice from $mountpoint"
 		rmdir $mountpoint
 		echo "$script:  removed $mountpoint"
