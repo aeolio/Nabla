@@ -6,7 +6,7 @@ BOARD_DIR="$(dirname $0)"
 BOARD_NAME="$(basename $(dirname ${BOARD_DIR}))"
 GENIMAGE_CFG="${BOARD_DIR}/genimage-${BOARD_NAME}.cfg"
 GENIMAGE_TMP="${BUILD_DIR}/genimage.tmp"
-GENIMAGE_INC="${BR2_EXTERNAL_NABLA_PATH}/board/genimage.layout"
+GENIMAGE_INC="${BR2_EXTERNAL_NABLA_PATH}/board/genimage.cfg"
 
 for arg in "$@"
 do
@@ -38,14 +38,15 @@ __EOF__
 
 done
 
-rm -rf "${GENIMAGE_TMP}"
+rm -rf "$GENIMAGE_TMP"
 
-genimage                           \
-	--rootpath "${TARGET_DIR}"     \
-	--tmppath "${GENIMAGE_TMP}"    \
-	--inputpath "${BINARIES_DIR}"  \
-	--outputpath "${BINARIES_DIR}" \
-	--config "${GENIMAGE_CFG}"
+genimage \
+	--rootpath "$TARGET_DIR" \
+	--tmppath "$GENIMAGE_TMP" \
+	--inputpath "$BINARIES_DIR" \
+	--outputpath "$BINARIES_DIR" \
+	--includepath "$GENIMAGE_INC:" \
+	--config "$GENIMAGE_CFG"
 
 # very ugly hack, uses syslinux from the host computer
 syslinux -t 0x100000 -d boot/syslinux ${BINARIES_DIR}/sdcard.img
