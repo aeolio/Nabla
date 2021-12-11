@@ -2,6 +2,12 @@
 # automatic configuration
 #
 
+# host-genimage needs host-mtools
+config BR2_PACKAGE_HOST_GENIMAGE_MTOOLS
+	bool
+	default y if BR2_PACKAGE_HOST_GENIMAGE
+	select BR2_PACKAGE_HOST_MTOOLS
+
 # mpd needs a web server for album art
 config BR2_PACKAGE_MPD_ALBUMART
 	bool
