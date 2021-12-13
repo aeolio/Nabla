@@ -1,10 +1,10 @@
 Description
 
-NABLA is a compact GNU/Linux image for a few selected hardware configurations. Currently PC Engines Alix2, Raspberry Pi 4, Intel 32 and 64 bit are supported. Recommended hardware is Intel 64 bit and Raspberry Pi 4. 
+Nabla is a compact GNU/Linux image for a few selected hardware configurations. Currently PC Engines Alix2, Raspberry Pi 4, Intel 32 and 64 bit are supported. Recommended hardware is Intel 64 bit and Raspberry Pi 4. Intel 32 bit will be discontinued in the future. 
 
-A Buildroot installation with out-of-tree build is required in addition to generate Nabla images. 
+In addition to this repository, a Buildroot installation is required to generate Nabla images. 
 
-Resulting firmware images can be started via syslinux or extlinux from a USB stick or SD card and run completely within a ram disk. Configurations will be read from /written back to a directory on the boot device. 
+Resulting firmware images can be started via syslinux or isolinux from a USB stick or SD card and run completely within a ram disk. Configurations will be read from /written back to a hidden directory on the boot device. 
 
 Nabla uses mpd for music playback and can access local hard drives or remote directories via NFS or SMB. Filesystems must be mounted locally to be accessible. USB drives are recognized and mounted automatically. 
 
@@ -14,26 +14,28 @@ Configuration
 Buildroot configurations exist for selected hardware platforms. The configs directory contains Buildroot defconfig files that can be used to initialize the build system with the cross-compile settings and kernel configurations for that hardware. 
 
   Active configurations:
-  alix2_defconfig			PC Engines ALIX2 
+  alix2_defconfig			PC Engines ALIX2 [1]
   generic_i386_defconfig	32-bit Intel boards, Core2 or newer
-  generic_x86-64_defconfig	64-bit Intel Boards, Core2 or newer
-  raspberrypi_defconfig		Raspberry 4 Model B
+  generic_x86-64_defconfig	64-bit Intel Boards, Core2 or newer [2]
+  raspberrypi_defconfig		Raspberry 4 Model B [3]
 
 
 Image build
+
+Prepare the build machine, see https://buildroot.org/downloads/manual/manual.html#requirement
 
 Download Buildroot from https://buildroot.org/download.html and unpack into ./buildroot
   $ wget https://buildroot.org/downloads/buildroot-2021.02.6.tar.bz2
   $ tar xf buildroot-2021.02.6.tar.bz2 ./buildroot
 
-Clone Buildroot external tree
+Clone Nabla repository to use as Buildroot external tree
   $ git clone https://github.com/aeolio/Nabla.git br2-external
 
-Create output directory and initialize build system. Select the defconfig file from the list in 'Configuration'
+Create output directory and initialize build system. Select the defconfig file from the list under 'Configuration'
   $ mkdir nabla
   $ make BR2_EXTERNAL=$PWD/br2-external/ -C $PWD/buildroot/ O=$PWD/nabla generic_x86-64_defconfig
 
-Build the firmware image
+Build firmware image
   $ cd nabla
   $ make
 
@@ -57,3 +59,10 @@ Using a file browser, connect via sftp to the embedded system and copy bzImage (
 
 Now reboot the machine from the terminal session:
   [nabla]# reboot
+
+
+Footnotes
+
+[1] This machine is hopelessly outdated, but since it performs quite well, it is still supported
+[2] SoC bases mainboards, like J1800 and J1900 were found to perform well as music players
+[3] Only Raspberry 4 is supported, older models did show very poor software jitter results, so were not implemented
