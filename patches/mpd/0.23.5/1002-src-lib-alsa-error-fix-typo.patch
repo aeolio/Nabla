@@ -1,0 +1,8 @@
+--- mpd-0.23.5/src/lib/alsa/Error.hxx	2021-12-01 20:00:00.000000000 +0100
++++ mpd-0.23.5/src/lib/alsa/Error.hxx	2021-12-14 07:31:19.833422730 +0100
+@@ -50,4 +50,4 @@
+ 	return std::system_error(error, error_category, msg);
+ }
+ 
+-} // namespace Avahi
++} // namespace Alsa

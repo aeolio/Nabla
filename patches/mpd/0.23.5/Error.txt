@@ -1,0 +1,7 @@
+[90/498] Compiling C++ object src/lib/alsa/libalsa.a.p/Error.cxx.o
+FAILED: src/lib/alsa/libalsa.a.p/Error.cxx.o 
+/home/data/alix.2/host/bin/i586-buildroot-linux-uclibc-g++ -Isrc/lib/alsa/libalsa.a.p -Isrc/lib/alsa -I../src/lib/alsa -Isrc -I../src -I. -I.. -I/home/data/alix.2/host/i586-buildroot-linux-uclibc/sysroot/usr/include -fdiagnostics-color=always -Wall -Winvalid-pch -Wnon-virtual-dtor -Wextra -Wpedantic -std=c++17 -O3 -ffast-math -ftree-vectorize -Wcast-qual -Wdouble-promotion -Wmissing-declarations -Wshadow -Wunused -Wvla -Wwrite-strings -fno-threadsafe-statics -fmerge-all-constants -Wcomma-subscript -Wextra-semi -Wmismatched-tags -Woverloaded-virtual -Wsign-promo -Wvolatile -Wvirtual-inheritance -Wno-non-virtual-dtor -Wsuggest-override -fvisibility=hidden -ffunction-sections -fdata-sections -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -O2 -g0 -fPIC -MD -MQ src/lib/alsa/libalsa.a.p/Error.cxx.o -MF src/lib/alsa/libalsa.a.p/Error.cxx.o.d -o src/lib/alsa/libalsa.a.p/Error.cxx.o -c ../src/lib/alsa/Error.cxx
+In file included from ../src/lib/alsa/Error.cxx:32:
+/home/data/alix.2/host/i586-buildroot-linux-uclibc/sysroot/usr/include/alsa/error.h:80:60: error: ‘va_list’ has not been declared
+   80 |                                           const char *fmt, va_list arg);
+      |                                                            ^~~~~~~
