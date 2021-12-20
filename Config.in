@@ -2,19 +2,17 @@
 # automatic configuration
 #
 
-# host-genimage needs host-mtools
-config BR2_PACKAGE_HOST_GENIMAGE_MTOOLS
-	bool
-	default y if BR2_PACKAGE_HOST_GENIMAGE
-	select BR2_PACKAGE_HOST_MTOOLS
+# mpd server uses BR2_PACKAGE_MPD_MPG123
+# mpd client uses BR2_PACKAGE_MPD_MAD and BR2_PACKAGE_MPD_LIBNFS
+# mpd standalone uses both BR2_PACKAGE_MPD_MPG123 and BR2_PACKAGE_MPD_MAD
 
-# mpd needs a web server for album art
+# mpd server and standalone needs a web server for album art
 config BR2_PACKAGE_MPD_ALBUMART
 	bool
-	default y if BR2_PACKAGE_MPD
-	select BR2_PACKAGE_LIGHTTPD
+	default y if !(BR2_PACKAGE_MPD_LIBNFS || BR2_PACKAGE_MPD_LIBSMBCLIENT)
+	select BR2_PACKAGE_PHTTPD
 
-# mpd needs libmpdclient for access to a remote database
+# mpd client needs libmpdclient for access to a remote database
 config BR2_PACKAGE_MPD_CLIENT
 	bool
 	default y if BR2_PACKAGE_MPD_LIBNFS || BR2_PACKAGE_MPD_LIBSMBCLIENT
@@ -48,6 +46,12 @@ config BR2_PACKAGE_WPA_SUPPLICANT_CRDA
 	default y if BR2_PACKAGE_WPA_SUPPLICANT
 	select BR2_PACKAGE_CRDA
 
+# host-genimage needs host-mtools
+config BR2_PACKAGE_HOST_GENIMAGE_MTOOLS
+	bool
+	default y if BR2_PACKAGE_HOST_GENIMAGE
+	select BR2_PACKAGE_HOST_MTOOLS
+
 
 #
 # external options menu
@@ -68,6 +72,10 @@ menu "Hardware handling"
 		source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
 		source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
 	endmenu
+endmenu
+
+menu "Networking applications"
+	source "$BR2_EXTERNAL_NABLA_PATH/package/phttpd/Config.in"
 endmenu
 
 menu "Shell and utilities"
