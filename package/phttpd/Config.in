@@ -1,0 +1,6 @@
+config BR2_PACKAGE_PHTTPD
+	bool "phttpd"
+	select BR2_PACKAGE_LIBMICROHTTPD
+	help
+	  phttpd implements a small http server for static content 
+	  only. It can be used to supply mpd album covers. 
