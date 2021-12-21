@@ -23,7 +23,7 @@ PIDFILE=$MPD_RUN/pid
 ### initialize system variables
 [ -f /etc/nabla.conf ] && . /etc/nabla.conf
 
-### check if mpd should run
+### check if mpd is configured to run
 [ "$NABLA_START_MUSICPLAYER" != "Y" ] && exit 0
 
 ### functions that are used in more than one init script
@@ -73,8 +73,8 @@ start() {
 	echo -n "Starting mpd: "
 	initialize
 	unmute
-	# mpd priority is below default hard interrupt priority (50)
-	ulimit -HS -r 50
+	# set mpd priority limit below hard interrupt priority
+	ulimit -HS -r $(eval $HARDIRQ_PRIORITY - 1)
 	# mpd creates its own $PIDFILE, do not use --make-pidfile 
 	start-stop-daemon --start --quiet --background --exec /usr/bin/mpd
 	[ ! -z $(pidof mpd) ] && echo "OK" || echo "FAIL"
