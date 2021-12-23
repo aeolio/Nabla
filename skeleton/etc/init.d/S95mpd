@@ -43,7 +43,9 @@ unmute() {
 			# extract device id
 			id=${card##*/card}
 			# unmute all simple controls on this device
-			amixer -c $id scontrols | sed -e 's/^Simple mixer control//' | while read line; do 
+			amixer -c $id scontrols | \
+				sed -e 's/^Simple mixer control//' | \
+				while read line; do 
 				amixer -c $id sset "$line" 100% unmute > /dev/null 2>&1
 			done
 		done
@@ -73,11 +75,21 @@ start() {
 	echo -n "Starting mpd: "
 	initialize
 	unmute
-	# set mpd priority limit below hard interrupt priority
-	ulimit -HS -r $(eval $HARDIRQ_PRIORITY - 1)
+	# raise priority limit to below hard interrupt priority
+	ulimit -HS -r $(expr $HARDIRQ_PRIORITY - 1)
 	# mpd creates its own $PIDFILE, do not use --make-pidfile 
-	start-stop-daemon --start --quiet --background --exec /usr/bin/mpd
-	[ ! -z $(pidof mpd) ] && echo "OK" || echo "FAIL"
+	start-stop-daemon --start --quiet --exec /usr/bin/mpd
+	if [ $? = 0 ]; then
+		# set processor affinity
+		cpu_id=$(_get_rt_cpuid)
+		pid=$(cat $PIDFILE)
+		taskset -p $(_get_cpumask $cpu_id) $pid
+		# thread priority is set by process, so this might be unnecessary
+		chrt $(_chrt_policy) -p $SOFTIRQ_PRIORITY $pid
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
 } 
 
 stop() {
