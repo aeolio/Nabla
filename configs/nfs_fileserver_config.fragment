@@ -1,3 +1,0 @@
-# additional kernel configuration for use as file server
-CONFIG_NFSD=m
-CONFIG_NFSD_V3=y
