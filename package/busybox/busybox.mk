@@ -4,10 +4,12 @@
 #
 ################################################################################
 
-# modify configuration
+BUSYBOX_MDEV_CONFIG = $(TARGET_DIR)/etc/mdev.conf
+
+# modify mdev configuration
 define BUSYBOX_MODIFY_INIT_CONFIG
-	if [ -f "$(TARGET_DIR)/etc/mdev.conf" ]; then \
-		patch $(TARGET_DIR)/etc/mdev.conf \
+	if [ -f "$(BUSYBOX_MDEV_CONFIG)" ]; then \
+		patch $(BUSYBOX_MDEV_CONFIG) \
 			$(BR2_EXTERNAL)/package/busybox/0000-additional-mdev-configurations.patch; \
 	fi
 endef
