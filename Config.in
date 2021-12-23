@@ -77,8 +77,3 @@ endmenu
 menu "Networking applications"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/phttpd/Config.in"
 endmenu
-
-menu "Shell and utilities"
-	comment "ebay is currently broken"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/esniper/Config.in"
-endmenu
