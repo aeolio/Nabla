@@ -1,3 +1,9 @@
+2021-12-22
+Optimized init scripts
+
+2021-12-20
+Replace lighttpd with libmicrohttpd
+
 2021-10-25
 mpd version 0.23.y
 
