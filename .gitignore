@@ -5,7 +5,7 @@ _backup
 # development log files
 board/*/*.txt
 # experiments with xenomai
-configs/generic_x86_64_xeno_defconfig
-# new kernel development
-configs/raspberrypi_nx_defconfig
+configs/*_xeno_*
 patches/xenomai
+# new kernel development
+configs/*_nx_*
