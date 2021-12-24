@@ -6,5 +6,6 @@ _backup
 board/*/*.txt
 # experiments with xenomai
 configs/generic_x86_64_xeno_defconfig
-configs/xeno_defconfig.fragment
+# new kernel development
+configs/raspberrypi_nx_defconfig
 patches/xenomai
