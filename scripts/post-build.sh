@@ -2,15 +2,10 @@
 # common post-build script
 
 ### bind function library
-_path="`dirname $0`"
-if [ -z "$_path" ]; then
-	_path="."
-fi
-. "$_path/function_lib.sh"
+_path=$BR2_EXTERNAL_NABLA_PATH/scripts
+[ -x "$_path/function_lib.sh" ] && . "$_path/function_lib.sh"
 
-KERNEL_VERSION=$(grep BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE ${BR2_CONFIG})
-KERNEL_VERSION=${KERNEL_VERSION##*=}
-KERNEL_VERSION=$(echo ${KERNEL_VERSION} | sed 's/^"\(.*\)"$/\1/')
+KERNEL_VERSION=$(get_config_value "BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE")
 KERNEL_SOURCE=${BUILD_DIR}/linux-${KERNEL_VERSION}
 KERNEL_CONFIG=${KERNEL_SOURCE}/.config
 
@@ -138,6 +133,10 @@ if [ $(grep -c "BR2_PACKAGE_LINUXPTP=y" $BR2_CONFIG) -gt 0 ]; then
 		echo "[lo]" >> $LINUXPTP_CONFIG
 	fi
 fi
+
+### modify os-release
+RELEASE_FILE="$TARGET_DIR/usr/lib/os-release"
+replace_symbols $RELEASE_FILE
 
 ### remove unnecessary items from target filesystem
 # empty directories

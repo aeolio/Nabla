@@ -1,0 +1,5 @@
+NAME="nabla {arch}"
+VERSION={kernel_version}
+ID="buildroot {project_name}"
+VERSION_ID="{buildroot_version} {software_version} {arch} {kernel_version} {build_date}"
+PRETTY_NAME=Nabla
