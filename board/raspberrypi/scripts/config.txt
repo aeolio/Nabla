@@ -1,9 +1,9 @@
 # System configuration parameters for Raspberry Pi 4
-# Template version 2021-10-18
+# Template version 2021-12-24
 # Buildroot {project_name}
 # Build date {build_date}
 
-# Firmware {buildroot_firmware}
+# Firmware variant {firmware_variant}
 start_file=start4.elf
 fixup_file=fixup4.dat
 

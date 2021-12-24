@@ -1,9 +1,11 @@
 #!/bin/sh
 # post-build.sh for Raspberry Pi
 
+### bind function library
+_path=$BR2_EXTERNAL_NABLA_PATH/scripts
+[ -x "$_path/function_lib.sh" ] && . "$_path/function_lib.sh"
+
 BOOT_FILE=${BINARIES_DIR}/rpi-firmware/cmdline.txt
-CONFIG_FILE=${BINARIES_DIR}/rpi-firmware/config.txt
-TEMPLATE_TEXT="{.*}"
 
 ### modify cmdline.txt
 # remove root parameter
@@ -28,18 +30,8 @@ if ! grep -q 'nohz_full=' "${BOOT_FILE}"; then
 fi
 
 ### modify config.txt
-# check if the config file contains template strings
-if $(grep -q "${TEMPLATE_TEXT}" ${CONFIG_FILE}); then
-	firmware_variant=$(grep BR2_PACKAGE_RPI_FIRMWARE_VARIANT_.*=y ${BR2_CONFIG})
-	firmware_variant=${firmware_variant%%=*}
-	firmware_variant=${firmware_variant##BR2_PACKAGE_RPI_FIRMWARE_VARIANT_}
-	project_name="$(basename ${BASE_DIR})"
-	build_date=$(date +"%Y-%m-%d")
-	# replace placeholder strings
-	sed -i 's/{project_name}/'${project_name}'/' ${CONFIG_FILE}
-	sed -i 's/{build_date}/'${build_date}'/' ${CONFIG_FILE}
-	sed -i 's/{buildroot_firmware}/'${firmware_variant}'/' ${CONFIG_FILE}
-fi
+CONFIG_FILE=${BINARIES_DIR}/rpi-firmware/config.txt
+replace_symbols $CONFIG_FILE
 
 ### copy basic configuration files
 config_dir=${BINARIES_DIR}/.config/etc
