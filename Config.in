@@ -2,15 +2,11 @@
 # automatic configuration
 #
 
+
 # mpd server uses BR2_PACKAGE_MPD_MPG123
 # mpd client uses BR2_PACKAGE_MPD_MAD and BR2_PACKAGE_MPD_LIBNFS
 # mpd standalone uses both BR2_PACKAGE_MPD_MPG123 and BR2_PACKAGE_MPD_MAD
-
-# mpd server and standalone needs a web server for album art
-config BR2_PACKAGE_MPD_ALBUMART
-	bool
-	default y if !(BR2_PACKAGE_MPD_LIBNFS || BR2_PACKAGE_MPD_LIBSMBCLIENT)
-	select BR2_PACKAGE_PHTTPD
+if BR2_PACKAGE_MPD
 
 # mpd client needs libmpdclient for access to a remote database
 config BR2_PACKAGE_MPD_CLIENT
@@ -18,11 +14,19 @@ config BR2_PACKAGE_MPD_CLIENT
 	default y if BR2_PACKAGE_MPD_LIBNFS || BR2_PACKAGE_MPD_LIBSMBCLIENT
 	select BR2_PACKAGE_MPD_LIBMPDCLIENT
 
+# mpd server and standalone needs a web server for album art
+config BR2_PACKAGE_MPD_ALBUMART
+	bool
+	default y if !(BR2_PACKAGE_MPD_LIBNFS || BR2_PACKAGE_MPD_LIBSMBCLIENT)
+	select BR2_PACKAGE_PHTTPD
+
 # mp3 playback depends on id3tag
 config BR2_PACKAGE_MPD_MP3
 	bool
 	default y if BR2_PACKAGE_MPD_MAD || BR2_PACKAGE_MPD_MPG123
 	select BR2_PACKAGE_MPD_ID3TAG
+
+endif # BR2_PACKAGE_MPD
 
 # for libmad, prefer accuracy over speed
 #	this does not work, unfortunately;
