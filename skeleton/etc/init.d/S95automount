@@ -28,8 +28,8 @@ parse_options() {
 	vers="3.1.1"
 	gid=$(grep audio /etc/group | awk 'BEGIN {FS=":"} {print $3}')
 	uid=$(grep mpd /etc/passwd | awk 'BEGIN {FS=":"} {print $3}')
-	dmask="0222"
-	fmask="0333"
+	dmask="0022"
+	fmask="0022"
 	for opt in ${options_in//,/ }
 	do
 		case $opt in
