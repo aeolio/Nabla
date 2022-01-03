@@ -14,12 +14,6 @@ config BR2_PACKAGE_MPD_CLIENT
 	default y if BR2_PACKAGE_MPD_LIBNFS || BR2_PACKAGE_MPD_LIBSMBCLIENT
 	select BR2_PACKAGE_MPD_LIBMPDCLIENT
 
-# mpd server and standalone needs a web server for album art
-config BR2_PACKAGE_MPD_ALBUMART
-	bool
-	default y if !(BR2_PACKAGE_MPD_LIBNFS || BR2_PACKAGE_MPD_LIBSMBCLIENT)
-	select BR2_PACKAGE_PHTTPD
-
 # mp3 playback depends on id3tag
 config BR2_PACKAGE_MPD_MP3
 	bool
@@ -76,8 +70,4 @@ menu "Hardware handling"
 		source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
 		source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
 	endmenu
-endmenu
-
-menu "Networking applications"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/phttpd/Config.in"
 endmenu
