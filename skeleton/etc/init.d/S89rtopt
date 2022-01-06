@@ -14,13 +14,17 @@ if [ "$1" = "stop" ];  then
 	exit 0;
 fi
 
-# Change CPU frequency scaling governor to performance
+# Change CPU frequency scaling governor to performance 
+# and increase CPU minimum frequency to the maximum value
 governor="performance"
 available_cpus="/sys/devices/system/cpu/cpu[0-9]*"
 for cpu in $available_cpus; do
 	interface=$cpu/cpufreq
-	if $([ -d $interface ] && grep -q $governor $interface/scaling_available_governors); then
-		echo $governor > $interface/scaling_governor
+	if [ -d $interface ]; then
+		if $(grep -q $governor $interface/scaling_available_governors); then
+			echo $governor > $interface/scaling_governor
+		fi
+		cat $interface/cpuinfo_max_freq > $interface/scaling_min_freq
 	fi
 done
 
