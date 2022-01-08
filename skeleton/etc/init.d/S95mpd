@@ -19,6 +19,7 @@ WWW_MUSIC=$WWW_ROOT/Music
 
 MPD_MUSIC=$MPD_LIB/$MUSIC
 PIDFILE=$MPD_RUN/pid
+MPD_CACHE=$MPD_LIB/cache
 
 ### initialize system variables
 [ -f /etc/nabla.conf ] && . /etc/nabla.conf
@@ -55,6 +56,7 @@ unmute() {
 # create directories and link to music libraries
 initialize() {
 	mkdir -p $MPD_LIB && chown -R mpd:audio $MPD_LIB
+	mkdir -p $MPD_CACHE && chown -R mpd:audio $MPD_CACHE
 	mkdir -p $MPD_LOG && chown -R mpd:audio $MPD_LOG
 	mkdir -p $MPD_RUN && chown -R mpd:audio $MPD_RUN
 	# this is the mpd link to the music directory
