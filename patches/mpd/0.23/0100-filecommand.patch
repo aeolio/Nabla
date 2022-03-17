@@ -1,6 +1,6 @@
---- mpd-0.23/src/command/FileCommands.cxx
-+++ mpd-0.23/src/command/FileCommands.cxx
-@@ -158,10 +158,9 @@
+--- mpd-0.23.6/src/command/FileCommands.cxx
++++ mpd-0.23.6/src/command/FileCommands.cxx
+@@ -158,8 +158,9 @@
  find_stream_art(std::string_view directory, Mutex &mutex)
  {
  	static constexpr auto art_names = std::array {
@@ -8,9 +8,6 @@
 +		"cover.jpg",
  		"cover.png",
 -		"cover.jpg",
--		"cover.tiff",
--		"cover.bmp",
+ 		"cover.webp",
  	};
  
- 	for(const auto name : art_names) {
-
