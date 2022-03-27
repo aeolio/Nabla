@@ -61,6 +61,11 @@ Now reboot the machine from the terminal session:
   [nabla]# reboot
 
 
+Caveat
+
+Currently the Alix2 image is configured to be used as a mpd server, the Raspberry Pi image as a mpd client. For standalone installations (database and player on one machine) the mpd build options should be reviewed. 
+
+
 Footnotes
 
 [1] This machine is hopelessly outdated, but since it performs quite well, it is still supported
