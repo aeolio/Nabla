@@ -69,5 +69,5 @@ Currently the Alix2 image is configured to be used as a mpd server, the Raspberr
 Footnotes
 
 [1] This machine is hopelessly outdated, but since it performs quite well, it is still supported
-[2] SoC bases mainboards, like J1800 and J1900 were found to perform well as music players
-[3] Only Raspberry 4 is supported, older models did show very poor software jitter results, so were not implemented
+[2] SoC based mainboards, like J1800 and J1900 were found to perform well as music players
+[3] Only Raspberry 4 is supported, older models did show very poor scheduling jitter results, so were not implemented
