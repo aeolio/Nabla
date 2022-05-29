@@ -17,6 +17,8 @@ MPD_MUSIC=$MPD_LIB/music
 PIDFILE=$MPD_RUN/pid
 MPD_CACHE=$MPD_LIB/cache
 
+IO_URING_MEMLIMIT=65536
+
 ### initialize system variables
 [ -f /etc/nabla.conf ] && . /etc/nabla.conf
 
@@ -69,8 +71,9 @@ start() {
 	echo -n "Starting mpd: "
 	initialize
 	unmute
-	# raise priority limit to below hard interrupt priority
-	ulimit -HS -r $(expr $HARDIRQ_PRIORITY - 1)
+	# increase max locked memory limit for io_uring 
+	# increase real-time priority limit to enable mpd's realtime scheduling
+	ulimit -HS -l $IO_URING_MEMLIMIT -r $(expr $HARDIRQ_PRIORITY - 1)
 	# mpd creates its own $PIDFILE, do not use --make-pidfile 
 	start-stop-daemon --start --quiet --exec /usr/bin/mpd
 	if [ $? = 0 ]; then

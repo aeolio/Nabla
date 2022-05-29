@@ -14,11 +14,11 @@ config BR2_PACKAGE_MPD_CLIENT
 	default y if BR2_PACKAGE_MPD_LIBNFS || BR2_PACKAGE_MPD_LIBSMBCLIENT
 	select BR2_PACKAGE_MPD_LIBMPDCLIENT
 
-# mp3 playback depends on id3tag
-config BR2_PACKAGE_MPD_MP3
+# mpd server gets io_uring
+config BR2_PACKAGE_MPD_SERVER
 	bool
-	default y if BR2_PACKAGE_MPD_MAD || BR2_PACKAGE_MPD_MPG123
-	select BR2_PACKAGE_MPD_ID3TAG
+	default y if ! BR2_PACKAGE_MPD_CLIENT
+	select BR2_PACKAGE_MPD_IO_URING
 
 endif # BR2_PACKAGE_MPD
 
