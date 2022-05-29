@@ -7,17 +7,13 @@
 test -f /usr/bin/mpd || exit 0
 test -f /etc/mpd.conf || exit 0
 
-MUSIC=music
 HOTPLUG_DIR=/media
 
 MPD_LIB="/var/lib/mpd"
 MPD_LOG="/var/log/mpd"
 MPD_RUN="/var/run/mpd"
 
-WWW_ROOT="/var/www"
-WWW_MUSIC=$WWW_ROOT/Music
-
-MPD_MUSIC=$MPD_LIB/$MUSIC
+MPD_MUSIC=$MPD_LIB/music
 PIDFILE=$MPD_RUN/pid
 MPD_CACHE=$MPD_LIB/cache
 
@@ -62,10 +58,6 @@ initialize() {
 	# this is the mpd link to the music directory
 	if [ ! -h $MPD_MUSIC ]; then
 		ln -s $HOTPLUG_DIR $MPD_MUSIC
-	fi
-	# this is the web server link to the music directory
-	if [ ! -h $WWW_MUSIC ]; then
-		ln -s $MPD_MUSIC $WWW_MUSIC
 	fi
 	# create ignore list
 	echo "$NABLA_PARTITION" > $HOTPLUG_DIR/.mpdignore
