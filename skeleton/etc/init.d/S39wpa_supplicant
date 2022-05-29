@@ -21,7 +21,8 @@ done
 
 start() {
 	echo -n "Starting $DAEMON... "
-	start-stop-daemon -S -b -m -p $PIDFILE -x /usr/sbin/wpa_supplicant -- -B -f${log_file} ${config}
+	start-stop-daemon -S -q -x /usr/sbin/wpa_supplicant -- \
+		-B -P $PIDFILE -f${log_file} ${config}
 	[ ! -z $(pidof $DAEMON) ] && echo "OK" || echo "FAIL"
 }
 
