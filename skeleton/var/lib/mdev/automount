@@ -11,6 +11,9 @@ MDEV_CONFIG=/dev/shm/mdev.conf
 MDEV_DEBUG=0
 [ -x $MDEV_CONFIG ] && . $MDEV_CONFIG
 
+MDEV_GUID_PARTITIONS="ntfs vfat"
+MDEV_SYSTEM_PARTITIONS="boot nabla root"
+
 #
 # Retrieves the partition label of a block device. 
 # If the partition has no label, the GUID is used.  
@@ -62,7 +65,8 @@ get_options() {
 	# set filesystem independent options
 	options_out="$options_out,$mode"
 	# set filesystem specific options
-	if [ "${filesystem_type}" = "vfat" ] || [ "${filesystem_type}" = "ntfs" ] ; then
+	if [ grep -q "$filesystem_type" $MDEV_GUID_PARTITIONS ] && \
+		! [ grep -iq "$partition_name" $MDEV_RESERVED_PARTITIONS ] ; then
 		# set owner and group to mpd:audio
 		options_out="$options_out,gid=$gid,uid=$uid"
 		# set dmask and fmask
@@ -215,7 +219,7 @@ if [ "X${ACTION}" == "Xremove" ] ; then
 	for dir in $( ls ${mountdir} )
 	do
 		if [ -d ${mountdir}/${dir} ]; then
-			if ! grep " ${mountdir}/${dir} " /proc/mounts 1>/dev/null ; then
+			if ! grep -q " ${mountdir}/${dir} " /proc/mounts ; then
 				rm -rf ${mountdir}/${dir}
 			fi
 		fi
@@ -249,6 +253,7 @@ if [ "X${ACTION}" == "Xadd" ] ; then
 	done
 
 	# Create the directory in ${mountdir}
+	umask 0022
 	mkdir -p ${mountdir}/${mountname}
 
 	# Mount the directory in ${mountdir}
