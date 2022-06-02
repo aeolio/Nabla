@@ -4,6 +4,9 @@
 #		This may include removal of unused hardware drivers.
 #
 
+### this is a startup only script
+[ "$1" != "start" ] && exit 0
+
 ### functions that are used in more than one init script
 [ -x /etc/init.d/init_functions ] && . /etc/init.d/init_functions
 
@@ -16,14 +19,12 @@
 ### check if feature is enabled
 [ "$NABLA_LOCAL_OPTIMIZATION" != "Y" ] && exit 0
 
-if [ "$1" = "start" ]; then
-	echo "Run local optimizations..."
-	mount_directory=/media
-	home_overlay=${mount_directory}/${NABLA_PARTITION}/${config_directory}/root
-	if [ -d $home_overlay ]; then
-		for s in ${home_overlay}/*.sh;  do
-			source $s
-		done
-	fi
-	echo "Done"
+echo "Run local optimizations..."
+mount_directory=/media
+home_overlay=${mount_directory}/${NABLA_PARTITION}/${config_directory}/root
+if [ -d $home_overlay ]; then
+	for s in ${home_overlay}/*.sh;  do
+		source $s
+	done
 fi
+echo "Done"
