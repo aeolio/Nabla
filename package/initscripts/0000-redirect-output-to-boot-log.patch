@@ -1,0 +1,13 @@
+During startup, redirect all output to /var/log/boot.log. 
+
+Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+
+--- a/etc/init.d/rcS
++++ a/etc/init.d/rcS
+@@ -1,5 +1,6 @@
+ #!/bin/sh
+ 
++exec > /var/log/boot.log 2>&1
+ 
+ # Start all init scripts in /etc/init.d
+ # executing them in numerical order.
