@@ -13,8 +13,16 @@
 ### initialize system variables
 [ -f /etc/nabla.conf ] && . /etc/nabla.conf
 
+### everything after this point needs a working network connection,
+### so wait for at least one interface to be up
+for i in `seq 20`; do
+	address=$(ip addr show | grep -w 'inet' | awk '/global/ {print $2; exit}')
+	[ $address ] && break
+	usleep 500000
+done
+
 ### some optimizations should be run regardless of feature enabling
-[ -e /usr/bin/ntpdate ] && ntpdate -bs 3.de.pool.ntp.org
+[ -e /usr/bin/ntpdate ] && ntpdate -bs europe.pool.ntp.org
 
 ### check if feature is enabled
 [ "$NABLA_LOCAL_OPTIMIZATION" != "Y" ] && exit 0
