@@ -9,3 +9,4 @@ configs/*_xeno_*
 patches/xenomai
 # new kernel development
 configs/*_nx_*
+kernel_[56].*_config.fragment
