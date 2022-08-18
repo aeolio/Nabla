@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# led	Activates LEDs on Alix platform.
+# led	Activates LEDs on ALIX platform.
 #
 
 ### initialize system variables

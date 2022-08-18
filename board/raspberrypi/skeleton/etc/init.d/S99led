@@ -8,11 +8,11 @@
 
 # ACT is the green LED
 # PWR is the red LED
-# brightness control seems not to work
+# brightness control handles on/off
 
 start() {
-	echo heartbeat > /sys/class/leds/ACT/trigger
-	echo 32 > /sys/class/leds/PWR/brightness
+	# activity LED initially has heartbeat pattern
+	# echo heartbeat > /sys/class/leds/ACT/trigger
 	echo timer > /sys/class/leds/PWR/trigger
 	echo 500  > /sys/class/leds/PWR/delay_on
 	echo 1500  > /sys/class/leds/PWR/delay_off
