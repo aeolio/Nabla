@@ -1,10 +1,10 @@
-Fix make variables to be used in a Buildroot environment
+Fix Makefile to be used in a Buildroot environment
 
 Signed-off-by: Andreas Ziegler <br015@umbiko.net>
 
---- a/source/Makefile.orig	2018-08-26 15:35:37.000000000 +0100
-+++ b/source/Makefile	2020-11-02 06:19:00.000000000 +0100
-@@ -20,23 +20,26 @@
+--- a/source/Makefile
++++ b/source/Makefile
+@@ -20,10 +20,15 @@
  
  # Modify as required.
  #
@@ -14,15 +14,15 @@ Signed-off-by: Andreas Ziegler <br015@umbiko.net>
 +PREFIX ?= /usr
  INCDIR ?= $(PREFIX)/include
  LIBDIR ?= $(PREFIX)/lib$(SUFFIX)
- 
++
 +ifdef FFTW_PATH
 +LIBPATH += -L$(FFTW_PATH)/lib
 +INCPATH += -I$(FFTW_PATH)/include
 +endif
-+
+ 
  
  MAJVERS = 4
- MINVERS = 0.3
+@@ -31,12 +36,10 @@
  VERSION = $(MAJVERS).$(MINVERS)
  
  
@@ -53,9 +53,11 @@ Signed-off-by: Andreas Ziegler <br015@umbiko.net>
  
  
  install:	$(ZITA-CONVOLVER_MIN)
-@@ -58,11 +65,11 @@
+@@ -56,12 +63,12 @@
+ 	install -d $(DESTDIR)$(LIBDIR)
+ 	install -m 644 $(ZITA-CONVOLVER_H) $(DESTDIR)$(INCDIR)
  	install -m 755 $(ZITA-CONVOLVER_MIN) $(DESTDIR)$(LIBDIR)
- 	ldconfig
+-	ldconfig
  	ln -sf $(ZITA-CONVOLVER_MIN) $(DESTDIR)$(LIBDIR)/$(ZITA-CONVOLVER_SO)
 +	ln -sf $(ZITA-CONVOLVER_MIN) $(DESTDIR)$(LIBDIR)/$(ZITA-CONVOLVER_MAJ)
  
@@ -65,5 +67,4 @@ Signed-off-by: Andreas Ziegler <br015@umbiko.net>
  
  clean:
 -	/bin/rm -f *~ *.o *.a *.d *.so.*
--
 +	$(RM) -f *~ *.o *.a *.d *.so.*
