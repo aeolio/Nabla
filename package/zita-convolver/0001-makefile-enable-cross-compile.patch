@@ -53,7 +53,7 @@ Signed-off-by: Andreas Ziegler <br015@umbiko.net>
  
  
  install:	$(ZITA-CONVOLVER_MIN)
-@@ -56,12 +63,12 @@
+@@ -56,13 +63,13 @@
  	install -d $(DESTDIR)$(LIBDIR)
  	install -m 644 $(ZITA-CONVOLVER_H) $(DESTDIR)$(INCDIR)
  	install -m 755 $(ZITA-CONVOLVER_MIN) $(DESTDIR)$(LIBDIR)
