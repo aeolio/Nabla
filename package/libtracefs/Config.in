@@ -1,0 +1,8 @@
+config BR2_PACKAGE_LIBTRACEFS
+	bool "libtracefs"
+	select BR2_PACKAGE_LIBTRACEEVENT
+
+	help
+	  Linux kernel trace file system library
+
+	  https://git.kernel.org/pub/scm/libs/libtrace/libtracefs.git/
