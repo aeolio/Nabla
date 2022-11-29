@@ -1,0 +1,26 @@
+The standard C++ library defibes a wrapper around condition_variable::wait 
+which leads to a circular call to the wrapper function because it's name is 
+now identical to the called function. 
+
+The issue is not encountered when glibc or musl are used. 
+
+Disable this wrapper when the C library is uClibc. 
+
+--- a/libstdc++-v3/src/c++11/compatibility-condvar.cc
++++ b/libstdc++-v3/src/c++11/compatibility-condvar.cc
+@@ -76,12 +76,14 @@
+ }
+ } // namespace __gnu_cxx
+ 
++#if !defined (__UCLIBC__)
+ // Export a noexcept wrapper around std::condition_variable::wait
+ // with the original @GLIBCXX_3.4.11 symbol version.
+ asm(
+   ".symver _ZN9__gnu_cxx17__nothrow_wait_cv4waitERSt11unique_lockISt5mutexE,"
+   "_ZNSt18condition_variable4waitERSt11unique_lockISt5mutexE@GLIBCXX_3.4.11"
+ );
++#endif // __UCLIBC__
+ #endif
+ #endif
+ 
+
