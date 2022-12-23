@@ -150,6 +150,8 @@ remove_files=""
 remove_files="$remove_files usr/share/common-lisp"
 # helper files for valgrind, installed by libglib2
 remove_files="$remove_files usr/share/glib-2.0"
+# installed by ffmpeg
+remove_files="$remove_files usr/share/ffmpeg"
 # installed by mpd
 remove_files="$remove_files usr/share/icons usr/share/vala"
 # installed by libgcrypt
