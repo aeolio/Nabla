@@ -26,7 +26,7 @@ SERIAL 0 38400
 
 DEFAULT nabla
 TIMEOUT 10
-SAY Booting Nabla music player ...
+SAY Booting Nabla O/S ...
 
 LABEL nabla
 KERNEL /boot/bzImage

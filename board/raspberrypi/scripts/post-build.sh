@@ -18,11 +18,7 @@ if grep -q 'rootwait' "${BOOT_FILE}"; then
 fi
 # append isolcpus parameter
 if ! grep -q 'isolcpus=' "${BOOT_FILE}"; then
-	sed -i 's/$/ isolcpus=3/' ${BOOT_FILE} 
-fi
-# append rcu_nocbs parameter
-if ! grep -q 'rcu_nocbs=' "${BOOT_FILE}"; then
-	sed -i 's/$/ rcu_nocbs=3/' ${BOOT_FILE} 
+	sed -i 's/$/ isolcpus=nohz,domain,managed_irq,3/' ${BOOT_FILE} 
 fi
 # append nohz_full parameter
 if ! grep -q 'nohz_full=' "${BOOT_FILE}"; then

@@ -26,9 +26,9 @@ DEFAULT nabla
 PROMPT 0
 
 LABEL nabla
-  SAY Booting Nabla music player ...
+  SAY Booting Nabla O/S ...
   KERNEL /boot/bzImage
-  APPEND isolcpus=1 rcu_nocbs=1 nohz_full=1 quiet
+  APPEND isolcpus=nohz,domain,managed_irq,1 nohz_full=1 quiet
 __EOF__
 		fi
 		;;
