@@ -25,6 +25,9 @@ config_file_path="etc/nabla.conf"
 # command parameters
 cmd_start="startup"
 cmd_stop="shutdown"
+# additional files to save only on shutdown
+NABLA_SYNC_SHUTDOWN="/var/log"
+
 
 #
 # finds out if a partition is mounted writeable or read-only
@@ -150,10 +153,6 @@ setup_prepare() {
 	fi
 	. $config_file
 	echo "$script:  Configuration file $config_file read"
-	# on shutdown, also save log file location 
-	if [ $command = ${cmd_stop} ]; then
-		NABLA_SYNC_DIRECTORIES="$NABLA_SYNC_DIRECTORIES /var/log"
-	fi
 	unset command
 	unset config_file
 	unset need_write_access
@@ -161,16 +160,17 @@ setup_prepare() {
 }
 
 #
-# copy from source to destination
+# copy multiple items from source to destination
 # function parameters
-#	$1 = source
-#	$2 = destination
-# either $source or $destination is an empty string
+#	$1 = source prefix
+#	$2 = destination prefix
+#	$3 = directory /file list
+# either $1 or $2 will be an empty string
 #
-setup_copy() {
+setup_copy_list() {
 	src_directory=$1
 	dst_directory=$2
-	sync_directories="$NABLA_SYNC_DIRECTORIES"
+	sync_directories=$3
 	if [ -n "$sync_directories" ]; then
 		for s in $sync_directories; do
 			# item is a directory
@@ -201,7 +201,7 @@ setup_copy() {
 #
 setup_copy_shutdown() {
 	echo "$script:  Export to ${config_directory}"
-	setup_copy "" ${config_directory}
+	setup_copy_list "" ${config_directory} "$NABLA_SYNC_DIRECTORIES $NABLA_SYNC_SHUTDOWN"
 }
 
 #
@@ -209,7 +209,7 @@ setup_copy_shutdown() {
 #
 setup_copy_startup() {
 	echo "$script:  Import from ${config_directory}"
-	setup_copy ${config_directory} ""
+	setup_copy_list ${config_directory} "" "$NABLA_SYNC_DIRECTORIES"
 }
 
 #
