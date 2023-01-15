@@ -11,6 +11,9 @@ SSH_KEY_FILES="ssh_host_dsa_key \
 	ssh_host_ed25519_key \
 	ssh_host_rsa_key"
 
+SSH_SERVER_KEYFILES="$SSH_DIR/ssh_host_*"
+SSH_USER_KEYFILES="/root/.ssh/*"
+
 # Make sure the ssh-keygen program exists
 [ -f /usr/bin/ssh-keygen ] || exit 0
 
@@ -19,7 +22,7 @@ mkdir -p $SSH_DIR
 
 # key file permissions were lost during restore from FAT file system
 restore_key_permissions() {
-	key_files="$SSH_DIR/ssh_host_*"
+	key_files="$1"
 	# if the string can be expanded, files exist
 	if [ ! "$key_files" = "$(echo $key_files)" ]; then 
 		chmod 600 $key_files
@@ -44,7 +47,8 @@ generate_missing_keys() {
 umask 022
 
 start() {
-	restore_key_permissions
+	restore_key_permissions "$SSH_SERVER_KEYFILES"
+	restore_key_permissions "$SSH_USER_KEYFILES"
 	generate_missing_keys
 	echo -n "Starting sshd: "
 	/usr/sbin/sshd -E /var/log/sshd.log
