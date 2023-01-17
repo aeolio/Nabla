@@ -42,11 +42,10 @@ Build firmware image
 
 Installation
 
-Write the final sdcard.img found in nabla/images to a USB stick. If the resulting device should not be bootable, re-install syslinux. Check for the USB stick's device file and replace sdX1 with the correct one. 
-  $ fdisk -l
-  $ syslinux --install /dev/sdX1
+Write the final sdcard.img found in nabla/images to a USB stick. If the resulting device should not be bootable, check if syslinux is present on your build system. If necessary, re-install syslinux on the image file and write it to your USB stick. 
+  $ syslinux --install nabla/images/sdcard.img
 
-Raspberry Pi does not use image files; instead transfer the files in the folder rpi-firmware plus the files bcm2711-rpi-4-b.dtb, Image, rootfs.cpio.gz to a microSD card. 
+Raspberry Pi does not use image files; transfer the files in the folder rpi-firmware plus the files bcm2711-rpi-4-b.dtb, Image, rootfs.cpio.gz to a FAT32 formatted microSD card instead. 
 
 
 Upgrade
@@ -55,7 +54,7 @@ Using a terminal, connect via ssh to the embedded system and make the boot parti
   $ ssh nabla
   [nabla]# mount -o remount,rw /media/boot
 
-Using a file browser, connect via sftp to the embedded system and copy bzImage (for Raspberry Pi: Image and rootfs.cpio.gz) to the boot partition mounted on /media/boot. 
+Using a file browser, connect via sftp to the embedded system and copy bzImage (for Raspberry Pi: bcm2711-rpi-4-b.dtb, Image, rootfs.cpio.gz) to the boot partition mounted on /media/boot. 
 
 Now reboot the machine from the terminal session:
   [nabla]# reboot
@@ -63,11 +62,11 @@ Now reboot the machine from the terminal session:
 
 Caveat
 
-Currently the Alix2 image is configured to be used as a mpd server, the Raspberry Pi image as a mpd client. For standalone installations (database and player on one machine) the mpd build options should be reviewed. 
+Currently the Alix2 image is configured to be used as a mpd server, the Raspberry Pi image as a mpd client. For standalone installations (database and player on one machine) the mpd build options need to be adapted. 
 
 
 Footnotes
 
 [1] This machine is hopelessly outdated, but since it performs quite well, it is still supported
 [2] SoC based mainboards, like J1800 and J1900 were found to perform well as music players
-[3] Only Raspberry 4 is supported, older models did show very poor scheduling jitter results, so were not implemented
+[3] Only Raspberry 4 is supported, older models did show very poor scheduling jitter results, so were discontinued
