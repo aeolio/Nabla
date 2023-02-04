@@ -71,10 +71,3 @@ menu "Hardware handling"
 		source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
 	endmenu
 endmenu
-
-menu "Libraries"
-	menu "Debugging, profiling and benchmark"
-		source "$BR2_EXTERNAL_NABLA_PATH/package/libtraceevent/Config.in"
-		source "$BR2_EXTERNAL_NABLA_PATH/package/libtracefs/Config.in"
-	endmenu
-endmenu

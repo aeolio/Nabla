@@ -1,7 +1,0 @@
-config BR2_PACKAGE_LIBTRACEEVENT
-	bool "libtraceevent"
-
-	help
-	  Library to parse raw trace event formats
-
-	  https://git.kernel.org/pub/scm/libs/libtrace/libtraceevent.git/
