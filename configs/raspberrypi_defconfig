@@ -23,7 +23,7 @@ BR2_ROOTFS_POST_IMAGE_SCRIPT="$(BR2_EXTERNAL_NABLA_PATH)/board/raspberrypi/scrip
 BR2_ROOTFS_POST_SCRIPT_ARGS="--genimage-cfg=$(BR2_EXTERNAL_NABLA_PATH)/board/raspberrypi/scripts/genimage.cfg"
 BR2_LINUX_KERNEL=y
 BR2_LINUX_KERNEL_CUSTOM_VERSION=y
-BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="6.1.7"
+BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="6.1.9"
 BR2_LINUX_KERNEL_PATCH="https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.1/patch-6.1.5-rt7.patch.xz"
 BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
 BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="$(BR2_EXTERNAL_NABLA_PATH)/board/raspberrypi/configs/bcm2711_defconfig"
