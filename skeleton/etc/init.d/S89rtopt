@@ -9,10 +9,8 @@
 ### functions that are used in more than one init script
 [ -x /etc/init.d/init_functions ] && . /etc/init.d/init_functions
 
-### do not run during shutdown
-if [ "$1" = "stop" ];  then
-	exit 0;
-fi
+### this is a startup only script
+[ "$1" != "start" ] && exit 0
 
 # Change CPU frequency scaling governor to performance 
 # and increase CPU minimum frequency to the maximum value
