@@ -1,22 +1,28 @@
 #EXTM3U
+
+#EXTINF:-1,Radio Paradise (Main Mix)
+http://stream.radioparadise.com/flacm
+#EXTINF:-1,Radio Paradise (Mellow Mix)
+http://stream.radioparadise.com/mellow-flacm
+#EXTINF:-1,Radio Paradise (Rock Mix)
+http://stream.radioparadise.com/rock-flacm
+#EXTINF:-1,Radio Paradise (World/Etc Mix)
+http://stream.radioparadise.com/world-etc-flacm
+
+#EXTINF:-1,TOP BLUES (320 kbps)
+http://us3.internet-radio.com:8342/stream
+#EXTINF:-1,QFM Jazz (320 kbps)
+http://51.255.235.165:5018/stream
+
 #EXTINF:-1,Rock Antenne
-http://mp3.webradio.rockantenne.de:80
-#EXTINF:-1,Radio Caroline Breskens NL
-http://94.75.235.38:8253
+https://stream.rockantenne.de/rockantenne/stream/mp3
+#EXTINF:-1,Radio Caroline | Breskens NL (320 kpbs)
+http://46.165.208.21:8270
 #EXTINF:-1,RADIO BOB! – Hessen Rock'n Pop
-http://stream.hoerradar.de/mp3-radiobob
-#EXTINF:-1,BLUES RADIO (1.FM TM)
+http://streams.radiobob.de/bob-live/mp3-192/mediaplayer
+#EXTINF:-1,1.FM Blues | Zug CH
 http://205.164.62.21:8030
-#EXTINF:-1,Campus FM Toulouse
-http://live.radio-campus.org:8000/radio_tlse
-#EXTINF:-1,Radiolla Jiraffe 192k
-http://air.radiolla.com:80/jiraffe.192k.mp3
-#EXTINF:-1,Radio Swiss Jazz
-http://streaming.swisstxt.ch/m/rsj/mp3_128
-#EXTINF:-1,Jazz Hamburg
-http://dude.mp3streams.net/jazzgeneralgvl
-#EXTINF:-1,Jazzavac.com
-http://85.10.199.221:8002
-#EXTINF:-1,Krautrock-World - Psychedelic & Progressive Rock
-http://stream.laut.fm/krautrock-world
+
+#EXTINF:-1,Krautrock World
+https://krautrockworld.stream.laut.fm/krautrockworld?pl=pls&t302=2023-02-26_12-35-24&uuid=e713060c-f39c-468d-bd44-9dd6e6ab1009
 
