@@ -40,6 +40,19 @@ define LINUX_PATCH_ASSURANCE
 endef
 LINUX_PRE_PATCH_HOOKS += LINUX_PATCH_ASSURANCE
 
+# remove old versions of kernel modules immediately before target installation
+define LINUX_CLEAN_LIB_MODULES
+	module_dir=$(TARGET_DIR)/lib/modules; \
+	version_info=$(@D)/include/config/kernel.release; \
+	linux_version=$$(cat $$version_info); \
+	for d in $$(ls $$module_dir); do \
+		if [ $$d != $$linux_version ]; then \
+			rm -fr $$module_dir/$$d; \
+		fi \
+	done
+endef
+LINUX_PRE_INSTALL_TARGET_HOOKS += LINUX_CLEAN_LIB_MODULES
+
 # install dtb overlays
 ifeq ($(BR2_LINUX_KERNEL_DTB_OVERLAY_SUPPORT),y)
 define LINUX_INSTALL_OVERLAYS
