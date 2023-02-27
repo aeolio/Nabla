@@ -21,16 +21,18 @@ LINUX_MAKE_ENV += KCFLAGS='-Wno-packed-not-aligned \
 endif
 endif # rockpi4 && GCC 8
 
-# if patch directory exists, symbolic link should also be present
-# the 'custom' version must be explicitly excluded from this logic
+# if a base version patch directory exists, a symbolic link 
+# for the current version should also be present
 define LINUX_PATCH_ASSURANCE
 	patch_dirs=$(BR2_GLOBAL_PATCH_DIR); \
-	linux_version=$(BR2_LINUX_KERNEL_VERSION); \
-	linux_series=$${linux_version%.*}; \
-	if [ $${linux_version} != $${linux_series} ]; then \
+	pkg_name=linux; \
+	pkg_version=$(BR2_LINUX_KERNEL_VERSION); \
+	base_version=$${pkg_version%.*}; \
+	if [ $${pkg_version} != $${base_version} ]; then \
 		for p in $${patch_dirs}; do \
-			if [ -d "$$p/linux/$${linux_series}" ] && [ ! -h "$$p/linux/$${linux_version}" ]; then \
-				echo "patch directory link missing"; \
+			if	[ -d "$$p/$$pkg_name/$${base_version}" ] && \
+				[ ! -h "$$p/$$pkg_name/$${pkg_version}" ]; then \
+				echo "patch directory link missing for $${pkg_version}"; \
 				exit -1; \
 			fi \
 		done \
