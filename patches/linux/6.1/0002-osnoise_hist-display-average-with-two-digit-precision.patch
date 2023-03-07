@@ -8,7 +8,7 @@ Changes v1 -> v2:
 
 --- a/tools/tracing/rtla/src/osnoise_hist.c
 +++ b/tools/tracing/rtla/src/osnoise_hist.c
-@@ -332,8 +335,8 @@
+@@ -335,8 +335,8 @@
  			continue;
  
  		if (data->hist[cpu].count)
