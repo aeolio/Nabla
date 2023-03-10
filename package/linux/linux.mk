@@ -21,7 +21,7 @@ LINUX_MAKE_ENV += KCFLAGS='-Wno-packed-not-aligned \
 endif
 endif # rockpi4 && GCC 8
 
-# if a base version patch directory exists, a symbolic link 
+# if a base version patch directory exists, a directory 
 # for the current version should also be present
 define LINUX_PATCH_ASSURANCE
 	patch_dirs=$(BR2_GLOBAL_PATCH_DIR); \
@@ -31,8 +31,8 @@ define LINUX_PATCH_ASSURANCE
 	if [ $${pkg_version} != $${base_version} ]; then \
 		for p in $${patch_dirs}; do \
 			if	[ -d "$$p/$$pkg_name/$${base_version}" ] && \
-				[ ! -h "$$p/$$pkg_name/$${pkg_version}" ]; then \
-				echo "patch directory link missing for $${pkg_version}"; \
+				[ ! -d "$$p/$$pkg_name/$${pkg_version}" ]; then \
+				echo "Patch directory missing for $${pkg_version}"; \
 				exit -1; \
 			fi \
 		done \
