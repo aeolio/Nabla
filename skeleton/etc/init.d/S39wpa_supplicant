@@ -16,7 +16,7 @@ log_file="/var/log/wpa_supplicant.log"
 config=""
 for i in /sys/class/net/wlan?; do
 	if [ -n "${config}" ]; then config="${config} -N"; fi
-	config="${config} -i`basename $i` -Dnl80211,wext -c${cfg_file}"
+	config="${config} -i`basename $i` -Dnl80211 -c${cfg_file}"
 done
 
 start() {
