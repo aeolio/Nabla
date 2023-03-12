@@ -14,6 +14,18 @@ append_option() {
 	eval "echo ${1},${2}=\${$2}"
 }
 
+### expects one variable
+###	device string
+### returns device string, or device name if input parameter contains UUID
+map_uuid() {
+	if [ "${1%=*}" = "UUID" ]; then
+		uuid=${1#*=}
+		blkid | awk '/'$uuid'/ { gsub(/:/, "", $1); print $1 }'
+	else
+		eval "echo $1"
+	fi
+}
+
 ### expects two variables
 ###	option_string 
 ###	filesystem_type
@@ -50,6 +62,9 @@ parse_options() {
 			;;
 		r[ow])
 			mode=$opt
+			;;
+		user|users)
+			# discard option
 			;;
 		*)
 			options_out="$options_out,$opt"
@@ -95,7 +110,7 @@ if [ "$1" = "start" -o "$1" = "sync" ]; then
 			# filter entries that are incomplete
 			if [ ${file_system} -a ${mount_point} -a ${type} ]; then 
 				# check if file system is already mounted
-				mounted=`grep "$file_system $mount_point $type" $mount_file`
+				mounted=`grep "$(map_uuid $file_system) $mount_point $type" $mount_file`
 				if [ -z "${mounted}" ]; then
 					# ignore entries with "noauto" set
 					if [ ! ${options##*noauto*} ]; then continue; fi
