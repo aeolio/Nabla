@@ -4,10 +4,10 @@
 #
 ################################################################################
 
-FOLVE_VERSION = 2021.04
+FOLVE_VERSION = 2022.08
 FOLVE_SITE = $(call github,hzeller,folve,master)
 FOLVE_INSTALL_STAGING = YES
-FOLVE_DEPENDENCIES = flac libfuse3 libmicrohttpd libsndfile zita-convolver
+FOLVE_DEPENDENCIES = host-pkgconf flac libfuse3 libmicrohttpd libsndfile zita-convolver
 FOLVE_LICENSE = GPL3
 FOLVE_LICENSE_FILES = COPYING
 

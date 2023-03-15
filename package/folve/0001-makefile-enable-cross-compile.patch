@@ -4,10 +4,8 @@ Signed-off-by: Andreas Ziegler <br015@umbiko.net>
 
 --- a/Makefile
 +++ b/Makefile
-@@ -1,15 +1,15 @@
--CXX=g++
+@@ -2,14 +2,14 @@
 -PREFIX=/usr/local
-+CXX?=g++
 +PREFIX=/usr
  
  F_VERSION=$(shell git log -n1 --date=short --format="%cd (commit=%h)" 2>/dev/null || echo "[unknown version - compile from git]")
