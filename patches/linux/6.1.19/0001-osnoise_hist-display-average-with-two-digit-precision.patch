@@ -1,0 +1,21 @@
+Calculate average value in osnoise-hist summary with two-digit 
+precision to avoid displaying too optimitic results. 
+
+Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+---
+Changes v1 -> v2:
+ - output with two-digit precision instead of rounding (Daniel)
+
+--- a/tools/tracing/rtla/src/osnoise_hist.c
++++ b/tools/tracing/rtla/src/osnoise_hist.c
+@@ -335,8 +335,8 @@
+ 			continue;
+ 
+ 		if (data->hist[cpu].count)
+-			trace_seq_printf(trace->seq, "%9llu ",
+-					data->hist[cpu].sum_sample / data->hist[cpu].count);
++			trace_seq_printf(trace->seq, "%9.2f ",
++				((double) data->hist[cpu].sum_sample) / data->hist[cpu].count);
+ 		else
+ 			trace_seq_printf(trace->seq, "        - ");
+ 	}
