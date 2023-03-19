@@ -44,6 +44,12 @@ config BR2_PACKAGE_WPA_SUPPLICANT_CRDA
 	default y if BR2_PACKAGE_WPA_SUPPLICANT && !BR2_STATIC_LIBS
 	select BR2_PACKAGE_CRDA
 
+# post-image-script needs host-genimage
+config BR2_ROOTFS_POST_IMAGE_SCRIPT_GENIMAGE
+	bool
+	default y if BR2_ROOTFS_POST_IMAGE_SCRIPT != ""
+	select BR2_PACKAGE_HOST_GENIMAGE
+
 # host-genimage needs host-mtools
 config BR2_PACKAGE_HOST_GENIMAGE_MTOOLS
 	bool
