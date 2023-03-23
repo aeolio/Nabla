@@ -1,0 +1,135 @@
+Systemd libudev allows creation of udev structure from any sysfs path. 
+Modify udev_device_new_from_syspath to enable compatibility. 
+
+--- a/udev_device.c
++++ b/udev_device.c
+@@ -528,9 +528,41 @@
+     udev_list_entry_add(&udev_device->properties, "ID_PATH", id, 0);
+ }
+ 
++static char *get_subsystem_from_syspath(const char *syspath, char *path, int len)
++{
++    char *subsystem;
++
++    memset(path, 0, len);
++    subsystem = read_symlink(syspath, "subsystem");
++
++    if (!subsystem) {
++        return NULL;
++    }
++
++    if (!realpath(syspath, path)) {
++        free(subsystem);
++        return NULL;
++    }
++
++	return subsystem;
++}
++
++static char *get_uevent_from_syspath(const char *syspath)
++{
++    char path[PATH_MAX];
++    struct stat st;
++
++    snprintf(path, sizeof(path), "%s/%s", syspath, "uevent");
++    if (lstat(path, &st) != 0 || !S_ISREG(st.st_mode)) {
++        return NULL;
++    }
++
++    return strdup(strrchr(path, '/') + 1);
++}
++
+ struct udev_device *udev_device_new_from_syspath(struct udev *udev, const char *syspath)
+ {
+-    char *subsystem, *driver, *sysname;
++    char *subsystem, *driver, *sysname, *uevent;
+     struct udev_device *udev_device;
+     char path[PATH_MAX];
+     int i;
+@@ -539,21 +571,19 @@
+         return NULL;
+     }
+ 
+-    subsystem = read_symlink(syspath, "subsystem");
+-
+-    if (!subsystem) {
+-        return NULL;
+-    }
+-
+-    if (!realpath(syspath, path)) {
+-        free(subsystem);
+-        return NULL;
+-    }
++    subsystem = get_subsystem_from_syspath(syspath, path, sizeof(path));
++    uevent = get_uevent_from_syspath(syspath);
++
++    if (!subsystem && !uevent)
++        return NULL;
+ 
+     udev_device = calloc(1, sizeof(*udev_device));
+ 
+     if (!udev_device) {
+-        free(subsystem);
++        if (subsystem)
++            free(subsystem);
++        if (uevent)
++            free(uevent);
+         return NULL;
+     }
+ 
+@@ -564,29 +594,36 @@
+     udev_list_entry_init(&udev_device->properties);
+     udev_list_entry_init(&udev_device->sysattrs);
+ 
+-    udev_list_entry_add(&udev_device->properties, "SYSPATH", path, 0);
+-    udev_list_entry_add(&udev_device->properties, "DEVPATH", path + 4, 0);
+-
+-    sysname = strrchr(path, '/') + 1;
+-    driver = read_symlink(path, "driver");
+-
+-    udev_list_entry_add(&udev_device->properties, "SUBSYSTEM", subsystem, 0);
+-    udev_list_entry_add(&udev_device->properties, "SYSNAME", sysname, 0);
+-    udev_list_entry_add(&udev_device->properties, "DRIVER", driver, 0);
+-
+-    for (i = 0; sysname[i] != '\0'; i++) {
+-        if (sysname[i] >= '0' && sysname[i] <= '9') {
+-            udev_list_entry_add(&udev_device->properties, "SYSNUM", sysname + i, 0);
+-            break;
+-        }
+-    }
++	if (subsystem) {
++        udev_list_entry_add(&udev_device->properties, "SYSPATH", path, 0);
++        udev_list_entry_add(&udev_device->properties, "DEVPATH", path + 4, 0);
++
++        sysname = strrchr(path, '/') + 1;
++        driver = read_symlink(path, "driver");
++
++        udev_list_entry_add(&udev_device->properties, "SUBSYSTEM", subsystem, 0);
++        udev_list_entry_add(&udev_device->properties, "SYSNAME", sysname, 0);
++        udev_list_entry_add(&udev_device->properties, "DRIVER", driver, 0);
++
++        for (i = 0; sysname[i] != '\0'; i++) {
++            if (sysname[i] >= '0' && sysname[i] <= '9') {
++                udev_list_entry_add(&udev_device->properties, "SYSNUM", sysname + i, 0);
++                break;
++            }
++        }
++        free(driver);
++    }
++    else
++        udev_list_entry_add(&udev_device->properties, "SYSPATH", syspath, 0);
+ 
+     set_properties_from_uevent(udev_device);
+     set_properties_from_evdev(udev_device);
+     set_properties_from_props(udev_device);
+ 
+-    free(driver);
+-    free(subsystem);
++    if (subsystem)
++        free(subsystem);
++    if (uevent)
++        free(uevent);
+     return udev_device;
+ }
+ 
+

@@ -1,0 +1,9 @@
+config BR2_PACKAGE_LIBUDEV_ZERO
+	bool "libudev-zero"
+	depends on !BR2_PACKAGE_HAS_UDEV
+
+	help
+	  Libudev-zero is a drop-in replacement for libudev 
+	  intended to work with any device manager.
+
+	  https://github.com/illiliti/libudev-zero

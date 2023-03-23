@@ -1,0 +1,16 @@
+#
+#	copy of http://www.linux-usb.org/usb.ids
+#
+
+0bda  Realtek Semiconductor Corp.
+	8179  RTL8188EUS 802.11n Wireless Network Adapter
+174c  ASMedia Technology Inc.
+	55aa  ASM1051E SATA 6Gb/s bridge, ASM1053E SATA 6Gb/s bridge, ASM1153 SATA 3Gb/s bridge, ASM1153E SATA 6Gb/s bridge
+1d6b  Linux Foundation
+	0002  2.0 root hub
+	0003  3.0 root hub
+20a0  Clay Logic
+	4143  WaveIO USB Audio 2.0
+2109  VIA Labs, Inc.
+	3431  4-port USB 3.0 Hub
+

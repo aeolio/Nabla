@@ -56,6 +56,12 @@ config BR2_PACKAGE_HOST_GENIMAGE_MTOOLS
 	default y if BR2_PACKAGE_HOST_GENIMAGE
 	select BR2_PACKAGE_HOST_MTOOLS
 
+# usbip needs libudev-zero
+config BR2_PACKAGE_USBIP_LIBUDEV_ZERO
+	bool
+	default y if BR2_PACKAGE_USBIP
+	select BR2_PACKAGE_LIBUDEV_ZERO
+
 
 #
 # external options menu
@@ -75,5 +81,11 @@ menu "Hardware handling"
 	menu "Firmware"
 		source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
 		source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
+	endmenu
+endmenu
+
+menu "Libraries"
+	menu "Hardware handling"
+		source "$BR2_EXTERNAL_NABLA_PATH/package/libudev-zero/Config.in"
 	endmenu
 endmenu
