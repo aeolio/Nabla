@@ -11,13 +11,18 @@ FOLVE_DEPENDENCIES = host-pkgconf flac libfuse3 libmicrohttpd libsndfile zita-co
 FOLVE_LICENSE = GPL3
 FOLVE_LICENSE_FILES = COPYING
 
-FOLVE_MAKE_ENV += " SNDFILE_INC= "
-FOLVE_MAKE_ENV += " SNDFILE_LIB=-lsndfile"
-FOLVE_MAKE_ENV += " FUSE_INC=-I$(STAGING_DIR)/usr/include/fuse3"
-FOLVE_MAKE_ENV += " FUSE_LIB=-lfuse3"
+FOLVE_MAKE_ENV = \
+	SNDFILE_INC= \
+	SNDFILE_LIB=-lsndfile \
+	FUSE_INC=-I$(STAGING_DIR)/usr/include/fuse3 \
+	FUSE_LIB=-lfuse3
+
+FOLVE_MAKE_OPTS = \
+	CXX="$(TARGET_CXX)" \
+	LD="$(TARGET_LD)"
 
 define FOLVE_BUILD_CMDS
-	$(MAKE) $(FOLVE_MAKE_ENV) CXX="$(TARGET_CXX)" LD="$(TARGET_LD)" -C $(@D)
+	$(FOLVE_MAKE_ENV) $(MAKE) $(FOLVE_MAKE_OPTS) -C $(@D)
 endef
 
 define FOLVE_INSTALL_TARGET_CMDS
