@@ -11,7 +11,7 @@ KERNEL_CONFIG=${KERNEL_SOURCE}/.config
 
 ### Linux firmware is selected
 ### check out wireless.wiki.kernel.org for firmware version related to kernel version
-if [ $(grep -c "BR2_PACKAGE_LINUX_FIRMWARE=y" $BR2_CONFIG) -gt 0 ]; then
+if [ $(is_config_selected "BR2_PACKAGE_LINUX_FIRMWARE") -gt 0 ]; then
 	_SOURCE_DIR=$(ls -dt $BUILD_DIR/linux-firmware-* | awk '{ print $1; exit }')
 	_TARGET_DIR="$TARGET_DIR/lib/firmware"
 	FW_PKG_LIST=""
@@ -71,7 +71,7 @@ fi
 ### patch sshd configuration files in /etc/ssh
 ### openssh 7.x changed default behaviour, but leave in place for documentation
 ### root login behaviour also changed, this is handled by patch in package folder
-if [ $(grep -c "BR2_PACKAGE_OPENSSH_SERVER=y" $BR2_CONFIG) -gt 0 ]; then
+if [ $(is_config_selected "BR2_PACKAGE_OPENSSH_SERVER") -gt 0 ]; then
 	_ETC_SSH="$TARGET_DIR/etc/ssh"
 	SSHD_CONFIG=${_ETC_SSH}/sshd_config
 	if [ $(grep -c "^#HostKey /etc/ssh_host*_key$" $SSHD_CONFIG) -gt 0 ]; then
@@ -80,13 +80,11 @@ if [ $(grep -c "BR2_PACKAGE_OPENSSH_SERVER=y" $BR2_CONFIG) -gt 0 ]; then
 	fi
 fi
 
-TARGET_HOSTNAME=$(grep BR2_TARGET_GENERIC_HOSTNAME ${BR2_CONFIG})
-TARGET_HOSTNAME=${TARGET_HOSTNAME##*=}
-TARGET_HOSTNAME=$(echo ${TARGET_HOSTNAME} | sed 's/^"\(.*\)"$/\1/')
+TARGET_HOSTNAME=$(get_config_value "BR2_TARGET_GENERIC_HOSTNAME")
 
 ### Avahi package selected
 ### modify avahi configuration file
-if [ $(grep -c "BR2_PACKAGE_AVAHI=y" $BR2_CONFIG) -gt 0 ]; then
+if [ $(is_config_selected "BR2_PACKAGE_AVAHI") -gt 0 ]; then
 	_ETC_AVAHI="${TARGET_DIR}/etc/avahi"
 	AVAHI_CONFIG=${_ETC_AVAHI}/avahi-daemon.conf
 	if [ -f $AVAHI_CONFIG ] && [ $(grep -c "#host-name=" $AVAHI_CONFIG) -gt 0 ]; then
@@ -97,7 +95,7 @@ fi
 
 ### nfs-utils selected
 ### modify init.d startup file
-if [ $(grep -c "BR2_PACKAGE_NFS_UTILS=y" $BR2_CONFIG) -gt 0 ]; then
+if [ $(is_config_selected "BR2_PACKAGE_NFS_UTILS") -gt 0 ]; then
 	_ETC_INIT_D="${TARGET_DIR}/etc/init.d"
 	NFS_STARTUP=${_ETC_INIT_D}/S60nfs
 	if [ -f $NFS_STARTUP ] && [ $(grep -c "daemon:daemon" $NFS_STARTUP) -lt 1 ]; then
@@ -107,7 +105,7 @@ fi
 
 ### libfuse3 selected
 ### modify init.d startup file
-if [ $(grep -c "BR2_PACKAGE_LIBFUSE3=y" $BR2_CONFIG) -gt 0 ]; then
+if [ $(is_config_selected "BR2_PACKAGE_LIBFUSE3") -gt 0 ]; then
 	_ETC_INIT_D="${TARGET_DIR}/etc/init.d"
 	FUSE3_PROVIDED=${_ETC_INIT_D}/fuse3
 	FUSE3_STARTUP=${_ETC_INIT_D}/S22fuse3
@@ -119,7 +117,7 @@ fi
 
 ### linuxptp selected
 ### modify configuration
-if [ $(grep -c "BR2_PACKAGE_LINUXPTP=y" $BR2_CONFIG) -gt 0 ]; then
+if [ $(is_config_selected "BR2_PACKAGE_LINUXPTP") -gt 0 ]; then
 	_ETC="${TARGET_DIR}/etc"
 	LINUXPTP_CONFIG=${_ETC}/linuxptp.cfg
 	if [ -f $LINUXPTP_CONFIG ] && [ $(grep -c "^time_stamping.*hardware" $LINUXPTP_CONFIG) -gt 0 ]; then

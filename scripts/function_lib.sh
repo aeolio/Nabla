@@ -32,12 +32,21 @@ copy_firmware() {
 	fi
 }
 
+### check setting of buildroot config boolean value
+### Usage:  is_config_selected <key>
+# $1 = config variable
+is_config_selected() {
+	CONFIG_SETTING="$1=y"
+	result=$(grep -c $CONFIG_SETTING $BR2_CONFIG)
+	echo $result
+}
+
 ### get configuration value from buildroot config
 ### Usage:  get_config_value <key>
-# $1 = config name
+# $1 = config variable
 get_config_value() {
-	CONFIG_NAME="$1=\".*\""
-	CONFIG_VALUE=$(grep $CONFIG_NAME $BR2_CONFIG)
+	CONFIG_SETTING="$1=\".*\""
+	CONFIG_VALUE=$(grep $CONFIG_SETTING $BR2_CONFIG)
 	CONFIG_VALUE=${CONFIG_VALUE##*=}
 	CONFIG_VALUE=$(echo ${CONFIG_VALUE} | sed 's/^"\(.*\)"$/\1/')
 	echo $CONFIG_VALUE
