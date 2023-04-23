@@ -113,13 +113,17 @@ if [ "$1" = "start" -o "$1" = "sync" ]; then
 				mounted=`grep "$(map_uuid $file_system) $mount_point $type" $mount_file`
 				if [ -z "${mounted}" ]; then
 					# ignore entries with "noauto" set
-					if [ ! ${options##*noauto*} ]; then continue; fi
+					[ ${options##*noauto*} ] || continue
 					# create mount point
 					mkdir -p $mount_point || continue
 					# add some options for cifs file systems
 					options=`parse_options ${options} $type` || continue
 					# mount this file system
-					mount -t $type -o $options $file_system $mount_point || continue
+					mount -t $type -o $options $file_system $mount_point
+					if [ $? != 0 ]; then
+						rmdir $mount_point
+						continue
+					fi
 					echo "mounted $file_system on $mount_point"
 				fi
 			fi
