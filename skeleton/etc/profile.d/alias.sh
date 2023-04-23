@@ -6,5 +6,5 @@ list_rt_priorities()
 }
 
 alias psr=list_rt_priorities
-alias mrw='mount -o remount,rw /media/BOOT'
-alias mro='mount -o remount,ro /media/BOOT'
+alias mrw='mount -o remount,rw /media/boot && mount -o remount,rw /media/NABLA'
+alias mro='mount -o remount,ro /media/boot && mount -o remount,ro /media/NABLA'
