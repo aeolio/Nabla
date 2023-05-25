@@ -1,0 +1,72 @@
+Using a toolchain w/o locales (uClibc), building host-gcc-final-13.1.0 
+fails with this error: 
+
+>Making all in c++17
+>/bin/bash ../../libtool --tag CXX --tag disable-shared   --mode=compile /home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/./gcc/xgcc -shared-libgcc -B/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/./gcc -nostdinc++ -L/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/x86_64-buildroot-linux-uclibc/libstdc++-v3/src -L/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/x86_64-buildroot-linux-uclibc/libstdc++-v3/src/.libs -L/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/x86_64-buildroot-linux-uclibc/libstdc++-v3/libsupc++/.libs -B/home/data/buildroot.x86_64/host/x86_64-buildroot-linux-uclibc/bin/ -B/home/data/buildroot.x86_64/host/x86_64-buildroot-linux-uclibc/lib/ -isystem /home/data/buildroot.x86_64/host/x86_64-buildroot-linux-uclibc/include -isystem /home/data/buildroot.x86_64/host/x86_64-buildroot-linux-uclibc/sys-include    -I/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/libstdc++-v3/../libgcc -I/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/x86_64-buildroot-linux-uclibc/libstdc++-v3/include/x86_64-buildroot-linux-uclibc -I/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/x86_64-buildroot-linux-uclibc/libstdc++-v3/include -I/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/libstdc++-v3/libsupc++   -std=gnu++17 -nostdinc++ -prefer-pic -D_GLIBCXX_SHARED -fno-implicit-templates  -Wall -Wextra -Wwrite-strings -Wcast-qual -Wabi=2  -fdiagnostics-show-location=once   -ffunction-sections -fdata-sections  -frandom-seed=floating_from_chars.lo  -fimplicit-templates -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64  -O2 -g0  -D_GNU_SOURCE -fcf-protection -mshstk -c -o floating_from_chars.lo ../../../../../libstdc++-v3/src/c++17/floating_from_chars.cc
+>libtool: compile:  /home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/./gcc/xgcc -shared-libgcc -B/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/./gcc -nostdinc++ -L/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/x86_64-buildroot-linux-uclibc/libstdc++-v3/src -L/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/x86_64-buildroot-linux-uclibc/libstdc++-v3/src/.libs -L/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/x86_64-buildroot-linux-uclibc/libstdc++-v3/libsupc++/.libs -B/home/data/buildroot.x86_64/host/x86_64-buildroot-linux-uclibc/bin/ -B/home/data/buildroot.x86_64/host/x86_64-buildroot-linux-uclibc/lib/ -isystem /home/data/buildroot.x86_64/host/x86_64-buildroot-linux-uclibc/include -isystem /home/data/buildroot.x86_64/host/x86_64-buildroot-linux-uclibc/sys-include -I/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/libstdc++-v3/../libgcc -I/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/x86_64-buildroot-linux-uclibc/libstlibtool: compile:  /home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/./gcc/xgcc -shared-libgcc -B/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/./gcc -nostdinc++ -L/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/x86_64-buildroot-linux-uclibc/libstdc++-v3/src -L/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/x86_64-buildroot-linux-uclibc/libstdc++-v3/src/.libs -L/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/x86_64-buildroot-linux-uclibc/libstdc++-v3/libsupc++/.libs -B/home/data/buildroot.x86_64/host/x86_64-buildroot-linux-uclibc/bin/ -B/home/data/buildroot.x86_64/host/x86_64-buildroot-linux-uclibc/lib/ -isystem /home/data/buildroot.x86_64/host/x86_64-buildroot-linux-uclibc/include -isystem /home/data/buildroot.x86_64/host/x86_64-buildroot-linux-uclibc/sys-include -I/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/libstdc++-v3/../libgcc -I/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/x86_64-buildroot-linux-uclibc/libstdc++-v3/include/x86_64-buildroot-linux-uclibc -I/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/build/x86_64-buildroot-linux-uclibc/libstdc++-v3/include -I/home/data/buildroot.x86_64/build/host-gcc-final-13.1.0/libstdc++-v3/libsupc++ -std=gnu++17 -nostdinc++ -D_GLIBCXX_SHARED -fno-implicit-templates -Wall -Wextra -Wwrite-strings -Wcast-qual -Wabi=2 -fdiagnostics-show-location=once -ffunction-sections -fdata-sections -frandom-seed=floating_from_chars.lo -fimplicit-templates -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -O2 -g0 -D_GNU_SOURCE -fcf-protection -mshstk -c ../../../../../libstdc++-v3/src/c++17/floating_from_chars.cc  -fPIC -DPIC -D_GLIBCXX_SHARED -o floating_from_chars.o
+>../../../../../libstdc++-v3/src/c++17/floating_from_chars.cc: In function ‘std::from_chars_result std::from_chars(const char*, const char*, _Float128&, chars_format)’:
+>../../../../../libstdc++-v3/src/c++17/floating_from_chars.cc:1281:10: error: ‘from_chars_strtod’ was not declared in this scope
+> 1281 |   return from_chars_strtod(first, last, value, fmt);
+>      |          ^~~~~~~~~~~~~~~~~
+>make[7]: *** [Makefile:587: floating_from_chars.lo] Error 1
+
+Patch adapted from https://gcc.gnu.org/bugzilla/show_bug.cgi?id=109921
+
+Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+
+--- a/libstdc++-v3/src/c++17/floating_from_chars.cc
++++ b/libstdc++-v3/src/c++17/floating_from_chars.cc
+@@ -64,7 +64,7 @@
+ // strtold for __ieee128
+ extern "C" __ieee128 __strtoieee128(const char*, char**);
+ #elif __FLT128_MANT_DIG__ == 113 && __LDBL_MANT_DIG__ != 113 \
+-      && defined(__GLIBC_PREREQ)
++      && defined(__GLIBC_PREREQ) && defined(USE_STRTOD_FOR_FROM_CHARS)
+ #define USE_STRTOF128_FOR_FROM_CHARS 1
+ extern "C" _Float128 __strtof128(const char*, char**)
+   __asm ("strtof128")
+@@ -77,10 +77,6 @@
+ #if _GLIBCXX_FLOAT_IS_IEEE_BINARY32 && _GLIBCXX_DOUBLE_IS_IEEE_BINARY64 \
+     && __SIZE_WIDTH__ >= 32
+ # define USE_LIB_FAST_FLOAT 1
+-# if __LDBL_MANT_DIG__ == __DBL_MANT_DIG__
+-// No need to use strtold.
+-#  undef USE_STRTOD_FOR_FROM_CHARS
+-# endif
+ #endif
+ 
+ #if USE_LIB_FAST_FLOAT
+@@ -1211,7 +1207,7 @@
+ from_chars(const char* first, const char* last, long double& value,
+ 	   chars_format fmt) noexcept
+ {
+-#if ! USE_STRTOD_FOR_FROM_CHARS
++#if __LDBL_MANT_DIG__ == __DBL_MANT_DIG__ || !defined USE_STRTOD_FOR_FROM_CHARS
+   // Either long double is the same as double, or we can't use strtold.
+   // In the latter case, this might give an incorrect result (e.g. values
+   // out of range of double give an error, even if they fit in long double).
+@@ -1272,13 +1268,23 @@
+   // fast_float doesn't support IEEE binary128 format, but we can use strtold.
+   return from_chars_strtod(first, last, value, fmt);
+ }
+-#elif defined(USE_STRTOF128_FOR_FROM_CHARS)
++#else
+ from_chars_result
+ from_chars(const char* first, const char* last, _Float128& value,
+ 	   chars_format fmt) noexcept
+ {
++#ifdef USE_STRTOF128_FOR_FROM_CHARS
+   // fast_float doesn't support IEEE binary128 format, but we can use strtold.
+   return from_chars_strtod(first, last, value, fmt);
++#else
++  // Read a long double. This might give an incorrect result (e.g. values
++  // out of range of long double give an error, even if they fit in _Float128).
++  long double ldbl_val;
++  auto res = std::from_chars(first, last, ldbl_val, fmt);
++  if (res.ec == errc{})
++    value = ldbl_val;
++  return res;
++#endif
+ }
+ #endif
+ 
