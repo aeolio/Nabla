@@ -5,6 +5,15 @@ list_rt_priorities()
 	grep SCHED_FIFO
 }
 
+mount_system_disks()
+{
+	_partitions="boot NABLA"
+	mode=$1
+	for p in $_partitions; do
+		mount -o remount,$mode /media/$p || exit 1
+	done
+}
+
 alias psr=list_rt_priorities
-alias mrw='mount -o remount,rw /media/boot && mount -o remount,rw /media/NABLA'
-alias mro='mount -o remount,ro /media/boot && mount -o remount,ro /media/NABLA'
+alias mrw='mount_system_disks rw'
+alias mro='mount_system_disks ro'
