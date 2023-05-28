@@ -25,4 +25,5 @@ define E2FSPROGS_INSTALL_TARGET_CMDS
 	$(TARGET_MAKE_ENV) $(MAKE) $(E2FSPROGS_MAKE_OPTS) -C $(@D)/lib/ext2fs install-shlibs
 	$(TARGET_MAKE_ENV) $(MAKE) $(E2FSPROGS_MAKE_OPTS) -C $(@D)/lib/e2p install-shlibs
 	$(TARGET_MAKE_ENV) $(MAKE) $(E2FSPROGS_MAKE_OPTS) -C $(@D)/e2fsck install
+	$(INSTALL) -D -m 0755 $(@D)/misc/badblocks $(TARGET_DIR)/sbin/badblocks
 endef
