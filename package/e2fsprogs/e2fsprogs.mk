@@ -19,11 +19,15 @@ E2FSPROGS_CONF_OPTS += \
 
 E2FSPROGS_MAKE_OPTS += DESTDIR=$(TARGET_DIR)
 
+E2FSPROGS_MISC_PROGRAMS = badblocks
+
 # Override installation script to force installation of e2fsck only
 define E2FSPROGS_INSTALL_TARGET_CMDS
 	$(TARGET_MAKE_ENV) $(MAKE) $(E2FSPROGS_MAKE_OPTS) -C $(@D)/lib/et install-shlibs
 	$(TARGET_MAKE_ENV) $(MAKE) $(E2FSPROGS_MAKE_OPTS) -C $(@D)/lib/ext2fs install-shlibs
 	$(TARGET_MAKE_ENV) $(MAKE) $(E2FSPROGS_MAKE_OPTS) -C $(@D)/lib/e2p install-shlibs
 	$(TARGET_MAKE_ENV) $(MAKE) $(E2FSPROGS_MAKE_OPTS) -C $(@D)/e2fsck install
-	$(INSTALL) -D -m 0755 $(@D)/misc/badblocks $(TARGET_DIR)/sbin/badblocks
+	for p in $(E2FSPROGS_MISC_PROGRAMS); do \
+		$(INSTALL) -D -m 0755 $(@D)/misc/$$p $(TARGET_DIR)/sbin/$$p; \
+	done
 endef
