@@ -29,6 +29,14 @@ libstdc++-v3/ChangeLog:
 	(from_chars(const char*, const char*, _Float128&, chars_format))
 	Only use from_chars_strtod when USE_STRTOD_FOR_FROM_CHARS is
 	defined, otherwise parse a long double and convert to _Float128.
+
+Backported to gcc 13.1 from git master
+
+Bug report: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=109921
+Commit: https://gcc.gnu.org/g:7037e7b6e4ac41e536bdb9a2efcf546ec4d77166
+
+Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+
 ---
  libstdc++-v3/src/c++17/floating_from_chars.cc | 20 ++++++++++++-------
  1 file changed, 13 insertions(+), 7 deletions(-)
