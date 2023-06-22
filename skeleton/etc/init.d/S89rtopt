@@ -54,8 +54,3 @@ vm_statistics=/proc/sys/vm/stat_interval
 # change block device writeback affinity
 echo 0 > /sys/bus/workqueue/devices/writeback/numa
 echo $(_get_nrt_cpumask) > /sys/bus/workqueue/devices/writeback/cpumask
-
-# change timer frequency, this patch originated from 
-# https://linuxmusicians.com/viewtopic.php?t=15378
-[ -d /sys/class/rtc/rtc0 ] && echo 2048 > /sys/class/rtc/rtc0/max_user_freq
-[ -d /proc/sys/dev/hpet ] && echo 2048 > /proc/sys/dev/hpet/max-user-freq
