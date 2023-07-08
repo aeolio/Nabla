@@ -16,6 +16,10 @@ CONFIG_ARCH_BCM=y
 CONFIG_SCHED_SMT=y
 CONFIG_NUMA=y
 
+# multi-gen LRU
+CONFIG_LRU_GEN=y
+CONFIG_LRU_GEN_ENABLED=y
+
 # arm 8.x extensions not available on this processor
 # CONFIG_ARM64_HW_AFDBM is not set
 # CONFIG_ARM64_PAN is not set
