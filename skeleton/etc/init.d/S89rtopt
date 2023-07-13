@@ -12,19 +12,40 @@
 ### this is a startup only script
 [ "$1" != "start" ] && exit 0
 
-# Change CPU frequency scaling governor to performance 
-# and increase CPU minimum frequency to the maximum value
-governor="performance"
-available_cpus="/sys/devices/system/cpu/cpu[0-9]*"
-for cpu in $available_cpus; do
-	interface=$cpu/cpufreq
-	if [ -d $interface ]; then
-		if $(grep -q $governor $interface/scaling_available_governors); then
-			echo $governor > $interface/scaling_governor
+# Set CPU frequency scaling governor to performance 
+# Disable frequency scaling by increasing the minimum value
+# $1 = cpufrq or policy directory
+change_cpufreq_settings() {
+	cpufreq=$1
+	echo "adjust cpufreq interface $cpufreq"
+	governor=performance
+	if [ -d $cpufreq ]; then
+		if $(grep -q $governor $cpufreq/scaling_available_governors); then
+			echo $governor > $cpufreq/scaling_governor
 		fi
-		cat $interface/cpuinfo_max_freq > $interface/scaling_min_freq
+		cat $cpufreq/scaling_max_freq > $cpufreq/scaling_min_freq
 	fi
-done
+}
+
+
+### modify processor frequency setup if enabled in nabla config
+if [ "$CPUFREQ_OPTIMIZATION" == "Y" ]; then
+	sysfs_cpu="/sys/devices/system/cpu"
+	policy="$sysfs_cpu/cpufreq/policy0"
+	available_cpus="$sysfs_cpu/cpu[0-9]*"
+	# use cpufreq_policy if available
+	if [ -d $policy ]; then
+		change_cpufreq_settings $policy
+	# otherwise set per CPU cpufreq
+	else
+		for cpu in $available_cpus; do
+			cpufreq=$cpu/cpufreq
+			if [ -d $cpufreq ]; then
+				change_cpufreq_settings $cpufreq
+			fi
+			done
+	fi
+fi
 
 # adjust configured processes' priority
 for priority in $PRIORITY_LIST; do
