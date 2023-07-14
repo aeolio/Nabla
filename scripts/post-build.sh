@@ -60,9 +60,9 @@ if [ $(is_config_selected "BR2_PACKAGE_LINUX_FIRMWARE") -gt 0 ]; then
 			elif [ -d ${_SOURCE_DIR}/$fw_pkg ]; then
 				mkdir -p ${_TARGET_DIR}/$fw_pkg || exit 3
 				cp -rf ${_SOURCE_DIR}/$fw_pkg/* ${_TARGET_DIR}/$fw_pkg || exit 4
-			# entry is not present, use information from WHENCE
+			# locate the file using WHENCE from the firmware package
 			else
-				copy_firmware ${fw_pkg} ${_SOURCE_DIR} ${_TARGET_DIR} || exit 5
+				install_firmware ${fw_pkg} ${_SOURCE_DIR} ${_TARGET_DIR} || exit 5
 			fi
 		done
 	fi

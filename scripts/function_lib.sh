@@ -15,20 +15,26 @@ add_mountpoint() {
 } 
 
 ### dereference firmware file names using WHENCE file from firmware directory
-### Usage:  copy_firmware <relative path> <source directory> <target directory>
+### Usage:  install_firmware <relative path> <source directory> <target directory>
 # $1 = filename relative to firmware directory 
 # $2 = source firmware directory 
 # $3 = target firmware directory 
-copy_firmware() {
+install_firmware() {
+	fw_file=$1
+	fw_source=$2
+	fw_target=$3
 	# installation target 
-	fw_dest=`awk -v f=$1 '/Link:/ { if ($2 == f) {print $4} }' $2/WHENCE`
-	# if installation target is link, copy target file first, then create link 
-	if [ -n "$fw_dest" ]; then
-		cp -f $2/${fw_dest} $3/${fw_dest} || exit 1
-		ln -frs $3/${fw_dest} $3/$1 || exit 1
-	# otherwise plain file copy
-	else
-		cp -f $2/$1 $3/$1 || exit 1
+	fw_file=$(awk -v f=$fw_file '/File:/ { if ($2 ~ f) {print $2} }' $fw_source/WHENCE)
+	fw_link=$(awk -v f=$fw_file '/Link:/ { if ($4 == f) {print $2} }' $fw_source/WHENCE)
+	# copy target file (create directory if necessary)
+	if [ -n "$fw_file" ]; then
+		fw_dir=$(dirname $fw_file)
+		( [ -n "$fw_dir)" ] && mkdir -p $fw_target/$fw_dir ) || exit 1
+		cp -f $fw_source/${fw_file} $fw_target/${fw_file} || exit 1
+	fi
+	# create target link, if specified
+	if [ -n "$fw_link" ]; then
+		ln -frs $fw_target/${fw_file} $fw_target/${fw_link} || exit 1
 	fi
 }
 
