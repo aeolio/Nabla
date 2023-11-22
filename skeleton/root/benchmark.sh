@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# check if PREEMPT_RT is enabled
+if ! $(dmesg | grep -q PREEMPT_RT); then echo 'PREEMPT_RT is OFF'; fi
+
 # run the usual tests
 echo -n "uname = " && uname -r
 echo -n "tasks = " && ps | wc -l
