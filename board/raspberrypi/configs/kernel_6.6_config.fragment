@@ -1,0 +1,7 @@
+# additional kernel configuration to upgrade BCM 2711 from kernel version 6.1 to 6.6
+
+# CONFIG_EMBEDDED is not set
+CONFIG_EXPERT=y
+
+# CONFIG_AMPERE_ERRATUM_AC03_CPU_38 is not set
+# CONFIG_ROCKCHIP_ERRATUM_3588001 is not set
