@@ -1,7 +1,7 @@
 diff -Naur tools/tracing/rtla/src/osnoise_hist.c /home/iago/rpi64/build/linux-6.1.15/tools/tracing/rtla/src/osnoise_hist.c
 --- a/tools/tracing/rtla/src/osnoise_hist.c	2023-03-07 09:14:07.769838499 +0100
 +++ b/tools/tracing/rtla/src/osnoise_hist.c	2023-03-07 08:02:55.314455000 +0100
-@@ -45,6 +45,7 @@
+@@ -51,6 +51,7 @@
  
  	unsigned long long	min_sample;
  	unsigned long long	sum_sample;
@@ -9,7 +9,7 @@ diff -Naur tools/tracing/rtla/src/osnoise_hist.c /home/iago/rpi64/build/linux-6.
  	unsigned long long	max_sample;
  
  };
-@@ -121,7 +122,7 @@
+@@ -127,7 +128,7 @@
  {
  	struct osnoise_hist_params *params = tool->params;
  	struct osnoise_hist_data *data = tool->data;
@@ -18,7 +18,7 @@ diff -Naur tools/tracing/rtla/src/osnoise_hist.c /home/iago/rpi64/build/linux-6.
  	int entries = data->entries;
  	int bucket;
  	int *hist;
-@@ -133,11 +134,13 @@
+@@ -139,11 +140,13 @@
  		bucket = duration / data->bucket_size;
  
  	total_duration = duration * count;
@@ -32,10 +32,12 @@ diff -Naur tools/tracing/rtla/src/osnoise_hist.c /home/iago/rpi64/build/linux-6.
  	update_max(&data->hist[cpu].max_sample, &duration);
  
  	if (bucket < entries)
-@@ -356,6 +359,31 @@
+@@ -360,6 +363,31 @@
  
- 	}
- 	trace_seq_printf(trace->seq, "\n");
+ 		trace_seq_printf(trace->seq, "%9llu ", data->hist[cpu].max_sample);
+ 
++	}
++	trace_seq_printf(trace->seq, "\n");
 +
 +	/* standard deviation */
 +	if (!params->no_index)
@@ -59,15 +61,13 @@ diff -Naur tools/tracing/rtla/src/osnoise_hist.c /home/iago/rpi64/build/linux-6.
 +			trace_seq_printf(trace->seq, "%9.2f ", sqrth(var - avg));
 +		else
 +			trace_seq_printf(trace->seq, "        - ");
-+	}
-+	trace_seq_printf(trace->seq, "\n");
+ 	}
+ 	trace_seq_printf(trace->seq, "\n");
  	trace_seq_do_printf(trace->seq);
- 	trace_seq_reset(trace->seq);
- }
 diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6.1.15/tools/tracing/rtla/src/timerlat_hist.c
 --- a/tools/tracing/rtla/src/timerlat_hist.c	2023-03-07 09:14:49.023996902 +0100
 +++ b/tools/tracing/rtla/src/timerlat_hist.c	2023-03-07 08:03:29.041735000 +0100
-@@ -51,10 +51,12 @@
+@@ -64,14 +64,17 @@
  
  	unsigned long long	min_irq;
  	unsigned long long	sum_irq;
@@ -78,9 +78,14 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
  	unsigned long long	sum_thread;
 +	unsigned long long	var_thread;
  	unsigned long long	max_thread;
+ 
+ 	unsigned long long	min_user;
+ 	unsigned long long	sum_user;
++	unsigned long long	var_user;
+ 	unsigned long long	max_user;
  };
  
-@@ -144,6 +146,7 @@
+@@ -171,6 +174,7 @@
  {
  	struct timerlat_hist_params *params = tool->params;
  	struct timerlat_hist_data *data = tool->data;
@@ -88,32 +93,42 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
  	int entries = data->entries;
  	int bucket;
  	int *hist;
-@@ -154,17 +157,21 @@
+@@ -180,24 +184,29 @@
+ 
  	if (data->bucket_size)
  		bucket = latency / data->bucket_size;
- 
-+	variance = latency * latency;
 +
- 	if (!thread) {
++	variance = latency * latency;
+ 
+ 	if (!context) {
  		hist = data->hist[cpu].irq;
  		data->hist[cpu].irq_count++;
  		update_min(&data->hist[cpu].min_irq, &latency);
  		update_sum(&data->hist[cpu].sum_irq, &latency);
 +		update_sum(&data->hist[cpu].var_irq, &variance);
  		update_max(&data->hist[cpu].max_irq, &latency);
- 	} else {
+ 	} else if (context == 1) {
  		hist = data->hist[cpu].thread;
  		data->hist[cpu].thread_count++;
  		update_min(&data->hist[cpu].min_thread, &latency);
  		update_sum(&data->hist[cpu].sum_thread, &latency);
 +		update_sum(&data->hist[cpu].var_thread, &variance);
  		update_max(&data->hist[cpu].max_thread, &latency);
+ 	} else { /* user */
+ 		hist = data->hist[cpu].user;
+ 		data->hist[cpu].user_count++;
+ 		update_min(&data->hist[cpu].min_user, &latency);
+ 		update_sum(&data->hist[cpu].sum_user, &latency);
++		update_sum(&data->hist[cpu].var_user, &variance);
+ 		update_max(&data->hist[cpu].max_user, &latency);
  	}
  
-@@ -341,6 +348,46 @@
- 					data->hist[cpu].max_thread);
- 	}
- 	trace_seq_printf(trace->seq, "\n");
+@@ -395,6 +404,62 @@
+ 		if (params->user_hist)
+ 			trace_seq_printf(trace->seq, "%9llu ",
+ 					data->hist[cpu].max_user);
++	}
++	trace_seq_printf(trace->seq, "\n");
 +
 +	/* standard deviation */
 +	if (!params->no_index)
@@ -123,7 +138,9 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
 +		if (params->cpus && !params->monitored_cpus[cpu])
 +			continue;
 +
-+		if (!data->hist[cpu].irq_count && !data->hist[cpu].thread_count)
++		if (!data->hist[cpu].irq_count 
++			&& !data->hist[cpu].thread_count 
++			&& !data->hist[cpu].user_count)
 +			continue;
 +
 +		if (!params->no_irq) {
@@ -152,17 +169,29 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
 +			else
 +				trace_seq_printf(trace->seq, "        - ");
 +		}
-+	}
-+	trace_seq_printf(trace->seq, "\n");
++
++		if (params->user_hist) {
++			if (data->hist[cpu].user_count) {
++				double var = ((double) data->hist[cpu].var_user) /
++					(data->hist[cpu].user_count-1);
++				double avg = ((double) data->hist[cpu].sum_user) *
++					data->hist[cpu].sum_user /
++					(data->hist[cpu].user_count-1) /
++					data->hist[cpu].user_count;
++				trace_seq_printf(trace->seq, "%9.2f ", sqrth(var - avg));
++			}
++			else
++				trace_seq_printf(trace->seq, "        - ");
++		}
+ 	}
+ 	trace_seq_printf(trace->seq, "\n");
  	trace_seq_do_printf(trace->seq);
- 	trace_seq_reset(trace->seq);
- }
 diff -Naur tools/tracing/rtla/src/utils.c /home/iago/rpi64/build/linux-6.1.15/tools/tracing/rtla/src/utils.c
 --- a/tools/tracing/rtla/src/utils.c	2023-03-03 11:52:25.000000000 +0100
 +++ b/tools/tracing/rtla/src/utils.c	2023-03-07 08:54:21.051112944 +0100
-@@ -529,3 +529,40 @@
+@@ -817,3 +817,40 @@
  
- 	return fd;
+ 	return 1;
  }
 +
 +/*
@@ -204,8 +233,11 @@ diff -Naur tools/tracing/rtla/src/utils.c /home/iago/rpi64/build/linux-6.1.15/to
 diff -Naur tools/tracing/rtla/src/utils.h /home/iago/rpi64/build/linux-6.1.15/tools/tracing/rtla/src/utils.h
 --- a/tools/tracing/rtla/src/utils.h	2023-03-03 11:52:25.000000000 +0100
 +++ b/tools/tracing/rtla/src/utils.h	2023-03-07 08:02:22.851169000 +0100
-@@ -56,3 +56,4 @@
- int parse_prio(char *arg, struct sched_attr *sched_param);
- int set_comm_sched_attr(const char *comm_prefix, struct sched_attr *attr);
+@@ -63,6 +63,7 @@
+ int set_pid_cgroup(pid_t pid, const char *cgroup);
  int set_cpu_dma_latency(int32_t latency);
+ int auto_house_keeping(cpu_set_t *monitored_cpus);
 +double sqrth(double value);
+ 
+ #define ns_to_usf(x) (((double)x/1000))
+ #define ns_to_per(total, part) ((part * 100) / (double)total)
