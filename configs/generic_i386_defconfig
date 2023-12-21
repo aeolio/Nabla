@@ -1,7 +1,5 @@
 BR2_x86_core2=y
 BR2_SVN="svn"
-BR2_LUAROCKS_MIRROR="http://luarocks.org/repositories/rocks"
-BR2_CPAN_MIRROR="http://search.cpan.org/CPAN"
 BR2_OPTIMIZE_FAST=y
 BR2_GLOBAL_PATCH_DIR="$(BR2_EXTERNAL_NABLA_PATH)/patches $(BR2_EXTERNAL_NABLA_PATH)/board/generic/i386/patches"
 # BR2_PIC_PIE is not set
