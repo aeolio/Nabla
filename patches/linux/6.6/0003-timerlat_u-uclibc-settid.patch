@@ -1,0 +1,27 @@
+Building tools/tracing/rtla with a uClibc toolchain results in this error:
+
+src/timerlat_u.c: In function ‘timerlat_u_main’:
+src/timerlat_u.c:46:36: warning: implicit declaration of function ‘gettid’; did you mean ‘getgid’? [-Wimplicit-function-declaration]
+   46 |         retval = sched_setaffinity(gettid(), sizeof(set), &set);
+      |                                    ^~~~~~
+      |                                    getgid
+
+Kernel documentation seems to prefer a syscall instead of the C library:
+./Documentation/scheduler/sched-deadline.rst:   #define gettid() syscall(__NR_gettid)
+
+Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+--
+--- a/tools/tracing/rtla/src/timerlat_u.c
++++ b/tools/tracing/rtla/src/timerlat_u.c
+@@ -19,6 +19,11 @@
+ #include "utils.h"
+ #include "timerlat_u.h"
+ 
++#if defined __UCLIBC_HAS_THREADS__
++#include <sys/syscall.h>
++#define gettid() syscall(SYS_gettid)
++#endif
++
+ /*
+  * This is the user-space main for the tool timerlatu/ threads.
+  *

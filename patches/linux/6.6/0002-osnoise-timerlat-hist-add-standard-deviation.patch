@@ -1,3 +1,7 @@
+Add standard deviation calculation and printout for osnoise and timerlat
+
+Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+---
 diff -Naur tools/tracing/rtla/src/osnoise_hist.c /home/iago/rpi64/build/linux-6.1.15/tools/tracing/rtla/src/osnoise_hist.c
 --- a/tools/tracing/rtla/src/osnoise_hist.c	2023-03-07 09:14:07.769838499 +0100
 +++ b/tools/tracing/rtla/src/osnoise_hist.c	2023-03-07 08:02:55.314455000 +0100
@@ -44,7 +48,7 @@ diff -Naur tools/tracing/rtla/src/osnoise_hist.c /home/iago/rpi64/build/linux-6.
 +		trace_seq_printf(trace->seq, "sd:   ");
 +
 +	for (cpu = 0; cpu < data->nr_cpus; cpu++) {
-+		if (params->cpus && !params->monitored_cpus[cpu])
++		if (params->cpus && !CPU_ISSET(cpu, &params->monitored_cpus))
 +			continue;
 +
 +		if (!data->hist[cpu].count)
@@ -135,7 +139,7 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
 +		trace_seq_printf(trace->seq, "sd:   ");
 +
 +	for (cpu = 0; cpu < data->nr_cpus; cpu++) {
-+		if (params->cpus && !params->monitored_cpus[cpu])
++		if (params->cpus && !CPU_ISSET(cpu, &params->monitored_cpus))
 +			continue;
 +
 +		if (!data->hist[cpu].irq_count 
