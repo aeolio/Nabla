@@ -73,8 +73,11 @@ vm_statistics=/proc/sys/vm/stat_interval
 [ -f $vm_statistics ] && echo 300 > $vm_statistics
 
 # change block device writeback affinity
-echo 0 > /sys/bus/workqueue/devices/writeback/numa
-echo $(_get_nrt_cpumask) > /sys/bus/workqueue/devices/writeback/cpumask
+writeback=/sys/bus/workqueue/devices/writeback
+writeback_numa=$WRITEBACK/numa
+[ -f $writeback_numa ] && echo 0 > $writeback_numa
+writeback_cpumask=$WRITEBACK/cpumask
+[ -f $writeback_cpumask ] && echo $(_get_nrt_cpumask) > $writeback_cpumask
 
 # increase maximum allocatable memory for USB device (drivers/usb/core/devio.c) 
 [ -d /sys/module/usbcore/parameters ] && echo 64 > /sys/module/usbcore/parameters/usbfs_memory_mb
