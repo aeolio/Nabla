@@ -5,7 +5,7 @@
 _path=$BR2_EXTERNAL_NABLA_PATH/scripts
 [ -x "$_path/function_lib.sh" ] && . "$_path/function_lib.sh"
 
-BOOT_FILE=${BINARIES_DIR}/rpi-firmware/cmdline.txt
+BOOT_FILE=$BINARIES_DIR/rpi-firmware/cmdline.txt
 
 ### modify cmdline.txt
 # remove root parameter
@@ -26,11 +26,11 @@ if ! grep -q 'nohz_full=' "${BOOT_FILE}"; then
 fi
 
 ### modify config.txt
-CONFIG_FILE=${BINARIES_DIR}/rpi-firmware/config.txt
+CONFIG_FILE=$BINARIES_DIR/rpi-firmware/config.txt
 replace_symbols $CONFIG_FILE
 
 ### copy basic configuration files
-config_dir=${BINARIES_DIR}/.config/etc
+config_dir=$BINARIES_DIR/.config/etc
 config_src=~/nabla/config/etc
 mkdir -p ${config_dir}
 if [ ! -f ${config_dir}/nabla.conf ]; then
@@ -39,3 +39,7 @@ fi
 if [ ! -f ${config_dir}/mpd.conf ]; then
 	cp ${config_src}/mpd.conf ${config_dir}
 fi
+
+### make sure that overlay directory exists
+OVERLAYS_DIR=$BINARIES_DIR/rpi-firmware/overlays
+mkdir -p $OVERLAYS_DIR
