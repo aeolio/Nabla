@@ -1,0 +1,21 @@
+Quick and dirty hack to allow reinstalling python packages in an 
+existing build. 
+
+--- a/src/installer/destinations.py  2022-02-16 20:24:54.873731900 +0100
++++ b/src/installer/destinations.py  2024-02-07 21:21:25.492850505 +0100
+@@ -158,13 +158,13 @@
+         :param stream: contents of the file
+         :param is_executable: whether the file should be made executable
+ 
+-        - Ensures that an existing file is not being overwritten.
++        - Overwrite existing files without notice.
+         - Hashes the written content, to determine the entry in the ``RECORD`` file.
+         """
+         target_path = self._path_with_destdir(scheme, path)
+         if os.path.exists(target_path):
+             message = f"File already exists: {target_path}"
+-            raise FileExistsError(message)
++            os.remove(target_path)
+ 
+         parent_folder = os.path.dirname(target_path)
+         if not os.path.exists(parent_folder):
