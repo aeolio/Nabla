@@ -6,7 +6,7 @@ Signed-off-by: Andreas Ziegler <br015@umbiko.net>
 diff -Naur a/tools/tracing/rtla/src/timerlat_hist.c b/tools/tracing/rtla/src/timerlat_hist.c
 --- a/tools/tracing/rtla/src/timerlat_hist.c	2023-02-14 19:11:56.000000000 +0100
 +++ b/tools/tracing/rtla/src/timerlat_hist.c	2023-02-22 10:41:15.478864281 +0100
-@@ -350,16 +350,16 @@
+@@ -349,16 +349,16 @@
  
  		if (!params->no_irq) {
  			if (data->hist[cpu].irq_count)

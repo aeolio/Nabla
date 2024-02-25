@@ -22,8 +22,8 @@ diff -Naur tools/tracing/rtla/src/osnoise_hist.c /home/iago/rpi64/build/linux-6.
  	int entries = data->entries;
  	int bucket;
  	int *hist;
-@@ -139,11 +140,13 @@
- 		bucket = duration / data->bucket_size;
+@@ -138,11 +139,13 @@
+ 	bucket = duration / data->bucket_size;
  
  	total_duration = duration * count;
 +	variance = total_duration * duration;
@@ -36,7 +36,7 @@ diff -Naur tools/tracing/rtla/src/osnoise_hist.c /home/iago/rpi64/build/linux-6.
  	update_max(&data->hist[cpu].max_sample, &duration);
  
  	if (bucket < entries)
-@@ -360,6 +363,31 @@
+@@ -359,6 +362,31 @@
  
  		trace_seq_printf(trace->seq, "%9llu ", data->hist[cpu].max_sample);
  
@@ -97,10 +97,10 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
  	int entries = data->entries;
  	int bucket;
  	int *hist;
-@@ -180,24 +184,29 @@
+@@ -179,18 +183,22 @@
+ 		latency = latency / params->output_divisor;
  
- 	if (data->bucket_size)
- 		bucket = latency / data->bucket_size;
+ 	bucket = latency / data->bucket_size;
 +
 +	variance = latency * latency;
  
@@ -116,18 +116,11 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
  		data->hist[cpu].thread_count++;
  		update_min(&data->hist[cpu].min_thread, &latency);
  		update_sum(&data->hist[cpu].sum_thread, &latency);
-+		update_sum(&data->hist[cpu].var_thread, &variance);
++		update_sum(&data->hist[cpu].var_user, &variance);
  		update_max(&data->hist[cpu].max_thread, &latency);
  	} else { /* user */
  		hist = data->hist[cpu].user;
- 		data->hist[cpu].user_count++;
- 		update_min(&data->hist[cpu].min_user, &latency);
- 		update_sum(&data->hist[cpu].sum_user, &latency);
-+		update_sum(&data->hist[cpu].var_user, &variance);
- 		update_max(&data->hist[cpu].max_user, &latency);
- 	}
- 
-@@ -395,6 +404,62 @@
+@@ -394,6 +402,62 @@
  		if (params->user_hist)
  			trace_seq_printf(trace->seq, "%9llu ",
  					data->hist[cpu].max_user);
@@ -193,7 +186,7 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
 diff -Naur tools/tracing/rtla/src/utils.c /home/iago/rpi64/build/linux-6.1.15/tools/tracing/rtla/src/utils.c
 --- a/tools/tracing/rtla/src/utils.c	2023-03-03 11:52:25.000000000 +0100
 +++ b/tools/tracing/rtla/src/utils.c	2023-03-07 08:54:21.051112944 +0100
-@@ -817,3 +817,40 @@
+@@ -811,3 +811,40 @@
  
  	return 1;
  }
@@ -237,7 +230,7 @@ diff -Naur tools/tracing/rtla/src/utils.c /home/iago/rpi64/build/linux-6.1.15/to
 diff -Naur tools/tracing/rtla/src/utils.h /home/iago/rpi64/build/linux-6.1.15/tools/tracing/rtla/src/utils.h
 --- a/tools/tracing/rtla/src/utils.h	2023-03-03 11:52:25.000000000 +0100
 +++ b/tools/tracing/rtla/src/utils.h	2023-03-07 08:02:22.851169000 +0100
-@@ -63,6 +63,7 @@
+@@ -65,6 +65,7 @@
  int set_pid_cgroup(pid_t pid, const char *cgroup);
  int set_cpu_dma_latency(int32_t latency);
  int auto_house_keeping(cpu_set_t *monitored_cpus);
