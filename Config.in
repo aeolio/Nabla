@@ -38,11 +38,11 @@ config BR2_PACKAGE_ALSA_UTILS_ALSALOOP_DEFAULTS
 	default y if BR2_PACKAGE_ALSA_UTILS_ALSALOOP
 	select BR2_PACKAGE_LIBSAMPLERATE
 
-# wpa-supplicant needs crda
-config BR2_PACKAGE_WPA_SUPPLICANT_CRDA
+# wpa-supplicant needs wireless-regdb
+config BR2_PACKAGE_WPA_SUPPLICANT_WIRELESS_REGDB
 	bool
 	default y if BR2_PACKAGE_WPA_SUPPLICANT && !BR2_STATIC_LIBS
-	select BR2_PACKAGE_CRDA
+	select BR2_PACKAGE_WIRELESS_REGDB
 
 # post-image-script needs host-genimage
 config BR2_ROOTFS_POST_IMAGE_SCRIPT_GENIMAGE
