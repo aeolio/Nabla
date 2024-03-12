@@ -26,7 +26,7 @@ Signed-off-by: Andreas Ziegler <br015@umbiko.net>
  
  # alsa sound devices
  snd/pcm.*	root:audio 660
-@@ -35,5 +37,14 @@
+@@ -35,5 +37,11 @@
  input/mouse[0-9]	root:root 640
  input/ts[0-9]		root:root 600
  
@@ -34,9 +34,6 @@ Signed-off-by: Andreas Ziegler <br015@umbiko.net>
 +
  # load modules
  $MODALIAS=.*	root:root 660 @modprobe "$MODALIAS"
-+
-+# wireless regulatory rules
-+ACTION=change;SUBSYSTEM=platform;regulatory.* root:root 660 */sbin/crda
 +
 +# auto mount usb devices
 +sd[a-z][0-9]*	root:disk 660 */var/lib/mdev/automount
