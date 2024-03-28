@@ -58,6 +58,12 @@ get_config_value() {
 	echo $CONFIG_VALUE
 }
 
+### extract project (build) name from Buildroot directory
+### Usage:  get_build_name
+get_project_name() {
+	echo $(basename ${BASE_DIR})
+}
+
 ### replace template strings in target file
 ### Usage:  replace_symbols <filename>
 # $1 = path to filename
@@ -71,7 +77,7 @@ replace_symbols() {
 		firmware_variant=${firmware_variant%%=*}
 		firmware_variant=${firmware_variant##BR2_PACKAGE_RPI_FIRMWARE_VARIANT_}
 		kernel_version=$(get_config_value "BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE")
-		project_name="$(basename ${BASE_DIR})"
+		project_name=$(get_project_name)
 		software_version="$(git -C $BR2_EXTERNAL_NABLA_PATH log -n 1 --format=%ai)"
 		# replace symbol strings
 		sed -i 's/{arch}/'${arch}'/' ${TARGET_FILE}
