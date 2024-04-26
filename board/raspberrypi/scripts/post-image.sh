@@ -36,4 +36,7 @@ genimage \
 	--outputpath "${BINARIES_DIR}" \
 	--config "${GENIMAGE_CFG}"
 
+# remove intermediate files
+rm -fr $BINARIES_DIR/*.vfat
+
 exit $?

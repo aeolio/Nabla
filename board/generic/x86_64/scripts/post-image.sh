@@ -46,6 +46,9 @@ genimage \
 	--includepath "$GENIMAGE_INC:" \
 	--config "$GENIMAGE_CFG"
 
+# remove intermediate files
+rm -fr $BINARIES_DIR/*.vfat
+
 # there is no host-syslinux, use the installation on the host machine, if present
 if [ $(which syslinux) ]; then 
 	syslinux -t 0x100000 -d boot/syslinux ${BINARIES_DIR}/sdcard.img
