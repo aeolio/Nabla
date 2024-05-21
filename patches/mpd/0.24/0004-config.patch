@@ -1,0 +1,41 @@
+--- a/src/config/Option.hxx
++++ b/src/config/Option.hxx
+@@ -9,6 +9,8 @@
+ #pragma GCC diagnostic push
+ #pragma GCC diagnostic ignored "-Wshadow"
+ #endif
++
++#include "config.h"
+ 
+ enum class ConfigOption {
+ 	MUSIC_DIR,
+@@ -75,6 +77,9 @@
+ 	RESAMPLER,
+ 	AUDIO_FILTER,
+ 	DATABASE,
++#ifdef ENABLE_RTOPT
++        REALTIME_OPTION,
++#endif
+ 	NEIGHBORS,
+ 	PARTITION,
+ 	MAX
+--- a/src/config/Templates.cxx
++++ b/src/config/Templates.cxx
+@@ -6,6 +6,7 @@
+ 
+ #include <iterator>
+ 
++#include "config.h"
+ #include <string.h>
+ 
+ const ConfigTemplate config_param_templates[] = {
+@@ -76,6 +77,9 @@
+ 	{ "resampler" },
+ 	{ "filter", true },
+ 	{ "database" },
++#ifdef ENABLE_RTOPT
++        { "realtime_option", false },
++#endif
+ 	{ "neighbors", true },
+ 	{ "partition", true },
+ };

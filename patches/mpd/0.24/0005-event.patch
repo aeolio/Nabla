@@ -1,0 +1,18 @@
+--- a/src/event/Thread.cxx
++++ b/src/event/Thread.cxx
+@@ -39,6 +39,7 @@
+ {
+ 	SetThreadName(realtime ? "rtio" : "io");
+ 
++#ifndef ENABLE_RTOPT
+ 	if (realtime) {
+ 		SetThreadTimerSlack(std::chrono::microseconds(10));
+ 
+@@ -50,6 +51,7 @@
+ 				std::current_exception());
+ 		}
+ 	}
++#endif
+ 
+ 	event_loop.Run();
+ }
