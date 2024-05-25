@@ -17,6 +17,10 @@ if [ $(is_config_selected "BR2_PACKAGE_LINUX_FIRMWARE") -gt 0 ]; then
 	FW_PKG_LIST=""
 
 	### define firmware packages based on kernel configuration
+	# AMD microcode -- only one file as function test
+	if [ $(grep -c "CONFIG_MICROCODE_AMD=y" $KERNEL_CONFIG) -gt 0 ]; then
+		FW_PKG_LIST="$FW_PKG_LIST amd-ucode/microcode_amd.bin"
+	fi
 	# Broadcom ethernet firmware (tigon3)
 	if [ $(grep -c "CONFIG_NET_VENDOR_BROADCOM=[my]" $KERNEL_CONFIG) -gt 0 ]; then
 		FW_PKG_LIST="$FW_PKG_LIST tigon"
