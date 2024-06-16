@@ -77,3 +77,10 @@ menu "Hardware handling"
 		source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
 	endmenu
 endmenu
+
+
+#
+# Linux version definition
+#
+
+source "$BR2_EXTERNAL_NABLA_PATH/Config.in.linux"

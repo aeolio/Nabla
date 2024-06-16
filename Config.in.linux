@@ -1,0 +1,44 @@
+#
+# define Linux versions and patches
+#
+
+
+# Toolchain/Custom kernel headers series is selected before everything else
+
+# latest release candidate
+if BR2_TOOLCHAIN_HEADERS_LATEST
+
+config NABLA_LINUX_VERSION
+	string
+	default "6.10-rc3"
+config NABLA_LINUX_PATCH
+	string
+	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.10/patch-6.10-rc3-rt5.patch.xz"
+
+endif # BR2_TOOLCHAIN_HEADERS_LATEST
+
+# stable kernel for 64-bit systems
+if BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_6 && (BR2_aarch64 || BR2_x86_64)
+
+config NABLA_LINUX_VERSION
+	string
+	default "6.6.33"
+
+config NABLA_LINUX_PATCH_STABLE
+	string
+	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.6/patch-6.6.32-rt32.patch.xz"
+
+endif # BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_6
+
+# stable kernel for older architectures
+if BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_10 && BR2_i386
+
+config NABLA_LINUX_VERSION
+	string
+	default "5.10.218" if BR2_i386
+
+config NABLA_LINUX_PATCH_STABLE
+	string
+	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/5.10/patch-5.10.218-rt110.patch.xz"
+
+endif # BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_10
