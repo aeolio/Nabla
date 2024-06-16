@@ -2,6 +2,12 @@
 # automatic configuration
 #
 
+# for client connectivity, mpd needs tcp sockets
+config BR2_PACKAGE_MPD_SOCKETS
+	bool
+	default y if BR2_PACKAGE_MPD
+	select BR2_PACKAGE_MPD_TCP
+
 # for mpd server, enable NFS server functionality
 config BR2_PACKAGE_MPD_NFS_UTILS
 	bool
