@@ -2,25 +2,12 @@
 # automatic configuration
 #
 
-
-# mpd server uses BR2_PACKAGE_MPD_MPG123
-# mpd client uses BR2_PACKAGE_MPD_MAD and BR2_PACKAGE_MPD_LIBNFS
-# mpd standalone uses both BR2_PACKAGE_MPD_MPG123 and BR2_PACKAGE_MPD_MAD
-if BR2_PACKAGE_MPD
-
-# mpd client needs libmpdclient for access to a remote database
-config BR2_PACKAGE_MPD_CLIENT
+# for mpd server, enable NFS server functionality
+config BR2_PACKAGE_MPD_NFS_UTILS
 	bool
-	default y if BR2_PACKAGE_MPD_LIBNFS || BR2_PACKAGE_MPD_LIBSMBCLIENT
-	select BR2_PACKAGE_MPD_LIBMPDCLIENT
-
-# mpd server gets io_uring
-config BR2_PACKAGE_MPD_SERVER
-	bool
-	default y if ! BR2_PACKAGE_MPD_CLIENT
-	select BR2_PACKAGE_MPD_IO_URING
-
-endif # BR2_PACKAGE_MPD
+	default y if NABLA_SERVER
+	select BR2_PACKAGE_NFS_UTILS
+	select BR2_PACKAGE_NFS_UTILS_RPC_NFSD
 
 # for libmad, prefer accuracy over speed
 #	this does not work, unfortunately;
@@ -61,6 +48,51 @@ config BR2_PACKAGE_HOST_GENIMAGE_MTOOLS
 # external options menu
 #
 
+# mpd server needs BR2_PACKAGE_MPD_MPG123 to extract mp3 meta data
+# mpd client uses BR2_PACKAGE_MPD_MAD for playback and 
+# BR2_PACKAGE_MPD_LIBNFS for remote database access
+# mpd standalone needs both BR2_PACKAGE_MPD_MPG123 and BR2_PACKAGE_MPD_MAD
+# both server and standalone can use liburing for async access to local files
+# playback functionality requires alsa
+
+comment "main system configuration"
+choice
+	prompt "Machine type"
+	default NABLA_STANDALONE
+	help
+	  Enable standard features to configure a system as 
+	  client /server /standalone music player.
+
+config NABLA_CLIENT
+	bool "client"
+	select BR2_PACKAGE_MPD_ALSA		# local playback
+	select BR2_PACKAGE_MPD_LIBMPDCLIENT
+	select BR2_PACKAGE_MPD_MAD		# mp3 playback
+	select BR2_PACKAGE_MPD_LIBNFS	# remote database access
+	help
+	  A client machine accesses a remote database and plays music locally. 
+
+config NABLA_SERVER
+	bool "server"
+	select BR2_PACKAGE_MPD_MPG123	# mp3 meta data extraction
+	select BR2_PACKAGE_MPD_IO_URING	# async access to local files
+	help
+	  A server machine manages a local database and does not play music. 
+
+config NABLA_STANDALONE
+	bool "standalone"
+	select BR2_PACKAGE_MPD_ALSA		# local playback
+	select BR2_PACKAGE_MPD_LIBMPDCLIENT
+	select BR2_PACKAGE_MPD_MPG123	# mp3 meta data extraction
+	select BR2_PACKAGE_MPD_MAD		# mp3 playback
+	select BR2_PACKAGE_MPD_IO_URING	# async access to local files
+	help
+	  A standalone machine has both a local database and 
+	  local playback capability
+
+endchoice # Machine type
+
+comment "additional packages"
 menu "Audio and video applications"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/brutefir/Config.in"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/folve/Config.in"
@@ -71,12 +103,16 @@ menu "Debugging, profiling and benchmark"
 	source "$BR2_EXTERNAL_NABLA_PATH/package/interbench/Config.in"
 endmenu
 
+if BR2_arm || BR2_aarch64
+
 menu "Hardware handling"
 	menu "Firmware"
 		source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
 		source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
 	endmenu
 endmenu
+
+endif # BR2_arm || BR2_aarch64
 
 
 #
