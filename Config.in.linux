@@ -24,7 +24,7 @@ config NABLA_LINUX_VERSION
 	string
 	default "6.6.33"
 
-config NABLA_LINUX_PATCH_STABLE
+config NABLA_LINUX_PATCH
 	string
 	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.6/patch-6.6.32-rt32.patch.xz"
 
@@ -37,7 +37,7 @@ config NABLA_LINUX_VERSION
 	string
 	default "5.10.218" if BR2_i386
 
-config NABLA_LINUX_PATCH_STABLE
+config NABLA_LINUX_PATCH
 	string
 	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/5.10/patch-5.10.218-rt110.patch.xz"
 
