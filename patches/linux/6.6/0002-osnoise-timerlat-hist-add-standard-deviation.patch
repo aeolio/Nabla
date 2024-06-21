@@ -120,10 +120,13 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
  		update_max(&data->hist[cpu].max_thread, &latency);
  	} else { /* user */
  		hist = data->hist[cpu].user;
-@@ -394,6 +402,62 @@
- 		if (params->user_hist)
- 			trace_seq_printf(trace->seq, "%9llu ",
- 					data->hist[cpu].max_user);
+@@ -415,6 +423,62 @@
+ 			if (data->hist[cpu].user_count)
+ 				trace_seq_printf(trace->seq, "%9llu ",
+ 						data->hist[cpu].max_user);
++			else
++				trace_seq_printf(trace->seq, "        - ");
++		}
 +	}
 +	trace_seq_printf(trace->seq, "\n");
 +
@@ -177,12 +180,9 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
 +					data->hist[cpu].user_count;
 +				trace_seq_printf(trace->seq, "%9.2f ", sqrth(var - avg));
 +			}
-+			else
-+				trace_seq_printf(trace->seq, "        - ");
-+		}
- 	}
- 	trace_seq_printf(trace->seq, "\n");
- 	trace_seq_do_printf(trace->seq);
+ 			else
+ 				trace_seq_printf(trace->seq, "        - ");
+ 		}
 diff -Naur tools/tracing/rtla/src/utils.c /home/iago/rpi64/build/linux-6.1.15/tools/tracing/rtla/src/utils.c
 --- a/tools/tracing/rtla/src/utils.c	2023-03-03 11:52:25.000000000 +0100
 +++ b/tools/tracing/rtla/src/utils.c	2023-03-07 08:54:21.051112944 +0100
