@@ -10,8 +10,7 @@ import tempfile
 from bs4 import BeautifulSoup as soup
 from shutil import copystat, move
 
-# config_file = '~/br2_external/Config.in.linux'
-config_file = '/tmp/Config.in.linux'
+config_file = '~/br2-external/Config.in.linux'
 kernel_url = 'https://www.kernel.org/releases.json'
 patch_url = 'https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/'
 patch_type = '.patch.xz'
@@ -22,7 +21,7 @@ linux_versions = {
  	# stable version for 64-bit hardware
 	'6.6': { 'symbol': 'BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_6' },
 	# experimental
-	'6.10': { 'symbol': 'BR2_KERNEL_HEADERS_LATEST' },
+	'6.10': { 'symbol': 'BR2_TOOLCHAIN_HEADERS_LATEST' },
 	}
 
 # kernel.org provides a list in JSON format
@@ -159,6 +158,7 @@ def parse(line):
 
 filename = os.path.expanduser(config_file)
 dirname = os.path.dirname(filename)
+print(filename, dirname)
 
 # Parse and modify the original file line-by-line into a temporary file
 with tempfile.NamedTemporaryFile(mode='w', dir=dirname, delete=False) as tmp_file:
