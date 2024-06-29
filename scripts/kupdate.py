@@ -5,6 +5,7 @@ import json
 import os
 import requests
 import shutil
+import sys
 import tempfile
 
 from bs4 import BeautifulSoup as soup
@@ -24,38 +25,45 @@ linux_versions = {
 	'6.10': { 'symbol': 'BR2_TOOLCHAIN_HEADERS_LATEST' },
 	}
 
+# read the current kernel versions from kernel.org
 # kernel.org provides a list in JSON format
-response = requests.get(kernel_url)
-db = json.loads(response.text)
-for r in db['releases']:
-	v = r['version']
-	_v = v.split('-')[0] # get rid of the release candidate
-	_v = _v.split('.')
-	vb = _v[0] + '.' + _v[1] if len(_v) > 1 else _v[0]
-	if vb in linux_versions:
-		linux_versions[vb]['version'] = v
+def get_kernel_versions():
+	response = requests.get(kernel_url)
+	db = json.loads(response.text)
+	for r in db['releases']:
+		v = r['version']
+		_v = v.split('-')[0] # get rid of the release candidate
+		_v = _v.split('.')
+		vb = _v[0] + '.' + _v[1] if len(_v) > 1 else _v[0]
+		if vb in linux_versions:
+			linux_versions[vb]['version'] = v
 
-# PREEMPT_RT patch
-response = requests.get(patch_url)
-page = soup(response.text, 'html.parser')
-a = page.find_all('a')
+# read the current PREEMPT_RT patches from kernel.org
+def get_kernel_patches(matching):
+	response = requests.get(patch_url)
+	page = soup(response.text, 'html.parser')
+	a = page.find_all('a')
 
-for t in a:
-	vb = t.text[:-1]
-	if vb in linux_versions:
-		# next page contains list of patches sorted by date
-		# first lines contain directories, last line contains sha256sum.asc
-		# correct file name ends with '.patch.xz'
-		url = patch_url + t.text
-		page = soup(requests.get(url).text, 'html.parser')
-		_a = page.find_all('a')
+	for t in a:
+		vb = t.text[:-1]
+		if vb in linux_versions:
+			# next page contains list of patches sorted by date
+			# first lines contain directories, last line contains sha256sum.asc
+			# correct file name ends with '.patch.xz'
+			url = patch_url + t.text
+			page = soup(requests.get(url).text, 'html.parser')
+			_a = page.find_all('a')
 
-		v = None
-		for _t in _a:
-			if _t.text.endswith(patch_type):
-				v = _t.text
+			v = None
+			for _t in _a:
+				if _t.text.endswith(patch_type):
+					v = _t.text
 
-		linux_versions[vb]['patch'] = url + v
+			linux_versions[vb]['patch'] = url + v
+			if matching:
+				_v = v.split('-')[1:-1]
+				lv = _v[0] + '-' + _v[1] if len(_v) == 2 else _v[0]
+				linux_versions[vb]['version'] = lv
 
 # Config syntax is:
 """
@@ -156,22 +164,39 @@ def parse(line):
 
 	return line
 
-filename = os.path.expanduser(config_file)
-dirname = os.path.dirname(filename)
-print(filename, dirname)
 
-# Parse and modify the original file line-by-line into a temporary file
-with tempfile.NamedTemporaryFile(mode='w', dir=dirname, delete=False) as tmp_file:
-	with open(filename) as src_file:
-		for line in src_file:
-			line = parse(line)
-			tmp_file.write(line)
+def kupdate(argv):
 
-# Overwrite the original file with the modified temporary file in a
-# manner preserving file attributes (e.g., permissions).
-if changes_made:
-	shutil.copystat(filename, tmp_file.name)
-	shutil.move(tmp_file.name, filename)
-else:
-	os.remove(tmp_file.name)
+	# convert argument(s) to single string containing letters only
+	options = ''.join([ s[1:] for s in argv[1:] ])
+	# use kernel versions matching kernel patches
+	matching_versions = True if 'm' in options else False
+	# just print what would be changed, do not modify the config file
+	trial_run = True if 'n' in options else False
+	print(matching_versions, trial_run)
 
+	get_kernel_patches(matching_versions)
+	if not matching_versions:
+		get_kernel_versions()
+
+	filename = os.path.expanduser(config_file)
+	dirname = os.path.dirname(filename)
+
+	# Parse and modify the original file line-by-line into a temporary file
+	with tempfile.NamedTemporaryFile(mode='w', dir=dirname, delete=False) as tmp_file:
+		with open(filename) as src_file:
+			for line in src_file:
+				line = parse(line)
+				tmp_file.write(line)
+
+
+	# Overwrite the original file with the modified temporary file in a
+	# manner preserving file attributes (e.g., permissions).
+	if changes_made and not trial_run:
+		shutil.copystat(filename, tmp_file.name)
+		shutil.move(tmp_file.name, filename)
+	else:
+		os.remove(tmp_file.name)
+
+if __name__ == '__main__':
+	sys.exit(kupdate(sys.argv))
