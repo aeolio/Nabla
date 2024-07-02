@@ -173,7 +173,6 @@ def kupdate(argv):
 	matching_versions = True if 'm' in options else False
 	# just print what would be changed, do not modify the config file
 	trial_run = True if 'n' in options else False
-	print(matching_versions, trial_run)
 
 	get_kernel_patches(matching_versions)
 	if not matching_versions:
