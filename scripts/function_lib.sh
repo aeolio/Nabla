@@ -58,8 +58,23 @@ get_config_value() {
 	echo $CONFIG_VALUE
 }
 
+### The current Linux kernel version
+### Usage:  get_kernel_version
+get_kernel_version() {
+	echo $(get_config_value "NABLA_LINUX_VERSION")
+}
+
+### The Linux kernel configuration file
+### Usage:  get_kernel_configfile
+get_kernel_config() {
+	kernel_version=$(get_kernel_version)
+	kernel_source=$BUILD_DIR/linux-$kernel_version
+	kernel_config=$kernel_source/.config
+	echo $kernel_config
+}
+
 ### extract project (build) name from Buildroot directory
-### Usage:  get_build_name
+### Usage:  get_project_name
 get_project_name() {
 	echo $(basename ${BASE_DIR})
 }
@@ -76,7 +91,7 @@ replace_symbols() {
 		firmware_variant=$(grep BR2_PACKAGE_RPI_FIRMWARE_VARIANT_.*=y ${BR2_CONFIG})
 		firmware_variant=${firmware_variant%%=*}
 		firmware_variant=${firmware_variant##BR2_PACKAGE_RPI_FIRMWARE_VARIANT_}
-		kernel_version=$(get_config_value "BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE")
+		kernel_version=$(get_kernel_version)
 		project_name=$(get_project_name)
 		software_version="$(git -C $BR2_EXTERNAL_NABLA_PATH log -n 1 --format=%ai)"
 		# replace symbol strings

@@ -5,9 +5,7 @@
 _path=$BR2_EXTERNAL_NABLA_PATH/scripts
 [ -x "$_path/function_lib.sh" ] && . "$_path/function_lib.sh"
 
-KERNEL_VERSION=$(get_config_value "BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE")
-KERNEL_SOURCE=${BUILD_DIR}/linux-${KERNEL_VERSION}
-KERNEL_CONFIG=${KERNEL_SOURCE}/.config
+KERNEL_CONFIG=$(get_kernel_config)
 
 ### Linux firmware is selected
 ### check out wireless.wiki.kernel.org for firmware version related to kernel version
