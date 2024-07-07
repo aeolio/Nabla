@@ -186,13 +186,6 @@ if [ "X${ACTION}" == "Xadd" ] ; then
 		fi
 		;;
 
-		# on armv[78] DEVTYPE is missing. Check for partition names instead. 
-		"")
-		if [ "$SUBSYSTEM" == "block" ] && [ `expr match $MDEV 'mmcblk[0-9]p[0-9]'` == 9 ]; then
-			partition=1
-		fi
-		;;
-
 	esac
 
 fi
