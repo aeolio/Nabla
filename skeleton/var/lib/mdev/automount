@@ -12,7 +12,7 @@ MDEV_DEBUG=0
 [ -x $MDEV_CONFIG ] && . $MDEV_CONFIG
 
 MDEV_GUID_PARTITIONS="ntfs vfat"
-MDEV_SYSTEM_PARTITIONS="boot nabla root"
+MDEV_SYSTEM_PARTITIONS="boot NABLA root"
 
 #
 # Retrieves the partition label of a block device. 
@@ -66,7 +66,7 @@ get_options() {
 	options_out="$options_out,$mode"
 	# set filesystem specific options
 	if [ grep -q "$filesystem_type" $MDEV_GUID_PARTITIONS ] && \
-		! [ grep -iq "$partition_name" $MDEV_RESERVED_PARTITIONS ] ; then
+		! [ grep -iq "$partition_name" $MDEV_SYSTEM_PARTITIONS ] ; then
 		# set owner and group to mpd:audio
 		options_out="$options_out,gid=$gid,uid=$uid"
 		# set dmask and fmask
