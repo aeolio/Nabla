@@ -66,7 +66,7 @@ Signed-off-by: Andreas Ziegler <br015@umbiko.net>
 +	generate_missing_keys
  
  	printf "Starting %s: " "$DAEMON"
- 	start-stop-daemon -S -q -p "$PIDFILE" \
+ 	start-stop-daemon --start --pidfile "$PIDFILE" \
 @@ -63,18 +105,9 @@
  }
  
@@ -89,4 +89,3 @@ Signed-off-by: Andreas Ziegler <br015@umbiko.net>
  	*)
  		echo "Usage: $0 {start|stop|restart|reload}"
  		exit 1
-
