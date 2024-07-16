@@ -6,7 +6,7 @@
 
 OPENSSH_INIT_SCRIPT = $(TARGET_DIR)/etc/init.d/S50sshd
 
-# modify mdev configuration
+# modify init.d configuration
 define OPENSSH_MODIFY_INIT_SCRIPT
 	if [ -f "$(OPENSSH_INIT_SCRIPT)" ]; then \
 		patch $(OPENSSH_INIT_SCRIPT) \
