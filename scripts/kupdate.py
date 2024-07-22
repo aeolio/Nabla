@@ -65,6 +65,21 @@ def get_kernel_patches(matching):
 				lv = _v[0] + '-' + _v[1] if len(_v) == 2 else _v[0]
 				linux_versions[vb]['version'] = lv
 
+def get_release_monitoring_version(project='mpd'):
+	url = "https://release-monitoring.org/api/v2/projects/?name=%s" % project
+	response = requests.get(url)
+	projects = json.loads(response.text)
+	v = projects['items'][0]['version']
+	return v
+
+def get_github_version(owner='MusicPlayerDaemon', repo='MPD'):
+	url = 'https://api.github.com/repos/%s/%s/tags' % (owner, repo)
+	response = requests.get(url)
+	tags = json.loads(response.text)
+	v = tags[0]['name'][1:]
+	return v
+
+
 # Config syntax is:
 """
 if <symbol>
@@ -173,6 +188,8 @@ def kupdate(argv):
 	matching_versions = True if 'm' in options else False
 	# just print what would be changed, do not modify the config file
 	trial_run = True if 'n' in options else False
+	# retrieve and print the mpd version from release-monitoring and github
+	mpd_version = True if 'p' in options else False
 
 	get_kernel_patches(matching_versions)
 	if not matching_versions:
@@ -188,6 +205,11 @@ def kupdate(argv):
 				line = parse(line)
 				tmp_file.write(line)
 
+	if mpd_version:
+		print("mpd version:  release-monitoring = %s  github = %s" %(
+			get_release_monitoring_version(),
+			get_github_version()
+			))
 
 	# Overwrite the original file with the modified temporary file in a
 	# manner preserving file attributes (e.g., permissions).
