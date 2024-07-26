@@ -1,5 +1,5 @@
---- buildroot/package/mpd/S95mpd	2024-07-18 07:50:58.564618946 +0200
-+++ target/etc/init.d/S95mpd	2024-07-18 08:24:45.141138881 +0200
+--- buildroot/package/mpd/S95mpd	2024-07-22 06:14:03.773465724 +0200
++++ target/etc/init.d/S95mpd	2024-07-21 19:02:01.543461548 +0200
 @@ -5,17 +5,89 @@
  # shellcheck disable=SC2317 # functions are called via variable
  
@@ -15,6 +15,7 @@
 +
 +MPD_LIB="/var/lib/$DAEMON"
 +MPD_LOG="/var/log/$DAEMON"
++MPD_RUN=$(dirname $PIDFILE)
 +
 +MPD_MUSIC=$MPD_LIB/music
 +MPD_CACHE=$MPD_LIB/cache
@@ -56,7 +57,6 @@
 +# create directories and link to music libraries
 +initialize() {
 +	_owner="mpd:audio"
-+	MPD_RUN=$(dirname $PIDFILE)
 +	mkdir -p $MPD_LIB && chown -R $_owner $MPD_LIB
 +	mkdir -p $MPD_CACHE && chown -R $_owner $MPD_CACHE
 +	mkdir -p $MPD_LOG && chown -R $_owner $MPD_LOG
@@ -78,8 +78,8 @@
 +	# increase max locked memory limit for io_uring 
 +	# increase real-time priority limit to enable real-time scheduling
 +	ulimit -HS -l $IO_URING_MEMLIMIT -r $(expr $HARDIRQ_PRIORITY - 1)
- 	# $DAEMON creates its own $PIDFILE, so do not use --pidfile
- 	start-stop-daemon --start --exec "/usr/bin/$DAEMON"
+ 	start-stop-daemon --start --pidfile "$PIDFILE" \
+ 		--exec "/usr/bin/$DAEMON"
  	status=$?
  	if [ "$status" -eq 0 ]; then
 +		# set processor affinity
