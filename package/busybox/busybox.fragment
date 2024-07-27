@@ -59,6 +59,15 @@ CONFIG_TSORT=y
 CONFIG_BASE64=y
 
 #
+# Core Utilities
+#
+# CONFIG_DOS2UNIX is not set
+# CONFIG_UNIX2DOS is not set
+CONFIG_STAT=y
+# CONFIG_FEATURE_STAT_FORMAT is not set
+# CONFIG_FEATURE_STAT_FILESYSTEM is not set
+
+#
 # Debian Utilities
 #
 CONFIG_PIPE_PROGRESS=y
