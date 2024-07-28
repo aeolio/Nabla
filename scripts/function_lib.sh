@@ -47,21 +47,29 @@ is_config_selected() {
 	echo $result
 }
 
-### get configuration value from buildroot config
-### Usage:  get_config_value <key>
-# $1 = config variable
+### get configuration value from file
+### Usage:  get_config_value <file> <key>
+# $1 = file name
+# $2 = variable name
 get_config_value() {
-	CONFIG_SETTING="$1=\".*\""
-	CONFIG_VALUE=$(grep $CONFIG_SETTING $BR2_CONFIG)
+	CONFIG_SETTING="$2=\".*\""
+	CONFIG_VALUE=$(grep $CONFIG_SETTING $1)
 	CONFIG_VALUE=${CONFIG_VALUE##*=}
 	CONFIG_VALUE=$(echo ${CONFIG_VALUE} | sed 's/^"\(.*\)"$/\1/')
 	echo $CONFIG_VALUE
 }
 
+### get configuration value from buildroot config
+### Usage:  get_buildroot_config_value <key>
+# $1 = config variable
+get_buildroot_config_value() {
+	get_config_value $BR2_CONFIG $1
+}
+
 ### The current Linux kernel version
 ### Usage:  get_kernel_version
 get_kernel_version() {
-	echo $(get_config_value "NABLA_LINUX_VERSION")
+	echo $(get_buildroot_config_value "NABLA_LINUX_VERSION")
 }
 
 ### The Linux kernel configuration file
@@ -86,7 +94,7 @@ replace_symbols() {
 	TARGET_FILE=$1
 	TEMPLATE_TEXT="{.*}"
 	if $(grep -q "${TEMPLATE_TEXT}" ${TARGET_FILE}); then
-		arch=$(get_config_value "BR2_ARCH")
+		arch=$(get_buildroot_config_value "BR2_ARCH")
 		build_date=$(date +"%Y-%m-%d")
 		firmware_variant=$(grep BR2_PACKAGE_RPI_FIRMWARE_VARIANT_.*=y ${BR2_CONFIG})
 		firmware_variant=${firmware_variant%%=*}

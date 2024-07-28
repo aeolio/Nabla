@@ -82,7 +82,7 @@ if [ $(is_config_selected "BR2_PACKAGE_OPENSSH_SERVER") -gt 0 ]; then
 	fi
 fi
 
-TARGET_HOSTNAME=$(get_config_value "BR2_TARGET_GENERIC_HOSTNAME")
+TARGET_HOSTNAME=$(get_buildroot_config_value "BR2_TARGET_GENERIC_HOSTNAME")
 
 ### Avahi package selected
 ### modify avahi configuration file
