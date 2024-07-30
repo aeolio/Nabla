@@ -12,58 +12,88 @@ from bs4 import BeautifulSoup as soup
 from shutil import copystat, move
 
 config_file = '~/br2-external/Config.in.linux'
-kernel_url = 'https://www.kernel.org/releases.json'
-patch_url = 'https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/'
-patch_type = '.patch.xz'
 
-linux_versions = { 
-	# stable version for 32-bit hardware
-	'5.10': { 'symbol': 'BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_10' },
- 	# stable version for 64-bit hardware
-	'6.6': { 'symbol': 'BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_6' },
-	# experimental
-	'6.10': { 'symbol': 'BR2_TOOLCHAIN_HEADERS_LATEST' },
-	}
 
-# read the current kernel versions from kernel.org
-# kernel.org provides a list in JSON format
-def get_kernel_versions():
-	response = requests.get(kernel_url)
-	db = json.loads(response.text)
-	for r in db['releases']:
-		v = r['version']
-		_v = v.split('-')[0] # get rid of the release candidate
-		_v = _v.split('.')
-		vb = _v[0] + '.' + _v[1] if len(_v) > 1 else _v[0]
-		if vb in linux_versions:
-			linux_versions[vb]['version'] = v
+### Linux kernel versions as found on kernel.org
+class KernelVersions:
 
-# read the current PREEMPT_RT patches from kernel.org
-def get_kernel_patches(matching):
-	response = requests.get(patch_url)
-	page = soup(response.text, 'html.parser')
-	a = page.find_all('a')
+	_kernel_url = 'https://www.kernel.org/releases.json'
+	kernel_versions = None
 
-	for t in a:
-		vb = t.text[:-1]
-		if vb in linux_versions:
-			# next page contains list of patches sorted by date
-			# first lines contain directories, last line contains sha256sum.asc
-			# correct file name ends with '.patch.xz'
-			url = patch_url + t.text
-			page = soup(requests.get(url).text, 'html.parser')
-			_a = page.find_all('a')
+	def __init__(self):
+		response = requests.get(self._kernel_url,
+			hooks = {'response': self.process_kernel_versions})
 
-			v = None
-			for _t in _a:
-				if _t.text.endswith(patch_type):
-					v = _t.text
+	# Retrieve the current kernel versions.
+	# kernel.org provides a list in JSON format
+	def process_kernel_versions(self, response, **kwargs):
+		self.kernel_versions = {}
+		db = json.loads(response.text)
+		for r in db['releases']:
+			v = r['version']
+			_v = v.split('-')[0] # get rid of the release candidate
+			_v = _v.split('.')
+			vb = _v[0] + '.' + _v[1] if len(_v) > 1 else _v[0]
+			self.kernel_versions[vb] = {'version': v}
 
-			linux_versions[vb]['patch'] = url + v
-			if matching:
-				_v = v.split('-')[1:-1]
-				lv = _v[0] + '-' + _v[1] if len(_v) == 2 else _v[0]
-				linux_versions[vb]['version'] = lv
+	def __contains__(self, version):
+		return version in self.kernel_versions
+
+	def get_version(self, base_version):
+		return self.kernel_versions[base_version]['version']
+
+	def get_latest_version(self):
+		v = next(iter(self.kernel_versions))
+		return v, self.get_version(v)
+
+
+### PREEMPT_RT patch versions from kernel.org
+class KernelPatches:
+
+	_patch_url = 'https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/'
+	_patch_type = '.patch.xz'
+	_kernel_versions = None
+	patch_versions = None
+
+	def __init__(self, kernel_versions):
+		self._kernel_versions = kernel_versions
+		response = requests.get(self._patch_url,
+			hooks = {'response': self.process_patch_versions})
+
+	def process_patch_versions(self, response, **kwargs):
+		self.patch_versions = {}
+		page = soup(response.text, 'html.parser')
+		a = page.find_all('a')
+		for t in a:
+			vb = t.text[:-1]
+			if vb in self._kernel_versions:
+				# next page contains list of patches sorted by date
+				# first lines contain directories, last line contains sha256sum.asc
+				# correct file name ends with '.patch.xz'
+				url = self._patch_url + t.text
+				page = soup(requests.get(url).text, 'html.parser')
+				_a = page.find_all('a')
+
+				v = None
+				for _t in _a:
+					if _t.text.endswith(self._patch_type):
+						v = _t.text
+
+				self.patch_versions[vb] = {'patch': url + v}
+
+	def __contains__(self, base_version):
+		return base_version in self.patch_versions
+
+	def get_patch(self, base_version):
+		if base_version in self.patch_versions:
+			return self.patch_versions[base_version]['patch']
+		return ''
+
+	def get_kernel_version(self, base_version):
+		_v = base_version.split('-')[1:-1]
+		lv = _v[0] + '-' + _v[1] if len(_v) == 2 else _v[0]
+		return lv
+
 
 def get_release_monitoring_version(project='mpd'):
 	url = "https://release-monitoring.org/api/v2/projects/?name=%s" % project
@@ -89,7 +119,12 @@ config <symbol>
 endif '#' <symbol>
 """
 
+#strings for parsing
+CUSTOM_VERSION = 'BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM'
+LATEST_VERSION = 'BR2_TOOLCHAIN_HEADERS_LATEST'
+
 # states for parsing
+config_symbol = None
 header_version = None
 LINUX_VERSION = 1
 LINUX_PATCH = 2
@@ -114,7 +149,8 @@ def reconstruct_line(array):
 	result = result[:-1] + '\n'
 	return result
 
-def parse(line):
+def parse(line, kernel_version, kernel_patch):
+	global config_symbol
 	global header_version
 	global config_block
 	global changes_made
@@ -126,11 +162,15 @@ def parse(line):
 	if line.startswith('if'):
 		if not header_version:
 			t = line.strip().split(' ')
-			header_version = get_version('symbol', t[1])
+			config_symbol = t[1]
+			if config_symbol == LATEST_VERSION:
+				header_version = kernel_version.get_latest_version()[0]
+			if config_symbol.startswith(CUSTOM_VERSION):
+				header_version = '%s.%s' % tuple(config_symbol.split('_')[-2:])
 			if not header_version:
 				terminal_error(line_number, 'Unknown symbol %s' % t[1])
 		else:
-			terminal_error(line_number, 'Unterminated block %s' % header_version['symbol'])
+			terminal_error(line_number, 'Unterminated block %s' % config_symbol)
 
 	# config item
 	elif line.startswith('config'):
@@ -141,7 +181,7 @@ def parse(line):
 			elif t[-1] == 'NABLA_LINUX_PATCH':
 				config_block = LINUX_PATCH
 		else:
-			terminal_error(line_number, 'Configuration %s outside of version block' % t[2])
+			terminal_error(line_number, 'Configuration item outside of version block')
 
 	# config value(s)
 	elif line.startswith('\t'):
@@ -149,30 +189,31 @@ def parse(line):
 		if t[0] == 'default':
 
 			if config_block == LINUX_VERSION:
-				v = '"' + header_version['version'] + '"'
+				v = '"' + kernel_version.get_version(header_version) + '"'
 				if t[1] != v:
-					print("%s: replacing %s with %s" % (header_version['symbol'], t[1], v))
+					print("%s: replacing %s with %s" % (config_symbol, t[1], v))
 					t[1] = v
 					line = reconstruct_line(t)
 					changes_made += 1
 
 			elif config_block == LINUX_PATCH:
-				p = '"' + header_version['patch'] + '"'
+				p = '"' + kernel_patch.get_patch(header_version) + '"'
 				if t[1] != p:
-					print("%s: replace %s with %s" % (header_version['symbol'], t[1], p))
+					print("%s: replace %s with %s" % (config_symbol, t[1], p))
 					t[1] = p
 					line = reconstruct_line(t)
 					changes_made += 1
 
 			else:
-				terminal_error(line_number, 'Config value outside config block')
+				terminal_error(line_number, 'Config value outside of config block')
 
 	# end of version block
 	elif line.startswith('endif'):
 		if header_version:
 			t = line.strip().split(' ')
-			if header_version['symbol'] != t[-1]:
-				terminal_error(line_number, 'Symbol %s not matching %s' % (t[-1], header_version['symbol']))
+			if t[-1] != config_symbol:
+				terminal_error(line_number, 'Symbol %s not matching %s' % (t[-1], config_symbol))
+			config_symbol = None 
 			header_version = None 
 		else:
 			terminal_error(line_number, 'Unmatched endif %s' % t[-1])
@@ -191,9 +232,8 @@ def kupdate(argv):
 	# retrieve and print the mpd version from release-monitoring and github
 	mpd_version = True if 'p' in options else False
 
-	get_kernel_patches(matching_versions)
-	if not matching_versions:
-		get_kernel_versions()
+	v = KernelVersions()
+	p = KernelPatches(v)
 
 	filename = os.path.expanduser(config_file)
 	dirname = os.path.dirname(filename)
@@ -202,7 +242,7 @@ def kupdate(argv):
 	with tempfile.NamedTemporaryFile(mode='w', dir=dirname, delete=False) as tmp_file:
 		with open(filename) as src_file:
 			for line in src_file:
-				line = parse(line)
+				line = parse(line, v, p)
 				tmp_file.write(line)
 
 	if mpd_version:
