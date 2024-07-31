@@ -94,20 +94,30 @@ class KernelPatches(KernelVersions):
 		return lv
 
 
-def get_release_monitoring_version(project='mpd'):
-	url = "https://release-monitoring.org/api/v2/projects/?name=%s" % project
-	response = requests.get(url)
-	projects = json.loads(response.text)
-	v = projects['items'][0]['version']
-	return v
+### package versions, retrived from release-monitoring.org and github tags
+class PackageVersion:
 
-def get_github_version(owner='MusicPlayerDaemon', repo='MPD'):
-	url = 'https://api.github.com/repos/%s/%s/tags' % (owner, repo)
-	response = requests.get(url)
-	tags = json.loads(response.text)
-	v = tags[0]['name'][1:]
-	return v
+	_release_monitoring_url = "https://release-monitoring.org/api/v2/projects/?name=%s"
+	_github_url = 'https://api.github.com/repos/%s/%s/tags'
 
+	def __init__(self, project, owner, repository):
+		url = self._release_monitoring_url % project
+		response = requests.get(url,
+			hooks = {'response': self.process_release_monitoring_request})
+		url = self._github_url % (owner, project)
+		response = requests.get(url,
+			hooks = {'response': self.process_github_request})
+
+	def process_release_monitoring_request(self, response, **kwargs):
+		projects = json.loads(response.text)
+		self.rm_version = projects['items'][0]['version']
+
+	def process_github_request(self, response, **kwargs):
+		tags = json.loads(response.text)
+		self.git_version = tags[0]['name'][1:]
+
+	def get_version(self):
+		return self.rm_version, self.git_version
 
 # Config syntax is:
 """
@@ -244,10 +254,11 @@ def kupdate(argv):
 				tmp_file.write(line)
 
 	if mpd_version:
-		print("mpd version:  release-monitoring = %s  github = %s" %(
-			get_release_monitoring_version(),
-			get_github_version()
-			))
+		mpd = PackageVersion('mpd', 'MusicPlayerDaemon', 'MPD')
+		v1, v2 = mpd.get_version()
+		print("%32s" % "mpd version")
+		print("%20s %11s" % ("Release monitoring", v1))
+		print("%20s %11s" % ("Github", v2))
 
 	# Overwrite the original file with the modified temporary file in a
 	# manner preserving file attributes (e.g., permissions).
