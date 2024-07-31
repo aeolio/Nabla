@@ -78,7 +78,15 @@ class KernelPatches(KernelVersions):
 					if _t.text.endswith(self._patch_type):
 						v = _t.text
 
-				self.patch_versions[vb] = {'patch': url + v}
+				# matching kernel version
+				mv = v.split('-')
+				mv = mv[1:-1]
+				mv = '-'.join([s for s in mv])
+
+				self.patch_versions[vb] = {
+					'patch': url + v,
+					'matching_version': mv,
+					}
 
 	def __contains__(self, base_version):
 		return base_version in self.patch_versions
@@ -88,10 +96,11 @@ class KernelPatches(KernelVersions):
 			return self.patch_versions[base_version]['patch']
 		return ''
 
-	def get_kernel_version(self, base_version):
-		_v = base_version.split('-')[1:-1]
-		lv = _v[0] + '-' + _v[1] if len(_v) == 2 else _v[0]
-		return lv
+	# overload kernel version
+	def get_version(self, base_version, matching=False):
+		if matching and base_version in self.patch_versions:
+			return self.patch_versions[base_version]['matching_version']
+		return super().get_version(base_version)
 
 
 ### package versions, retrived from release-monitoring.org and github tags
@@ -158,7 +167,7 @@ def reconstruct_line(array):
 	result = result[:-1] + '\n'
 	return result
 
-def parse(line, versions):
+def parse(line, versions, matching=False):
 	global config_symbol
 	global header_version
 	global config_block
@@ -198,7 +207,7 @@ def parse(line, versions):
 		if t[0] == 'default':
 
 			if config_block == LINUX_VERSION:
-				v = '"' + versions.get_version(header_version) + '"'
+				v = '"' + versions.get_version(header_version, matching=matching) + '"'
 				if t[1] != v:
 					print("%s: replacing %s with %s" % (config_symbol, t[1], v))
 					t[1] = v
@@ -250,7 +259,7 @@ def kupdate(argv):
 	with tempfile.NamedTemporaryFile(mode='w', dir=dirname, delete=False) as tmp_file:
 		with open(filename) as src_file:
 			for line in src_file:
-				line = parse(line, p)
+				line = parse(line, p, matching=matching_versions)
 				tmp_file.write(line)
 
 	if mpd_version:
