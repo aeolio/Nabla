@@ -48,15 +48,14 @@ class KernelVersions:
 
 
 ### PREEMPT_RT patch versions from kernel.org
-class KernelPatches:
+class KernelPatches(KernelVersions):
 
 	_patch_url = 'https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/'
 	_patch_type = '.patch.xz'
-	_kernel_versions = None
 	patch_versions = None
 
-	def __init__(self, kernel_versions):
-		self._kernel_versions = kernel_versions
+	def __init__(self):
+		super().__init__()
 		response = requests.get(self._patch_url,
 			hooks = {'response': self.process_patch_versions})
 
@@ -66,7 +65,7 @@ class KernelPatches:
 		a = page.find_all('a')
 		for t in a:
 			vb = t.text[:-1]
-			if vb in self._kernel_versions:
+			if vb in self.kernel_versions:
 				# next page contains list of patches sorted by date
 				# first lines contain directories, last line contains sha256sum.asc
 				# correct file name ends with '.patch.xz'
@@ -149,7 +148,7 @@ def reconstruct_line(array):
 	result = result[:-1] + '\n'
 	return result
 
-def parse(line, kernel_version, kernel_patch):
+def parse(line, versions):
 	global config_symbol
 	global header_version
 	global config_block
@@ -164,7 +163,7 @@ def parse(line, kernel_version, kernel_patch):
 			t = line.strip().split(' ')
 			config_symbol = t[1]
 			if config_symbol == LATEST_VERSION:
-				header_version = kernel_version.get_latest_version()[0]
+				header_version = versions.get_latest_version()[0]
 			if config_symbol.startswith(CUSTOM_VERSION):
 				header_version = '%s.%s' % tuple(config_symbol.split('_')[-2:])
 			if not header_version:
@@ -189,7 +188,7 @@ def parse(line, kernel_version, kernel_patch):
 		if t[0] == 'default':
 
 			if config_block == LINUX_VERSION:
-				v = '"' + kernel_version.get_version(header_version) + '"'
+				v = '"' + versions.get_version(header_version) + '"'
 				if t[1] != v:
 					print("%s: replacing %s with %s" % (config_symbol, t[1], v))
 					t[1] = v
@@ -197,7 +196,7 @@ def parse(line, kernel_version, kernel_patch):
 					changes_made += 1
 
 			elif config_block == LINUX_PATCH:
-				p = '"' + kernel_patch.get_patch(header_version) + '"'
+				p = '"' + versions.get_patch(header_version) + '"'
 				if t[1] != p:
 					print("%s: replace %s with %s" % (config_symbol, t[1], p))
 					t[1] = p
@@ -232,8 +231,7 @@ def kupdate(argv):
 	# retrieve and print the mpd version from release-monitoring and github
 	mpd_version = True if 'p' in options else False
 
-	v = KernelVersions()
-	p = KernelPatches(v)
+	p = KernelPatches()
 
 	filename = os.path.expanduser(config_file)
 	dirname = os.path.dirname(filename)
@@ -242,7 +240,7 @@ def kupdate(argv):
 	with tempfile.NamedTemporaryFile(mode='w', dir=dirname, delete=False) as tmp_file:
 		with open(filename) as src_file:
 			for line in src_file:
-				line = parse(line, v, p)
+				line = parse(line, p)
 				tmp_file.write(line)
 
 	if mpd_version:
