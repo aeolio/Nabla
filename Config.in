@@ -49,6 +49,12 @@ config BR2_PACKAGE_HOST_GENIMAGE_MTOOLS
 	default y if BR2_PACKAGE_HOST_GENIMAGE
 	select BR2_PACKAGE_HOST_MTOOLS
 
+# Disable write-through for SQL databases
+config BR2_PACKAGE_SQLITE_WRITE_BACK
+	bool
+	default y if BR2_PACKAGE_SQLITE
+	select BR2_PACKAGE_SQLITE_NO_SYNC
+
 
 #
 # external options menu
