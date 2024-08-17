@@ -52,7 +52,7 @@ def remove_package(argv):
 	# remove every installed file
 	for f in installed_files:
 		# might already have been removed by a cleanup task
-		if os.path.exists(f):
+		if os.path.lexists(f):
 			os.remove(f)
 			print('deleted %s' % f)
 
