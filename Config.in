@@ -55,6 +55,11 @@ config BR2_PACKAGE_SQLITE_WRITE_BACK
 	default y if BR2_PACKAGE_SQLITE
 	select BR2_PACKAGE_SQLITE_NO_SYNC
 
+# Should ncurses use wide characters if enabled in Toolchain menu?
+config BR2_PACKAGE_NCURSES_WIDE
+	bool
+	default y if BR2_PACKAGE_NCURSES && BR2_USE_WCHAR
+	select BR2_PACKAGE_NCURSES_WCHAR
 
 #
 # external options menu
