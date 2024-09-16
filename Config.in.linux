@@ -10,7 +10,7 @@ if BR2_TOOLCHAIN_HEADERS_LATEST
 
 config NABLA_LINUX_VERSION
 	string
-	default "6.11-rc7"
+	default "6.11"
 config NABLA_LINUX_PATCH
 	string
 	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.11/patch-6.11-rc5-rt5.patch.xz"
@@ -39,6 +39,6 @@ config NABLA_LINUX_VERSION
 
 config NABLA_LINUX_PATCH
 	string
-	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/5.10/patch-5.10.224-rt116.patch.xz"
+	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/5.10/patch-5.10.225-rt117.patch.xz"
 
 endif # BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_10
