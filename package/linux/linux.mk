@@ -27,7 +27,7 @@ define LINUX_PATCH_ASSURANCE
 	patch_dirs=$(BR2_GLOBAL_PATCH_DIR); \
 	pkg_name=linux; \
 	pkg_version=$(BR2_LINUX_KERNEL_VERSION); \
-	base_version=$${pkg_version%.*}; \
+	base_version=$$(expr match $$pkg_version '\([0-9]\+.[0-9]\+\)'); \
 	if [ $${pkg_version} != $${base_version} ]; then \
 		for p in $${patch_dirs}; do \
 			if	[ -d "$$p/$$pkg_name/$${base_version}" ] && \
