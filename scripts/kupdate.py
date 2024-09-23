@@ -209,7 +209,7 @@ def parse(line, versions, matching=False):
 			if config_block == LINUX_VERSION:
 				v = '"' + versions.get_version(header_version, matching=matching) + '"'
 				if t[1] != v:
-					print("%s: replacing %s with %s" % (config_symbol, t[1], v))
+					print("%s: replace %s with %s" % (config_symbol, t[1], v))
 					t[1] = v
 					line = reconstruct_line(t)
 					changes_made += 1
