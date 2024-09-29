@@ -1,0 +1,4 @@
+# NFS server does not need client filesystems 
+
+# CONFIG_NFS_FS is not set
+# CONFIG_CIFS is not set
