@@ -1,5 +1,5 @@
 # CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_KERNEL_ZSTD=y
+# Kernel compression format (CONFIG_KERNEL_*) is set by buildroot
 CONFIG_DEFAULT_HOSTNAME="nabla"
 # CONFIG_SWAP is not set
 CONFIG_SYSVIPC=y
@@ -10,6 +10,7 @@ CONFIG_HIGH_RES_TIMERS=y
 CONFIG_PREEMPT_RT=y
 CONFIG_BLK_DEV_INITRD=y
 CONFIG_INITRAMFS_SOURCE="${BR_BINARIES_DIR}/rootfs.cpio"
+# CONFIG_RD_GZIP is not set
 # CONFIG_RD_BZIP2 is not set
 # CONFIG_RD_LZMA is not set
 # CONFIG_RD_XZ is not set
