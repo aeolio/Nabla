@@ -1,4 +1,5 @@
-# NFS server does not need client filesystems 
+# NFS server does not use client network filesystems 
 
+# CONFIG_NFSD is set by Buildroot
 # CONFIG_NFS_FS is not set
 # CONFIG_CIFS is not set
