@@ -17,4 +17,6 @@ ifeq ($(BR2_PACKAGE_XENOMAI),y)
 define XENOMAI_LINUX_CONFIG_FIXUPS
 	$(call KCONFIG_DISABLE_OPT,CONFIG_PREEMPT_RT)
 endef
+# this is necessary because fragment files do not get processed by inner-generic-package
+PACKAGES_LINUX_CONFIG_FIXUPS += $(XENOMAI_LINUX_CONFIG_FIXUPS)$(sep)
 endif

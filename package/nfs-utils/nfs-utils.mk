@@ -10,6 +10,8 @@ define NFS_UTILS_LINUX_CONFIG_FIXUPS
 	$(call KCONFIG_ENABLE_OPT,CONFIG_NFSD)
 	$(call KCONFIG_ENABLE_OPT,CONFIG_NFSD_V3)
 endef
+# this is necessary because fragment files do not get processed by inner-generic-package
+PACKAGES_LINUX_CONFIG_FIXUPS += $(NFS_UTILS_LINUX_CONFIG_FIXUPS)$(sep)
 endif
 
 NFS_UTILS_LIBDIR = var/lib/nfs
