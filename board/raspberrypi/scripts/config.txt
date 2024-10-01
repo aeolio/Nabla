@@ -13,7 +13,7 @@ kernel=Image
 arm_64bit=1
 
 # Root file system
-initramfs rootfs.cpio.gz
+initramfs rootfs.cpio.zst
 
 # Use default setting for video memory
 # gpu_mem=76
