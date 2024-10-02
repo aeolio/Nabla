@@ -101,14 +101,18 @@ replace_symbols() {
 		firmware_variant=${firmware_variant##BR2_PACKAGE_RPI_FIRMWARE_VARIANT_}
 		kernel_version=$(get_kernel_version)
 		project_name=$(get_project_name)
-		software_version="$(git -C $BR2_EXTERNAL_NABLA_PATH log -n 1 --format=%ai)"
+		software_version="$(git -C $BR2_EXTERNAL_NABLA_PATH log -n 1 --format=%as-%h)"
+		version_id="$(printf '%d.%d' \
+			$(git -C ~/buildroot rev-list --count master) \
+			$(git -C ~/br2-external rev-list --count master))"
 		# replace symbol strings
-		sed -i 's/{arch}/'${arch}'/' ${TARGET_FILE}
-		sed -i 's/{build_date}/'${build_date}'/' ${TARGET_FILE}
-		sed -i 's/{buildroot_version}/'$BR2_VERSION'/' ${TARGET_FILE}
-		sed -i 's/{firmware_variant}/'${firmware_variant}'/' ${TARGET_FILE}
-		sed -i 's/{kernel_version}/'$KERNEL_VERSION'/' ${TARGET_FILE}
-		sed -i 's/{project_name}/'${project_name}'/' ${TARGET_FILE}
-		sed -i 's/{software_version}/'"${software_version}"'/' ${TARGET_FILE}
+		sed -i 's/{arch}/'$arch'/' $TARGET_FILE
+		sed -i 's/{build_date}/'$build_date'/' $TARGET_FILE
+		sed -i 's/{buildroot_version}/'$BR2_VERSION'/' $TARGET_FILE
+		sed -i 's/{firmware_variant}/'$firmware_variant'/' $TARGET_FILE
+		sed -i 's/{kernel_version}/'$kernel_version'/' $TARGET_FILE
+		sed -i 's/{project_name}/'$project_name'/' $TARGET_FILE
+		sed -i 's/{software_version}/'$software_version'/' $TARGET_FILE
+		sed -i 's/{version_id}/'"$version_id"'/' $TARGET_FILE
 	fi
 }

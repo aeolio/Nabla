@@ -1,5 +1,7 @@
-NAME="nabla {arch}"
-VERSION={kernel_version}
-ID="buildroot {project_name}"
-VERSION_ID="{buildroot_version} {software_version} {arch} {kernel_version} {build_date}"
-PRETTY_NAME=Nabla
+NAME="Nabla {project_name}"
+VERSION="{buildroot_version} {software_version} {arch} {kernel_version} {build_date}"
+ID="nabla"
+VERSION_ID="{version_id}"
+PRETTY_NAME="Nabla"
+ANSI_COLOR="38;2;130;145;160"
+ID_LIKE="GNU/Linux"
