@@ -134,6 +134,10 @@ if [ $(is_config_selected "BR2_PACKAGE_LINUXPTP") -gt 0 ]; then
 	fi
 fi
 
+### move /etc/init.d/S01seedrng to S20seedrng to enable persistence of seed file
+_ETC_INITD="${TARGET_DIR}/etc/init.d"
+[ -f $_ETC_INITD/S01seedrng ] && mv $_ETC_INITD/S01seedrng $_ETC_INITD/S20seedrng
+
 ### modify os-release
 RELEASE_FILE="$TARGET_DIR/usr/lib/os-release"
 replace_symbols $RELEASE_FILE
