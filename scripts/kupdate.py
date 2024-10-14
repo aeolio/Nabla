@@ -1,32 +1,40 @@
 #!/bin/python
 
-import io
+'''
+	kupdate: update Buildroot configuration with latest kernel and PREEMPT_RT
+	versions
+'''
+
 import json
 import os
-import requests
 import shutil
 import sys
 import tempfile
 
+import requests
 from bs4 import BeautifulSoup as soup
-from shutil import copystat, move
 
-config_file = '~/br2-external/Config.in.linux'
+CONFIG_FILE = 'Config.in.linux'
+TIMEOUT = 30
 
 
-### Linux kernel versions as found on kernel.org
 class KernelVersions:
+	''' Supported Linux kernel versions as found on kernel.org '''
 
 	_kernel_url = 'https://www.kernel.org/releases.json'
 	kernel_versions = None
 
 	def __init__(self):
-		response = requests.get(self._kernel_url,
+		requests.request('GET',
+			self._kernel_url,
+			timeout = TIMEOUT,
 			hooks = {'response': self.process_kernel_versions})
 
-	# Retrieve the current kernel versions.
-	# kernel.org provides a list in JSON format
 	def process_kernel_versions(self, response, **kwargs):
+		''' Response function: retrieve the current kernel versions.
+			kernel.org provides a list in JSON format '''
+		if kwargs:
+			del kwargs	# W0613: unused-argument
 		self.kernel_versions = {}
 		db = json.loads(response.text)
 		for r in db['releases']:
@@ -40,15 +48,17 @@ class KernelVersions:
 		return version in self.kernel_versions
 
 	def get_version(self, base_version):
+		''' get the latest patch version (x.y.z) for a kernel tree (x.y) '''
 		return self.kernel_versions[base_version]['version']
 
 	def get_latest_version(self):
+		''' get the current mainline kernel version '''
 		v = next(iter(self.kernel_versions))
 		return v, self.get_version(v)
 
 
-### PREEMPT_RT patch versions from kernel.org
 class KernelPatches(KernelVersions):
+	''' PREEMPT_RT patches matching currently supported kernel versions '''
 
 	_patch_url = 'https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/'
 	_patch_type = '.patch.xz'
@@ -56,10 +66,18 @@ class KernelPatches(KernelVersions):
 
 	def __init__(self):
 		super().__init__()
-		response = requests.get(self._patch_url,
+		requests.request('GET',
+			self._patch_url,
+			timeout = TIMEOUT,
 			hooks = {'response': self.process_patch_versions})
 
 	def process_patch_versions(self, response, **kwargs):
+		''' 
+			response function: retrieves the current patch version
+			for all supported Linux base versions
+		'''
+		if kwargs:
+			del kwargs	# W0613: unused-argument
 		self.patch_versions = {}
 		page = soup(response.text, 'html.parser')
 		a = page.find_all('a')
@@ -70,7 +88,7 @@ class KernelPatches(KernelVersions):
 				# first lines contain directories, last line contains sha256sum.asc
 				# correct file name ends with '.patch.xz'
 				url = self._patch_url + t.text
-				page = soup(requests.get(url).text, 'html.parser')
+				page = soup(requests.request('GET', url, timeout=TIMEOUT).text, 'html.parser')
 				_a = page.find_all('a')
 
 				v = None
@@ -81,7 +99,7 @@ class KernelPatches(KernelVersions):
 				# matching kernel version
 				mv = v.split('-')
 				mv = mv[1:-1]
-				mv = '-'.join([s for s in mv])
+				mv = '-'.join(list(mv))
 
 				self.patch_versions[vb] = {
 					'patch': url + v,
@@ -92,186 +110,222 @@ class KernelPatches(KernelVersions):
 		return base_version in self.patch_versions
 
 	def get_patch(self, base_version):
+		''' returns the URL of the patch for a Linux base version '''
 		if base_version in self.patch_versions:
 			return self.patch_versions[base_version]['patch']
 		return ''
 
-	# overload kernel version
 	def get_version(self, base_version, matching=False):
+		''' overload kernel version: return the latest version (x.y.z)
+			for a kernel tree (x.y) that is supported by a current
+			RT_PREEMPT patch '''
 		if matching and base_version in self.patch_versions:
 			return self.patch_versions[base_version]['matching_version']
 		return super().get_version(base_version)
 
 
-### package versions, retrived from release-monitoring.org and github tags
 class PackageVersion:
+	''' package versions, retrived from release-monitoring.org and github tags '''
 
-	_release_monitoring_url = "https://release-monitoring.org/api/v2/projects/?name=%s"
 	_github_url = 'https://api.github.com/repos/%s/%s/tags'
+	_release_monitoring_url = "https://release-monitoring.org/api/v2/projects/?name=%s"
+	_git_version = None
+	_rm_version = None
 
-	def __init__(self, project, owner, repository):
+	def __init__(self, owner, project):
 		url = self._release_monitoring_url % project
-		response = requests.get(url,
+		requests.request('GET',
+			url,
+			timeout=TIMEOUT,
 			hooks = {'response': self.process_release_monitoring_request})
 		url = self._github_url % (owner, project)
-		response = requests.get(url,
+		requests.request('GET',
+			url,
+			timeout=TIMEOUT,
 			hooks = {'response': self.process_github_request})
 
 	def process_release_monitoring_request(self, response, **kwargs):
+		''' 
+			Response function: retrieve latest software version from
+			the project's data on release-monitoring.org.
+		'''
+		if kwargs:
+			del kwargs	# W0613: unused-argument
 		projects = json.loads(response.text)
-		self.rm_version = projects['items'][0]['version']
+		self._rm_version = projects['items'][0]['version']
 
 	def process_github_request(self, response, **kwargs):
+		''' 
+			Response function: retrieve the latest tag version from
+			the projects github repository.
+		'''
+		if kwargs:
+			del kwargs	# W0613: unused-argument
 		tags = json.loads(response.text)
-		self.git_version = tags[0]['name'][1:]
+		self._git_version = tags[0]['name'][1:]
 
 	def get_version(self):
-		return self.rm_version, self.git_version
+		''' Return both version strings from release-monitoring and github '''
+		return self._rm_version, self._git_version
+
 
 # Config syntax is:
-"""
-if <symbol>
-config <symbol>
-\tstring
-\tdefault <value>
-endif '#' <symbol>
-"""
+#	if <symbol>
+#	config <symbol>
+#	\tstring
+#	\tdefault <value>
+#	endif # <symbol>
 
-#strings for parsing
+# strings for parsing
 CUSTOM_VERSION = 'BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM'
 LATEST_VERSION = 'BR2_TOOLCHAIN_HEADERS_LATEST'
-
-# states for parsing
-config_symbol = None
-header_version = None
+# flags for parsing
 LINUX_VERSION = 1
 LINUX_PATCH = 2
-config_block = None
-changes_made = 0
-line_number = 0
 
-def terminal_error(line_number, message):
-	e = 'line %d: %s' % (line_number, message)
-	raise RuntimeError(e)
+class LineParser:
+	''' Stateful line parser for the Config.linux.in file '''
 
-def get_version(key, value):
-	for k, v in linux_versions.items():
-		if v[key] == value:
-			return v
-	return None
+	# states for parsing
+	_config_symbol = None
+	_header_version = None
+	_config_block = None
 
-def reconstruct_line(array):
-	result = '\t'
-	for i in range(len(array)):
-		result = result + array[i] + ' '
-	result = result[:-1] + '\n'
-	return result
+	def __init__(self, matching):
+		self.changes_made = 0
+		self.line_number = 0
+		self.matching = matching
+		self.versions = KernelPatches()
 
-def parse(line, versions, matching=False):
-	global config_symbol
-	global header_version
-	global config_block
-	global changes_made
-	global line_number
+	def terminal_error(self, message):
+		''' Terminate the program with an error message '''
+		e = f'line {self.line_number}: {message}'
+		raise RuntimeError(e)
 
-	line_number += 1
-
-	# begin of version block
-	if line.startswith('if'):
-		if not header_version:
+	def _version_block_start(self, line):
+		''' start of version block '''
+		if not self._header_version:
 			t = line.strip().split(' ')
-			config_symbol = t[1]
-			if config_symbol == LATEST_VERSION:
-				header_version = versions.get_latest_version()[0]
-			if config_symbol.startswith(CUSTOM_VERSION):
-				header_version = '%s.%s' % tuple(config_symbol.split('_')[-2:])
-			if not header_version:
-				terminal_error(line_number, 'Unknown symbol %s' % t[1])
+			self._config_symbol = t[1]
+			if self._config_symbol == LATEST_VERSION:
+				self._header_version = \
+					self.versions.get_latest_version()[0]
+			if self._config_symbol.startswith(CUSTOM_VERSION):
+				self._header_version = \
+					'.'.join(self._config_symbol.split('_')[-2:])
+			if not self._header_version:
+				self.terminal_error(f'Unknown symbol {t[1]}')
 		else:
-			terminal_error(line_number, 'Unterminated block %s' % config_symbol)
+			self.terminal_error(f'Unterminated block {self._config_symbol}')
 
-	# config item
-	elif line.startswith('config'):
-		if header_version:
+	def _config_item(self, line):
+		''' config item '''
+		if self._header_version:
 			t = line.strip().split(' ')
 			if t[-1] == 'NABLA_LINUX_VERSION':
-				config_block = LINUX_VERSION
+				self._config_block = LINUX_VERSION
 			elif t[-1] == 'NABLA_LINUX_PATCH':
-				config_block = LINUX_PATCH
+				self._config_block = LINUX_PATCH
 		else:
-			terminal_error(line_number, 'Configuration item outside of version block')
+			self.terminal_error('Configuration item outside of version block')
 
-	# config value(s)
-	elif line.startswith('\t'):
+	def _config_value(self, line):
+		''' config value(s) '''
 		t = line.strip().split(' ')
 		if t[0] == 'default':
 
-			if config_block == LINUX_VERSION:
-				v = '"' + versions.get_version(header_version, matching=matching) + '"'
+			if self._config_block == LINUX_VERSION:
+				kv = self.versions.get_version(self._header_version, matching=self.matching)
+				v = '"' + kv + '"'
 				if t[1] != v:
-					print("%s: replace %s with %s" % (config_symbol, t[1], v))
+					print(f"{self._config_symbol}: replace {t[1]} with {v}")
 					t[1] = v
-					line = reconstruct_line(t)
-					changes_made += 1
+					line = '\t' + ' '.join(list(t)) + '\n'
+					self.changes_made += 1
 
-			elif config_block == LINUX_PATCH:
-				p = '"' + versions.get_patch(header_version) + '"'
+			elif self._config_block == LINUX_PATCH:
+				pv = self.versions.get_patch(self._header_version)
+				p = '"' + pv + '"'
 				if t[1] != p:
-					print("%s: replace %s with %s" % (config_symbol, t[1], p))
+					print(f"{self._config_symbol}: replace {t[1]} with {p}")
 					t[1] = p
-					line = reconstruct_line(t)
-					changes_made += 1
+					line = '\t' + ' '.join(list(t)) + '\n'
+					self.changes_made += 1
 
 			else:
-				terminal_error(line_number, 'Config value outside of config block')
+				self.terminal_error('Config value outside of config block')
+		return line
 
-	# end of version block
-	elif line.startswith('endif'):
-		if header_version:
+	def _version_block_finish(self, line):
+		''' end of version block '''
+		if self._header_version:
 			t = line.strip().split(' ')
-			if t[-1] != config_symbol:
-				terminal_error(line_number, 'Symbol %s not matching %s' % (t[-1], config_symbol))
-			config_symbol = None 
-			header_version = None 
+			if t[-1] != self._config_symbol:
+				self.terminal_error(f'Symbol {t[-1]} not matching {self._config_symbol}')
+			self._config_symbol = None
+			self._header_version = None
 		else:
-			terminal_error(line_number, 'Unmatched endif %s' % t[-1])
+			self.terminal_error(f'Unmatched endif {t[-1]}')
 
-	return line
+	def parse(self, line):
+		''' Parse one line into symbols, replace changed versions,
+			return the modified line '''
+
+		self.line_number += 1
+
+		if line.startswith('if'):
+			self._version_block_start(line)
+
+		elif line.startswith('config'):
+			self._config_item(line)
+
+		elif line.startswith('\t'):
+			line = self._config_value(line)
+
+		# end of version block
+		elif line.startswith('endif'):
+			self._version_block_finish(line)
+
+		return line
 
 
 def kupdate(argv):
+	''' Main function of the module '''
 
 	# convert argument(s) to single string containing letters only
 	options = ''.join([ s[1:] for s in argv[1:] ])
 	# use kernel versions matching kernel patches
-	matching_versions = True if 'm' in options else False
+	matching_versions = 'm' in options
 	# just print what would be changed, do not modify the config file
-	trial_run = True if 'n' in options else False
+	trial_run = 'n' in options
 	# retrieve and print the mpd version from release-monitoring and github
-	mpd_version = True if 'p' in options else False
+	mpd_version = 'p' in options
 
-	p = KernelPatches()
+	dirname = os.path.dirname(argv[0])
+	filename = os.path.join(dirname, CONFIG_FILE)
+	while not os.path.ismount(dirname) and not os.path.exists(filename):
+		dirname = os.path.dirname(dirname)
+		filename = os.path.join(dirname, CONFIG_FILE)
 
-	filename = os.path.expanduser(config_file)
-	dirname = os.path.dirname(filename)
+	parser = LineParser(matching_versions)
 
 	# Parse and modify the original file line-by-line into a temporary file
 	with tempfile.NamedTemporaryFile(mode='w', dir=dirname, delete=False) as tmp_file:
-		with open(filename) as src_file:
+		with open(filename, encoding='UTF8') as src_file:
 			for line in src_file:
-				line = parse(line, p, matching=matching_versions)
+				line = parser.parse(line)
 				tmp_file.write(line)
 
 	if mpd_version:
-		mpd = PackageVersion('mpd', 'MusicPlayerDaemon', 'MPD')
+		mpd = PackageVersion('MusicPlayerDaemon', 'mpd')
 		v1, v2 = mpd.get_version()
-		print("%32s" % "mpd version")
-		print("%20s %11s" % ("Release monitoring", v1))
-		print("%20s %11s" % ("Github", v2))
+		print(f"{'mpd version':>32}")
+		print(f"{'Release monitoring':>20} {v1:>11}")
+		print(f"{'Github':>20} {v2:>11}")
 
 	# Overwrite the original file with the modified temporary file in a
 	# manner preserving file attributes (e.g., permissions).
-	if changes_made and not trial_run:
+	if parser.changes_made and not trial_run:
 		shutil.copystat(filename, tmp_file.name)
 		shutil.move(tmp_file.name, filename)
 	else:
