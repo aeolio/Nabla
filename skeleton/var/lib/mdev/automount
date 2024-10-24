@@ -11,7 +11,7 @@ MDEV_CONFIG=/dev/shm/mdev.conf
 MDEV_DEBUG=0
 [ -x $MDEV_CONFIG ] && . $MDEV_CONFIG
 
-MDEV_GUID_PARTITIONS="ntfs vfat"
+MDEV_WINDOWS_PARTITIONS="exfat ntfs vfat"
 MDEV_SYSTEM_PARTITIONS="boot NABLA root"
 
 #
@@ -55,25 +55,24 @@ remove_action () {
 get_options() {
 	partition_name=$1
 	filesystem_type=$2
-	options_out=""
-	# mount everything read-only and without access time update
-	mode="ro,noatime,nodiratime"
+	# mount everything read-only
+	options_out="ro"
 	gid=$(grep audio /etc/group | awk 'BEGIN {FS=":"} {print $3}')
 	uid=$(grep mpd /etc/passwd | awk 'BEGIN {FS=":"} {print $3}')
-	dmask="0222"
-	fmask="0333"
-	# set filesystem independent options
-	options_out="$options_out,$mode"
+	umask="0022"
+	utime="2"
+	# filesystem independent options
+	options_out="$options_out,noatime,nodev,nosuid"
 	# set filesystem specific options
-	if [ grep -q "$filesystem_type" $MDEV_GUID_PARTITIONS ] && \
+	if [ grep -q "$filesystem_type" $MDEV_WINDOWS_PARTITIONS ] && \
 		! [ grep -iq "$partition_name" $MDEV_SYSTEM_PARTITIONS ] ; then
 		# set owner and group to mpd:audio
 		options_out="$options_out,gid=$gid,uid=$uid"
-		# set dmask and fmask
-		options_out="$options_out,dmask=$dmask,fmask=$fmask"
+		# set default permissions for new files /directories
+		options_out="$options_out,umask=$umask"
+		# other users can change timestamp
+		options_out="$options_out,allow_utime=$utime"
 	fi
-	# finally, remove first extra ',' character
-	if [ -n "$options_out" ]; then options_out=${options_out:1}; fi
 	echo "$options_out"
 	return 0
 }
@@ -86,61 +85,29 @@ probe_filesystem() {
 	# check for empty device name
 	if [ -z ${device_name} ] ; then exit 1 ; fi
 
-	# try fdisk first. Match full path to prevent partial matches 
-	id=$(fdisk -l | awk '/\/dev\/'$device_name' / {print $0}')
-	case "$id" in
+	# blkid has a field TYPE= 
+	id=$(blkid /dev/$device_name | \
+		awk '{ for(i=1; i<=NF; i++) \
+				{ if($i ~ "TYPE=") \
+					{type = gensub(".*=", "", "g", $i); \
+					print substr(type, 2, length(type)-2)} \
+				} \
+			}')
+	if [ -z ${id} ] ; then exit 1 ; fi
 
-		# FAT filesystems
-		*FAT16* | *FAT32*)
-		echo "vfat"
-		return 0
-		;;
-
-		# NTFS filesystems
-		*NTFS*)
-		echo "ntfs"
-		return 0
-		;;
-
-		# Linux filesystems
-		*Linux*)
-		echo "ext2"
-		return 0
-		;;
-	esac
-
-	# try magic numbers (unreliable)
-	# fat filesystems have the string "FATnn   " at offset 82 into device
-	id=$(dd if=/dev/${device_name} bs=1 count=8 skip=82 2>/dev/null)
-	if [ "$id" = "FAT16   " -o  "$id" = "FAT32   " ]; then
-		echo "vfat"
-		return 0
-	fi
-	# ntfs filesystems have the string "NTFS    " at offset 3 into device
-	id=$(dd if=/dev/${device_name} bs=1 count=8 skip=3 2>/dev/null)
-	if [ "$id" = "NTFS    " ]; then
-		echo "ntfs"
-		return 0
-	fi
-	# ext2/3/4 filesystem uses 0xef53 at offset 56 into superblock
-	# this corresponds to absolute offset 1080 into partition
-	id=$(dd if=/dev/${device_name} bs=1 count=2 skip=1080 2>/dev/null | od -x | awk '{print $2}')
-	if [ "$id" = "ef53" ]; then 
-		echo "ext2"
-		return 0
-	fi
-	return 1
+	echo $id
+	return 0
 }
-
-# At bootup, "mdev -s" is called.  It does not pass any environmental
-# variables other than MDEV.  S if no ACTION variable is passed, exit
-# the script.
 
 # write debug data dump to /dev/shm/mdevlog.txt
 if [ $MDEV_DEBUG -gt 1 ]; then
 	echo "" >> $MDEV_LOG
 	env >> $MDEV_LOG
 fi
+
+# At bootup, "mdev -s" is called.  It does not pass any environmental
+# variables other than MDEV.  S if no ACTION variable is passed, exit
+# the script.
 
 # Execute only if an action is passed; otherwise exit
 if [ -z ${ACTION} ] ; then exit 0 ; fi
@@ -250,10 +217,10 @@ if [ "X${ACTION}" == "Xadd" ] ; then
 	mkdir -p ${mountdir}/${mountname}
 
 	# Mount the directory in ${mountdir}
-	mount -o $mountoptions /dev/${MDEV} ${mountdir}/${mountname}
+	mount -t $filesystem_type -o $mountoptions /dev/${MDEV} ${mountdir}/${mountname}
 
 	# print some debug info
-	if [ $MDEV_DEBUG -gt 0 ]; then echo "mounted $MDEV as ${mountname}" >> $MDEV_LOG; fi
+	if [ $MDEV_DEBUG -gt 0 ]; then echo "mounted $MDEV as $mountname with options $mountoptions" >> $MDEV_LOG; fi
 
 # The "remove" action.
 elif [ "X${ACTION}" == "Xremove" ] ; then
