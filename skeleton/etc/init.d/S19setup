@@ -165,32 +165,40 @@ setup_prepare() {
 #	$1 = source prefix
 #	$2 = destination prefix
 #	$3 = directory /file list
+#	$4 = space for pre-pending in case of recursive call
 # either $1 or $2 will be an empty string
 #
 setup_copy_list() {
-	src_directory=$1
-	dst_directory=$2
-	sync_directories=$3
+	local src_directory=$1
+	local dst_directory=$2
+	local sync_directories=$3
+	local indent=${4:+"  "}
+	local pattern=${src_directory:-dst_directory}
 	if [ -n "$sync_directories" ]; then
 		for s in $sync_directories; do
 			# item is a directory
-			if [ -d "${src_directory}${s}" ]; then
-				echo "$script:  Start syncing directory $s"
+			local snc=$s # $s gets overwritten in recursion
+			if [ -d "${src_directory}${snc}" ]; then
+				echo "$script:  Start syncing directory $snc"
 				# create $s on target filesystem
-				mkdir -p "${dst_directory}${s}" || return 1
-				# copy (preserve symlinks, preserve file attributes)
-				cp -dp "${src_directory}${s}"/* "${dst_directory}${s}" > /dev/null 2>&1
-				echo "$script:  Finished syncing directory $s"
+				mkdir -p "${dst_directory}${snc}" || return 1
+				# recursive copy
+				for f in "${src_directory}${snc}"/*; do
+					[ -f $f ] && setup_copy_list "$src_directory" \
+						"$dst_directory" "${f#$pattern}" "  "
+				done
+				echo "$script:  Finished syncing directory $snc"
 			# item is a file
 			elif [ -f "${src_directory}${s}" ]; then
 				d=`dirname ${s}`
 				# create $d on target filesystem
 				mkdir -p "${dst_directory}${d}" || return 1
-				# copy (preserve symlinks, preserve file attributes)
-				cp -dp "${src_directory}${s}" "${dst_directory}${s}" > /dev/null 2>&1
-				echo "$script:  Copied file $s"
+				# copy (preserve symlinks), restore timestamps
+				cp -d "${src_directory}${s}" "${dst_directory}${s}"
+				touch -r "${src_directory}${s}" "${dst_directory}${s}"
+				echo "$script:  ${indent}Copied file $s"
 			else
-				echo "$script:  Missing entity $s"
+				echo "$script:  ${indent}Missing entity $s"
 			fi
 		done
 	fi
