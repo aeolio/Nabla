@@ -7,7 +7,9 @@
 
 import json
 import os
+from re import search
 import shutil
+from time import mktime, strptime
 import sys
 import tempfile
 
@@ -39,13 +41,23 @@ class KernelVersions:
 		db = json.loads(response.text)
 		for r in db['releases']:
 			v = r['version']
-			_v = v.split('-')[0] # get rid of the release candidate
-			_v = _v.split('.')
-			vb = _v[0] + '.' + _v[1] if len(_v) > 1 else _v[0]
-			self.kernel_versions[vb] = {'version': v}
+			vb = self._base_version(v)
+			t = r['released']['timestamp']
+			self.kernel_versions[vb] = {
+				'version': v, 
+				'timestamp': t,
+				}
 
 	def __contains__(self, version):
 		return version in self.kernel_versions
+
+	@staticmethod
+	def _base_version(v):
+		_v = v.strip('"')
+		_v = _v.split('-')[0] # get rid of the release candidate
+		_v = _v.split('.')
+		vb = _v[0] + '.' + _v[1] if len(_v) > 1 else _v[0]
+		return vb
 
 	def get_version(self, base_version):
 		''' get the latest patch version (x.y.z) for a kernel tree (x.y) '''
@@ -61,7 +73,8 @@ class KernelPatches(KernelVersions):
 	''' PREEMPT_RT patches matching currently supported kernel versions '''
 
 	_patch_url = 'https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/'
-	_patch_type = '.patch.xz'
+	_pattern = r'patch-[0-9crt.-]+\.patch.xz'
+	_time_format = '%d-%b-%Y %H:%M'
 	patch_versions = None
 
 	def __init__(self):
@@ -89,12 +102,15 @@ class KernelPatches(KernelVersions):
 				# correct file name ends with '.patch.xz'
 				url = self._patch_url + t.text
 				page = soup(requests.request('GET', url, timeout=TIMEOUT).text, 'html.parser')
-				_a = page.find_all('a')
 
+				t = None
 				v = None
-				for _t in _a:
-					if _t.text.endswith(self._patch_type):
-						v = _t.text
+				# the preformatted text element contains rows of releases
+				for s in page.body.pre.get_text().split('\r\n'):
+					if search(self._pattern, s):
+						p = s.split()
+						t = mktime(strptime(' '.join(p[1:3]), self._time_format))
+						v = p[0]
 
 				# matching kernel version
 				mv = v.split('-')
@@ -104,6 +120,7 @@ class KernelPatches(KernelVersions):
 				self.patch_versions[vb] = {
 					'patch': url + v,
 					'matching_version': mv,
+					'timestamp': t,
 					}
 
 	def __contains__(self, base_version):
@@ -122,7 +139,7 @@ class KernelPatches(KernelVersions):
 		if matching and base_version in self.patch_versions:
 			return self.patch_versions[base_version]['matching_version']
 		return super().get_version(base_version)
-
+		
 
 class PackageVersion:
 	''' package versions, retrived from release-monitoring.org and github tags '''
@@ -186,21 +203,24 @@ LINUX_PATCH = 2
 class LineParser:
 	''' Stateful line parser for the Config.linux.in file '''
 
-	# states for parsing
+	### parsing states
 	_config_symbol = None
 	_header_version = None
 	_config_block = None
 
-	def __init__(self, matching):
+	def __init__(self, matching, mtime):
 		self.changes_made = 0
 		self.line_number = 0
 		self.matching = matching
+		self.mtime = mtime
 		self.versions = KernelPatches()
 
 	def terminal_error(self, message):
 		''' Terminate the program with an error message '''
 		e = f'line {self.line_number}: {message}'
 		raise RuntimeError(e)
+
+	### block parsing functions
 
 	def _version_block_start(self, line):
 		''' start of version block '''
@@ -237,20 +257,24 @@ class LineParser:
 			if self._config_block == LINUX_VERSION:
 				kv = self.versions.get_version(self._header_version, matching=self.matching)
 				v = '"' + kv + '"'
-				if t[1] != v:
+				if v != t[1]:
 					print(f"{self._config_symbol}: replace {t[1]} with {v}")
 					t[1] = v
 					line = '\t' + ' '.join(list(t)) + '\n'
 					self.changes_made += 1
 
+			# The new rt patch version must be greater than the
+			# last version, otherwise it will not be replaced
 			elif self._config_block == LINUX_PATCH:
 				pv = self.versions.get_patch(self._header_version)
 				p = '"' + pv + '"'
-				if t[1] != p:
+				if p > t[1]:
 					print(f"{self._config_symbol}: replace {t[1]} with {p}")
 					t[1] = p
 					line = '\t' + ' '.join(list(t)) + '\n'
 					self.changes_made += 1
+				elif p < t[1]:
+					print(f"{self._config_symbol}: {t[1]} is newer")
 
 			else:
 				self.terminal_error('Config value outside of config block')
@@ -266,6 +290,8 @@ class LineParser:
 			self._header_version = None
 		else:
 			self.terminal_error(f'Unmatched endif {t[-1]}')
+
+	### main parser
 
 	def parse(self, line):
 		''' Parse one line into symbols, replace changed versions,
@@ -307,7 +333,8 @@ def kupdate(argv):
 		dirname = os.path.dirname(dirname)
 		filename = os.path.join(dirname, CONFIG_FILE)
 
-	parser = LineParser(matching_versions)
+	mtime = os.stat(filename).st_mtime
+	parser = LineParser(matching_versions, mtime)
 
 	# Parse and modify the original file line-by-line into a temporary file
 	with tempfile.NamedTemporaryFile(mode='w', dir=dirname, delete=False) as tmp_file:
