@@ -132,6 +132,10 @@ class KernelPatches(KernelVersions):
 			return self.patch_versions[base_version]['patch']
 		return ''
 
+	def get_basename(self, patch_url):
+		''' strips a patch URL to retrieve the patch base name '''
+		return patch_url.strip().split('/')[-1]
+
 	def get_version(self, base_version, matching=False):
 		''' overload kernel version: return the latest version (x.y.z)
 			for a kernel tree (x.y) that is supported by a current
@@ -268,13 +272,15 @@ class LineParser:
 			elif self._config_block == LINUX_PATCH:
 				pv = self.versions.get_patch(self._header_version)
 				p = '"' + pv + '"'
-				if p > t[1]:
-					print(f"{self._config_symbol}: replace {t[1]} with {p}")
+				cur = self.versions.get_basename(t[1])
+				new = self.versions.get_basename(p)
+				if new > cur:
+					print(f"{self._config_symbol}: replace {cur} with {new}")
 					t[1] = p
 					line = '\t' + ' '.join(list(t)) + '\n'
 					self.changes_made += 1
-				elif p < t[1]:
-					print(f"{self._config_symbol}: {t[1]} is newer")
+				elif new < cur:
+					print(f"{self._config_symbol}: {cur} is newer")
 
 			else:
 				self.terminal_error('Config value outside of config block')
