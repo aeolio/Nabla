@@ -278,8 +278,8 @@ class LineParser:
 				p = '"' + pv + '"'
 				cur = self.versions.get_basename(t[1])
 				new = self.versions.get_basename(p)
-				if self.versions.get_patch_level(new) > self.versions.get_patch_level(cur):
-					print(f"{self._config_symbol}: replace {cur} with {new}")
+				if not new or self.versions.get_patch_level(new) > self.versions.get_patch_level(cur):
+					print(f'{self._config_symbol}: replace "{cur}" with "{new}"')
 					t[1] = p
 					line = '\t' + ' '.join(list(t)) + '\n'
 					self.changes_made += 1
