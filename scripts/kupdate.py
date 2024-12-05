@@ -138,7 +138,12 @@ class KernelPatches(KernelVersions):
 
 	def get_patch_level(self, basename):
 		''' strips a patch file name to retrieve the patch version number '''
-		return basename.rstrip(self._pattern[-9:]).split('-')[-1]
+		if basename:
+			r = basename.rstrip(self._pattern[-9:]).split('-')
+			pat = 'rt[0-9]'
+			p = '-'.join(r[[i for i, v in enumerate(r) if search(pat, v)][-1]:])
+			return p
+		return basename
 
 	def get_version(self, base_version, matching=False):
 		''' overload kernel version: return the latest version (x.y.z)
@@ -278,12 +283,14 @@ class LineParser:
 				p = '"' + pv + '"'
 				cur = self.versions.get_basename(t[1])
 				new = self.versions.get_basename(p)
-				if not new or self.versions.get_patch_level(new) > self.versions.get_patch_level(cur):
+				if (not new and cur) or \
+					self.versions.get_patch_level(new) > self.versions.get_patch_level(cur):
 					print(f'{self._config_symbol}: replace "{cur}" with "{new}"')
 					t[1] = p
 					line = '\t' + ' '.join(list(t)) + '\n'
 					self.changes_made += 1
-				elif self.versions.get_patch_level(new) < self.versions.get_patch_level(cur):
+				elif (new and not cur) or \
+					self.versions.get_patch_level(new) < self.versions.get_patch_level(cur):
 					print(f"{self._config_symbol}: {cur} is newer")
 
 			else:
