@@ -1,3 +1,4 @@
+diff -Naur /tmp/mpd-0.24/src/thread/Name.hxx build/mpd-0.24/src/thread/Name.hxx
 --- a/src/thread/Name.hxx
 +++ b/src/thread/Name.hxx
 @@ -20,6 +20,10 @@
@@ -21,7 +22,7 @@
  #elif defined(HAVE_PRCTL) && defined(PR_SET_NAME)
  	prctl(PR_SET_NAME, (unsigned long)name, 0, 0, 0);
  #else
-diff -Naur /tmp/mpd-0.23.2/src/thread/RealtimeOption.cxx build/mpd-0.23.2/src/thread/RealtimeOption.cxx
+diff -Naur /tmp/mpd-0.24/src/thread/RealtimeOption.cxx build/mpd-0.24/src/thread/RealtimeOption.cxx
 --- a/src/thread/RealtimeOption.cxx	1970-01-01 01:00:00.000000000 +0100
 +++ b/src/thread/RealtimeOption.cxx	2021-10-23 14:07:04.120629388 +0200
 @@ -0,0 +1,416 @@
@@ -50,21 +51,6 @@ diff -Naur /tmp/mpd-0.23.2/src/thread/RealtimeOption.cxx build/mpd-0.23.2/src/th
 +
 +#ifdef ENABLE_RTOPT
 +
-+#include "system/Error.hxx"
-+#include "Log.hxx"
-+#include "util/Domain.hxx"
-+
-+#include "config/Block.hxx"
-+#include "config/Option.hxx"
-+
-+#include "Util.hxx"
-+#include "Slack.hxx"
-+#include "RealtimeOption.hxx"
-+
-+#include <sys/resource.h>
-+#include <sys/mman.h>
-+
-+
 +#include <stdlib.h>
 +#include <errno.h>
 +#include <string.h>
@@ -75,6 +61,21 @@ diff -Naur /tmp/mpd-0.23.2/src/thread/RealtimeOption.cxx build/mpd-0.23.2/src/th
 +#include <algorithm>
 +#include <unordered_map>
 +#include <vector>
++
++#include <sys/resource.h>
++#include <sys/mman.h>
++
++
++#include "system/Error.hxx"
++#include "Log.hxx"
++#include "util/Domain.hxx"
++
++#include "config/Block.hxx"
++#include "config/Option.hxx"
++
++#include "Util.hxx"
++#include "Slack.hxx"
++#include "RealtimeOption.hxx"
 +
 +
 +static constexpr Domain realtime_domain("realtimeoption");
@@ -441,7 +442,7 @@ diff -Naur /tmp/mpd-0.23.2/src/thread/RealtimeOption.cxx build/mpd-0.23.2/src/th
 +}
 +
 +#endif /* ENABLE_RTOPT */
-diff -Naur /tmp/mpd-0.23.2/src/thread/RealtimeOption.hxx build/mpd-0.23.2/src/thread/RealtimeOption.hxx
+diff -Naur /tmp/mpd-0.24/src/thread/RealtimeOption.hxx build/mpd-0.24/src/thread/RealtimeOption.hxx
 --- a/src/thread/RealtimeOption.hxx	1970-01-01 01:00:00.000000000 +0100
 +++ b/src/thread/RealtimeOption.hxx	2021-10-23 13:28:45.192731139 +0200
 @@ -0,0 +1,129 @@
