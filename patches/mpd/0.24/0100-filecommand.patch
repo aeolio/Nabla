@@ -1,5 +1,5 @@
---- mpd-0.23.6/src/command/FileCommands.cxx
-+++ mpd-0.23.6/src/command/FileCommands.cxx
+--- a/src/command/FileCommands.cxx
++++ b/src/command/FileCommands.cxx
 @@ -137,8 +137,9 @@
  find_stream_art(std::string_view directory, Mutex &mutex)
  {
