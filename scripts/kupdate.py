@@ -344,7 +344,7 @@ def kupdate(argv):
 	# retrieve and print the mpd version from release-monitoring and github
 	mpd_version = 'p' in options
 
-	dirname = os.path.dirname(argv[0])
+	dirname = os.path.dirname(os.path.realpath(argv[0]))
 	filename = os.path.join(dirname, CONFIG_FILE)
 	while not os.path.ismount(dirname) and not os.path.exists(filename):
 		dirname = os.path.dirname(dirname)
