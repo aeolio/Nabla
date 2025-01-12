@@ -15,8 +15,11 @@ arm_64bit=1
 # Root file system
 initramfs rootfs.cpio.zst
 
-# Use default setting for video memory
-# gpu_mem=76
+# disable I2C probe at startup
+disable_poe_fan=1
+
+# video memory may be 16/64/128/256
+gpu_mem=64
 
 # Hardware control
 dtparam=i2c_arm=on
@@ -25,13 +28,13 @@ dtparam=spi=on
 dtparam=audio=off
 
 # GPU subsystem frequencies at permitted minimum
-h264_freq=360
-isp_freq=360
-v3d_freq=360
-hevc_freq=360
+h264_freq=250
+isp_freq=250
+v3d_freq=250
+hevc_freq=250
 
 # 1.8GHz CPU frequency
-over_voltage=2
 arm_freq=1800
-#arm_freq_min=600
+arm_boost=1
+over_voltage=0
 force_turbo=1
