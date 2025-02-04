@@ -4,7 +4,7 @@
  	event_loop.SetThread(ThreadId::GetCurrent());
  
  	if (realtime) {
-++#ifndef ENABLE_RTOPT
++#ifndef ENABLE_RTOPT
  		SetThreadTimerSlack(std::chrono::microseconds(10));
  
  		try {
@@ -12,7 +12,7 @@
  				"RTIOThread could not get realtime scheduling, continuing anyway: {}",
  				std::current_exception());
  		}
-++#endif # ENABLE_RTOPT
++#endif # ENABLE_RTOPT
  	} else {
  #ifdef HAVE_URING
  		try {
