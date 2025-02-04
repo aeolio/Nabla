@@ -1,6 +1,6 @@
 --- a/meson.build
 +++ b/meson.build
-@@ -312,6 +312,9 @@
+@@ -311,6 +311,9 @@
  conf.set('ENABLE_INOTIFY', enable_inotify)
  
  conf.set('ENABLE_DSD', get_option('dsd'))
@@ -10,7 +10,7 @@
  
  inc = include_directories(
    'src',
-@@ -437,6 +440,12 @@
+@@ -443,6 +446,12 @@
    ]
  endif
  

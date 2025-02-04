@@ -1,6 +1,6 @@
 --- a/src/output/Thread.cxx
 +++ b/src/output/Thread.cxx
-@@ -407,6 +407,7 @@
+@@ -410,6 +410,7 @@
  {
  	FmtThreadName("output:{}", GetName());
  
@@ -8,7 +8,7 @@
  	try {
  		SetThreadRealtime();
  	} catch (...) {
-@@ -416,6 +417,7 @@
+@@ -419,6 +420,7 @@
  	}
  
  	SetThreadTimerSlack(std::chrono::microseconds(100));
