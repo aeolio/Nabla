@@ -11,7 +11,7 @@ diff -Naur a/tools/tracing/rtla/src/timerlat_hist.c b/tools/tracing/rtla/src/tim
  {
  	if (count)
 -		trace_seq_printf(seq, "%9llu ", avg ? val / count : val);
-+		trace_seq_printf(trace->seq, "%9.2f ", 
++		trace_seq_printf(seq, "%9.2f ", 
 +			avg ? ((double) val) / count : (double) val);
  	else
  		trace_seq_printf(seq, "%9c ", '-');

@@ -120,7 +120,7 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
  		update_max(&data->hist[cpu].max_thread, &latency);
  	} else { /* user */
  		hist = data->hist[cpu].user;
-@@ -421,6 +430,64 @@
+@@ -422,6 +430,64 @@
  					     false);
  	}
  	trace_seq_printf(trace->seq, "\n");
