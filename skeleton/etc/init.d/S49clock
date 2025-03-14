@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+# clock	Set the system clock from the internet.
+#
+
+wait_for_network() {
+	# shellcheck disable=SC2034 # unused iteration variable
+	for i in $(seq 20); do
+		address=$(ip addr show | grep -w 'inet' | awk '/global/ {print $2; exit}')
+		[ "$address" ] && break
+		usleep 500000
+	done
+}
+
+case "$1" in
+	start|stop|restart|reload)
+		[ "$1" = "start" ] && wait_for_network
+		printf "Set system time: "
+		# read current time from a HTTP page -- musl does not support %Z (timezone)
+		pattern="^ *Date: *"; date -s "$(wget -qSO /dev/null ntp.org 2>&1 | \
+			sed -n '1,/'"$pattern"'/{s/'"$pattern"'//p}')" -D "%a, %d %b %Y %T"
+		# set the hardware clock, if present
+		[ -e /dev/rtc0 ] && hwclock -su ;;
+
+	*)
+		echo "Usage: $0 {start|stop|restart|reload}"
+		exit 1
+esac
