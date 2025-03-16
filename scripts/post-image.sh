@@ -22,7 +22,7 @@ mkdir -p $_TARGET_DIR
 rsync -qrlt $_EXCLUDE_PATTERN --delete $_SOURCE_DIR/ $_TARGET_DIR/
 
 n=0
-for d in $(ls -d --time=birth $BACKUP_DIR/$PROJECT_NAME/[0-9]*); do
+for d in $(ls -d --time=ctime $BACKUP_DIR/$PROJECT_NAME/[0-9]*); do
 	n=$((n+1))
 	if [ $n -gt $GENERATIONS ]; then
 		rm -fr $d
