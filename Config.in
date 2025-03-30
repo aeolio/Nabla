@@ -1,5 +1,12 @@
 #
-# automatic configuration
+# Linux version definition
+#
+
+source "$BR2_EXTERNAL_NABLA_PATH/Config.in.linux"
+
+
+#
+# presets for standard configurations
 #
 
 # for client connectivity, mpd needs tcp sockets
@@ -61,6 +68,7 @@ config BR2_PACKAGE_NCURSES_WIDE
 	default y if BR2_PACKAGE_NCURSES && BR2_USE_WCHAR
 	select BR2_PACKAGE_NCURSES_WCHAR
 
+
 #
 # external options menu
 #
@@ -72,13 +80,20 @@ config BR2_PACKAGE_NCURSES_WIDE
 # both server and standalone can use liburing for async access to local files
 # playback functionality requires alsa
 
+# introduce 'unconfigured' option to avoid errors during test builds
+
 comment "main system configuration"
 choice
 	prompt "Machine type"
-	default NABLA_STANDALONE
+	default NABLA_UNCONFIGURED
 	help
 	  Enable standard features to configure a system as 
 	  client /server /standalone music player.
+
+config NABLA_UNCONFIGURED
+	bool "unconfigured"
+	help
+	  Do not pre-select Music Player Demon software. 
 
 config NABLA_CLIENT
 	bool "client"
@@ -130,10 +145,3 @@ menu "Hardware handling"
 endmenu
 
 endif # BR2_arm || BR2_aarch64
-
-
-#
-# Linux version definition
-#
-
-source "$BR2_EXTERNAL_NABLA_PATH/Config.in.linux"
