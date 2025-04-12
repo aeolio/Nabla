@@ -1,0 +1,29 @@
+# additional kernel configuration to upgrade Intel x86_64
+# from kernel version 6.6.y to 6.x bleeding edge
+
+# general setup
+CONFIG_PREEMPT_LAZY=Y
+
+# Processor type and features
+CONFIG_X86_CPU_RESCTRL=Y
+CONFIG_X86_FRED=Y
+
+# General architecture-dependent options
+# CONFIG_STACKPROTECTOR is not set
+
+# Device drivers -> Ethernet driver support
+# CONFIG_NET_VENDOR_HISILICON is not set
+# new Intel devices
+CONFIG_IWLMLD=Y
+
+# Device drivers -> PIN controllers
+# switch from Baytrail to Alder Lake
+# CONFIG_PINCTRL_BAYTRAIL is not set
+CONFIG_PINCTRL_ALDERLAKE=Y
+
+# Device drivers -> USB support
+CONFIG_USB_FEW_INIT_RETRIES=Y
+CONFIG_USB_UHCI_HCD=m
+
+# Device drivers -> Staging drivers
+# CONFIG_STAGING is not set
