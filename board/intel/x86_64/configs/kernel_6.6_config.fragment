@@ -1,0 +1,16 @@
+# configuration fragment to upgrade Intel x86_64 based kernels
+# from kernel series 6.1.y to 6.6.y 
+
+# General setup
+# feature CONFIG_EMBEDDED was removed
+CONFIG_EXPERT=y
+
+# Processor type and features
+# CONFIG_X86_IOPL_IOPERM is not set
+
+# Device Drivers -> Character devices
+# CONFIG_LEGACY_TIOCSTI is not set
+# CONFIG_LDISC_AUTOLOAD is not set
+
+# File systems -> Pseudo file systems
+CONFIG_TMPFS_INODE64=Y
