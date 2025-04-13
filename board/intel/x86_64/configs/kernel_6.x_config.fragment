@@ -1,5 +1,5 @@
-# additional kernel configuration to upgrade Intel x86_64
-# from kernel version 6.6.y to 6.x bleeding edge
+# configuration fragment to upgrade Intel x86_64 based kernels
+# from kernel version 6.6.y to 6.x.y bleeding edge
 
 # general setup
 CONFIG_PREEMPT_LAZY=Y

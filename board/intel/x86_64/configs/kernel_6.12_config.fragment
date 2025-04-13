@@ -1,6 +1,10 @@
-# additional kernel configuration to upgrade Intel x86_64 from kernel version 6.6 to 6.12
+# configuration fragment to upgrade Intel x86_64 based kernels
+# from kernel version 6.6.y to 6.12.y
+
+# Device Drivers
 
 # Intel management engine is now selected by default
 # CONFIG_INTEL_MEI is not set
 
+# new hardware vendors
 # CONFIG_NET_VENDOR_META is not set

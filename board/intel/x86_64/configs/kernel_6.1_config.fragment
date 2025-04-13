@@ -1,5 +1,5 @@
-# additional kernel configuration to upgrade x86 based configurations 
-# from kernel series 5.y to 6.y 
+# configuration fragment to upgrade Intel x86_64 based kernels
+# from kernel series 5.x to 6.x 
 
 # CONFIG_SCHED_CLUSTER is not set
 # CONFIG_PERF_EVENTS_AMD_UNCORE is not set

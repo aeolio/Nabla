@@ -1,4 +1,5 @@
-# additional kernel configuration to upgrade BCM 2711 from kernel series 5.y to 6.1
+# configuration fragment to upgrade BCM 2711 based kernels
+# from kernel series 5.x to 6.x 
 
 CONFIG_ARCH_BCM=y
 

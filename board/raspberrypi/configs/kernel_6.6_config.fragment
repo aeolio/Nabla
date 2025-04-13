@@ -1,7 +1,17 @@
-# additional kernel configuration to upgrade BCM 2711 from kernel version 6.1 to 6.6
+# configuration fragment to upgrade BCM 2711 based kernels
+# from kernel version 6.1.y to 6.6.y
 
-# CONFIG_EMBEDDED is not set
+# General setup
+# feature CONFIG_EMBEDDED was removed
 CONFIG_EXPERT=y
 
+# Kernel Features -> ARM errata workarounds via the alternatives framework
 # CONFIG_AMPERE_ERRATUM_AC03_CPU_38 is not set
 # CONFIG_ROCKCHIP_ERRATUM_3588001 is not set
+
+# Device Drivers -> Character devices
+# CONFIG_LEGACY_TIOCSTI is not set
+# CONFIG_LDISC_AUTOLOAD is not set
+
+# File systems -> Pseudo file systems
+CONFIG_TMPFS_INODE64=Y

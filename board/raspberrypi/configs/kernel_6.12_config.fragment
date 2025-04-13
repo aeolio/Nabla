@@ -1,7 +1,8 @@
-# additional kernel configuration to upgrade BCM 2711 from kernel version 6.6 to 6.12
+# configuration fragment to upgrade BCM 2711 based kernels
+# from kernel version 6.6.y to 6.12.y
 
 
-# ARMv8.9 architectural features
+# Kernel Features -> ARMv8.9 architectural features
 # CONFIG_ARM64_POE is not set
 
 # "This option alone does not add any kernel code"
