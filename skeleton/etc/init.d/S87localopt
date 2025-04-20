@@ -3,6 +3,7 @@
 # localopt	Run optimization scripts local to the machine. 
 #			This may include removal of unused hardware drivers.
 #
+# shellcheck disable=SC1091	# do not follow include files
 
 ### this is a startup only script
 [ "$1" != "start" ] && exit 0
@@ -16,12 +17,14 @@
 ### check if feature is enabled
 [ "$NABLA_LOCAL_OPTIMIZATION" != "Y" ] && exit 0
 
-echo "Run local optimizations..."
+printf "Run local optimizations: "
 mount_directory=/media
+# shellcheck disable=SC2154	# ignore config_directory from included file
 home_overlay=${mount_directory}/${NABLA_PARTITION}/${config_directory}/root
-if [ -d $home_overlay ]; then
-	for s in ${home_overlay}/*.sh;  do
-		source $s
+if [ -d "$home_overlay" ]; then
+	# shellcheck source=/dev/null
+	for s in "$home_overlay"/*.sh;  do
+		. "$s"
 	done
 fi
 echo "Done"

@@ -1,6 +1,9 @@
+#!/bin/sh
 #
 # function library. These functions are used in S89rtopt and S95mpd
 #
+# shellcheck disable=SC2034	# do not use 'export' for variables
+# shellcheck disable=SC3043	# allow local variables
 
 # this list is an abbreviation of a map found in RedHat's tuning guide
 #   access.redhat.com/documentation/en-us/red_hat_enterprise_linux_for_real_time/8/html/tuning_guide/index
@@ -30,17 +33,17 @@ _chrt_policy() {
 
 # retrieve a process's pid from a partial match
 _pidof() {
-	local process=$1
-	ps | awk '$5~/'$process'/ {print $1}'
+	local process="$1"
+	ps | awk '$5~/'"$process"'/ {print $1}'
 }
 
 # convert an integer number into a hexadecimal mask value
 _mask() {
-	local id=$1
+	local id="$1"
 	local mask=1
-	while [ $id -gt 0 ]; do
-		let mask=$mask*2
-		let id=$id-1
+	while [ "$id" -gt 0 ]; do
+		mask=$(( mask * 2 ))
+		id=$(( id - 1 ))
 	done
 	printf "0x%08X" $mask
 }
@@ -48,62 +51,66 @@ _mask() {
 # files in /sys/devices/system/cpu/* contain comma delimited lists of 
 # numbers and ranges. Examples: "0" or "0-1" or "2,4-31,33-63" 
 _get_online_cpumask() {
-	local mask=0
-	local cpus=$(cat /sys/devices/system/cpu/online)
+	local cpus first last mask
+	mask=0
+	cpus=$(cat /sys/devices/system/cpu/online)
 	IFS=","
 	for cpu_range in $cpus; do
 		case $cpu_range in
 		#cpu range
 		[0-9]*-[0-9]*)
-			local first=${cpu_range%-[0-9]*}
-			local last=${cpu_range#[0-9]*-}
-			while [ $first -lt $last ]; do
-				mask=$(( $mask | $(_mask $first) ))
-				let first=$first+1
+			first="${cpu_range%-[0-9]*}"
+			last="${cpu_range#[0-9]*-}"
+			while [ "$first" -lt "$last" ]; do
+				mask=$(( mask | $(_mask "$first") ))
+				first=$(( first + 1 ))
 			done
-			mask=$(( $mask | $(_mask $last) ))
+			mask=$(( mask | $(_mask "$last") ))
 			;;
 		#single cpu number
 		[0-9]*)
-			mask=$(( $mask | $(_mask $cpu_range) ))
+			mask=$(( mask | $(_mask "$cpu_range") ))
 			;;
 		esac
 	done
 	unset IFS
-	printf $mask
+	printf "%d" $mask
 }
 
 # use the highest processor id in the system for RT tasks
 _get_rt_cpuid() {
-	local cpus=$(cat /sys/devices/system/cpu/online)
-	echo ${cpus#*-}
+	local cpus
+	cpus="$(cat /sys/devices/system/cpu/online)"
+	echo "${cpus#*-}"
 }
 
 # use all processor cores but the last one for non RT tasks
 _get_nrt_cpumask() {
-	local mask=1
-	local rt_id=$(_get_rt_cpuid)
+	local mask rt_id
+	mask=1
+	rt_id=$(_get_rt_cpuid)
 	for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
-		cpu=$(basename ${cpu})
+		cpu=$(basename "${cpu}")
 		id=${cpu#cpu}
-		if [ $id -ne $rt_id ]; then
-			mask=$(( $mask | $(_mask $id) ))
+		if [ "$id" -ne "$rt_id" ]; then
+			mask=$(( mask | $(_mask "$id") ))
 		fi
 	done
-	printf $mask
+	printf "%d" $mask
 }
 
 # convert a processor id into a bit mask for this processor
 _get_cpumask() {
-	local id=$1
-	local mask=$(_mask $id)
-	local cpumask=$(_get_online_cpumask)
-	echo $(( $mask & $cpumask ))
+	local id mask cpumask
+	id="$1"
+	mask=$(_mask "$id")
+	cpumask="$(_get_online_cpumask)"
+	echo "$(( mask & cpumask ))"
 }
 
 # reads the associated IRQ number of a process
 _get_irq() {
-	local process=$1
-	irq=`grep $process /proc/interrupts | awk '{print $1}'`
-	echo ${irq%:*}
+	local process="$1"
+	irq=$(grep "$process" /proc/interrupts | awk '{print $1}')
+	echo "${irq%:*}"
 }

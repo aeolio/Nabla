@@ -2,34 +2,52 @@
 #
 # wpa_supplicant	Starts wireless connection handler.
 #
+# shellcheck disable=SC2317 # functions are called via variable
 
 DAEMON=wpa_supplicant
 PIDFILE="/var/run/$DAEMON.pid"
-bin_file=/usr/sbin/wpa_supplicant
-cfg_file="/etc/wpa_supplicant/wpa_supplicant.conf"
-log_file="/var/log/wpa_supplicant.log"
+cfg_file="/etc/$DAEMON/$DAEMON.conf"
+log_file="/var/log/$DAEMON.log"
 
-# Assure that at least one interface exists. 
+# Verify that at least one interface exists. 
 [ -e /sys/class/net/wlan0 ] || exit 0
 
-# allow for multiple interfaces
+# Allow for multiple interfaces
 config=""
 for i in /sys/class/net/wlan?; do
-	if [ -n "${config}" ]; then config="${config} -N"; fi
-	config="${config} -i`basename $i` -Dnl80211 -c${cfg_file}"
+	if [ -n "$config" ]; then config="$config -N"; fi
+	config="$config -i$(basename "$i") -Dnl80211 -c${cfg_file}"
 done
 
 start() {
-	echo -n "Starting $DAEMON... "
-	start-stop-daemon -S -q -x /usr/sbin/wpa_supplicant -- \
-		-B -P $PIDFILE -f${log_file} ${config}
-	[ ! -z $(pidof $DAEMON) ] && echo "OK" || echo "FAIL"
+	printf "Starting %s: " "$DAEMON"
+	# shellcheck disable=SC2086	# do not enclose $config in double quotes
+	start-stop-daemon --start --pidfile "$PIDFILE" \
+		--exec "/usr/sbin/$DAEMON" -- -B -P "$PIDFILE" -f "$log_file" $config
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	return "$status"
 }
 
 stop() {
-	echo -n "Stopping $DAEMON... "
-	start-stop-daemon -K -p $PIDFILE
-	[ $? -eq 0 ] && echo "OK" || echo "ERROR"
+	printf "Stopping %s: " "$DAEMON"
+	start-stop-daemon --stop --pidfile "$PIDFILE" \
+		--exec "/usr/sbin/$DAEMON"
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	# $DAEMON deletes its PID file on exit, wait for it to be gone
+	while [ -f "$PIDFILE" ]; do
+		sleep 0.1
+	done
+	return "$status"
 }
 
 restart() {

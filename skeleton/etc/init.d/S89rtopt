@@ -2,6 +2,7 @@
 #
 # rtopt	Optimize RT priorities for audio related processes.
 #
+# shellcheck disable=SC1091	# do not follow include files
 
 ### initialize system variables
 [ -x /etc/nabla.conf ] && . /etc/nabla.conf
@@ -14,22 +15,22 @@
 
 # Set CPU frequency scaling governor to performance 
 # Disable frequency scaling by increasing the minimum value
-# $1 = cpufrq or policy directory
+# $1 = cpufreq or policy directory
 change_cpufreq_settings() {
-	cpufreq=$1
+	cpufreq_ifc=$1
 	echo "adjust cpufreq interface $cpufreq"
 	governor=performance
-	if [ -d $cpufreq ]; then
-		if $(grep -q $governor $cpufreq/scaling_available_governors); then
-			echo $governor > $cpufreq/scaling_governor
+	if [ -d "$cpufreq_ifc" ]; then
+		if grep -q $governor "$cpufreq_ifc/scaling_available_governors"; then
+			echo $governor > "$cpufreq_ifc/scaling_governor"
 		fi
-		cat $cpufreq/scaling_max_freq > $cpufreq/scaling_min_freq
+		cat "$cpufreq_ifc/scaling_max_freq" > "$cpufreq_ifc/scaling_min_freq"
 	fi
 }
 
 
 ### modify processor frequency setup if enabled in nabla config
-if [ "$CPUFREQ_OPTIMIZATION" == "Y" ]; then
+if [ "$CPUFREQ_OPTIMIZATION" = Y ]; then
 	sysfs_cpu="/sys/devices/system/cpu"
 	policy="$sysfs_cpu/cpufreq/policy0"
 	available_cpus="$sysfs_cpu/cpu[0-9]*"
@@ -40,8 +41,8 @@ if [ "$CPUFREQ_OPTIMIZATION" == "Y" ]; then
 	else
 		for cpu in $available_cpus; do
 			cpufreq=$cpu/cpufreq
-			if [ -d $cpufreq ]; then
-				change_cpufreq_settings $cpufreq
+			if [ -d "$cpufreq" ]; then
+				change_cpufreq_settings "$cpufreq"
 			fi
 			done
 	fi
@@ -49,11 +50,14 @@ fi
 
 # adjust configured processes' priority
 for priority in $PRIORITY_LIST; do
-	process_list=$(eval echo \$${priority}_LIST)
-	priority_value=$(eval echo \$${priority})
+	process_list=$(eval echo \$"$priority"_LIST)
+	priority_value=$(eval echo \$"$priority")
 	for process in $process_list; do
-		echo $process $priority_value
-		for pid in $(_pidof $process); do chrt $(_chrt_policy) -p $priority_value $pid; done
+		echo "$process $priority_value"
+		for pid in $(_pidof "$process"); do
+			# shellcheck disable=SC2154	# _chrt_policy is from init_functions
+			chrt "$(_chrt_policy)" -p "$priority_value" "$pid"
+		done
 	done
 done
 
@@ -74,10 +78,11 @@ vm_statistics=/proc/sys/vm/stat_interval
 
 # change block device writeback affinity
 writeback=/sys/bus/workqueue/devices/writeback
-writeback_numa=$WRITEBACK/numa
+writeback_numa=$writeback/numa
 [ -f $writeback_numa ] && echo 0 > $writeback_numa
-writeback_cpumask=$WRITEBACK/cpumask
-[ -f $writeback_cpumask ] && echo $(_get_nrt_cpumask) > $writeback_cpumask
+writeback_cpumask=$writeback/cpumask
+			# shellcheck disable=SC2154	# _get_nrt_cpumask is from init_functions
+[ -f $writeback_cpumask ] && echo "$_get_nrt_cpumask" > $writeback_cpumask
 
 # increase maximum allocatable memory for USB device (drivers/usb/core/devio.c) 
 [ -d /sys/module/usbcore/parameters ] && echo 64 > /sys/module/usbcore/parameters/usbfs_memory_mb
