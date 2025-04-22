@@ -1,12 +1,12 @@
 #!/bin/sh
 
 # check if PREEMPT_RT is enabled
-if ! $(dmesg | grep -q PREEMPT_RT); then echo 'PREEMPT_RT is OFF'; fi
+if ! dmesg | grep -q PREEMPT_RT; then echo 'PREEMPT_RT is OFF'; fi
 
 # run the usual tests
-echo -n "uname = " && uname -r
-echo -n "tasks = " && ps | wc -l
-echo -n "free = " && free | awk '/Mem:/ { print $3 " /" ($2 - $7) }'
+printf "uname = " && uname -r
+printf "tasks = " && ps | wc -l
+printf "free = " && free | awk '/Mem:/ { print $3 " /" ($2 - $7) }'
 case "$1" in
   -c)
     # start interbench without console interaction
