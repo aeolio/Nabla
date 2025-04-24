@@ -1,4 +1,4 @@
-#!/bin/busybox ash
+#!/bin/sh
 #
 
 #
@@ -9,6 +9,7 @@ MDEV_ERR=/dev/shm/mdev_err.txt
 MDEV_LOG=/dev/shm/mdev_log.txt
 MDEV_CONFIG=/dev/shm/mdev.conf
 MDEV_DEBUG=0
+# shellcheck source=/dev/null
 [ -x $MDEV_CONFIG ] && . $MDEV_CONFIG
 
 MDEV_WINDOWS_PARTITIONS="exfat ntfs vfat"
@@ -22,15 +23,15 @@ read_label() {
 	device="$1"
 	label=""
 	id=""
-	if [ `expr match "$device" '/dev/.*'` != `expr length "$device"` ]; then device="/dev/$device"; fi
-	for s in `blkid $device`; do
+	if [ "$(expr "$device" : '/dev/.*')" != ${#device} ]; then device="/dev/$device"; fi
+	for s in $(blkid "$device"); do
 		case $s in
 		# MBR and GPT format use slightly different identifiers
 		UUID=* | PTUUID=* )
-			id=`expr match "$s" '.*=\"\(.*\)\"'`
+			id=$(expr "$s" : '.*=\"\(.*\)\"')
 			;;
 		LABEL=* )
-			label=`expr match "$s" '.*=\"\(.*\)\"'`
+			label=$(expr "$s" : '.*=\"\(.*\)\"')
 			;;
 		esac
 	done
@@ -44,9 +45,9 @@ read_label() {
 #
 remove_action () {
 	# Unmount the device via the mount point 
-	umount ${2}
+	umount "$2"
 	# Delete the mount point
-	rm -rf ${2}
+	rmdir "$2"
 }
 
 #
@@ -64,8 +65,8 @@ get_options() {
 	# filesystem independent options
 	options_out="$options_out,noatime,nodev,nosuid"
 	# set filesystem specific options
-	if [ grep -q "$filesystem_type" $MDEV_WINDOWS_PARTITIONS ] && \
-		! [ grep -iq "$partition_name" $MDEV_SYSTEM_PARTITIONS ] ; then
+	if grep -q "$filesystem_type" "$MDEV_WINDOWS_PARTITIONS" && \
+		! grep -iq "$partition_name" "$MDEV_SYSTEM_PARTITIONS" ; then
 		# set owner and group to mpd:audio
 		options_out="$options_out,gid=$gid,uid=$uid"
 		# set default permissions for new files /directories
@@ -83,19 +84,19 @@ get_options() {
 probe_filesystem() {
 	device_name=$1
 	# check for empty device name
-	if [ -z ${device_name} ] ; then exit 1 ; fi
+	if [ -z "$device_name" ] ; then exit 1 ; fi
 
 	# blkid has a field TYPE= 
-	id=$(blkid /dev/$device_name | \
+	id=$(blkid /dev/"$device_name" | \
 		awk '{ for(i=1; i<=NF; i++) \
 				{ if($i ~ "TYPE=") \
 					{type = gensub(".*=", "", "g", $i); \
 					print substr(type, 2, length(type)-2)} \
 				} \
 			}')
-	if [ -z ${id} ] ; then exit 1 ; fi
+	if [ -z "$id" ] ; then exit 1 ; fi
 
-	echo $id
+	echo "$id"
 	return 0
 }
 
@@ -110,7 +111,7 @@ fi
 # the script.
 
 # Execute only if an action is passed; otherwise exit
-if [ -z ${ACTION} ] ; then exit 0 ; fi
+if [ -z "$ACTION" ] ; then exit 0 ; fi
 
 # Make mountdir a var in case the pmount default directory ever changes
 mountdir="/media"
@@ -122,7 +123,7 @@ partition=0
 # Many linux utilities are hard-coded to work with these file descriptors.
 # So we need to manually open them. This file descriptor block device 
 # is missing on some systems
-if [ -b /dev/fd0 -a -b /dev/fd1 ]; then
+if [ -b /dev/fd0 ] && [ -b /dev/fd1 ]; then
 	0 < /dev/fd0
 	1 > /dev/fd1
 fi
@@ -131,12 +132,12 @@ fi
 # the value of the MDEV_DEBUG flag. Values >= 1 will enable this feature
 if [ $MDEV_DEBUG -gt 0 ]; then
 	exec 3<>$MDEV_ERR # open file for rw
-	while [ ! $? ]; do read <&3; done # seek operation
-	2>&3 # redirect standard error
+	while [ ! $? ]; do read -r <&3; done # seek operation
+	exec 2>&3 # redirect standard error
 fi
 
 # Check for various conditions during an "add" operation
-if [ "X${ACTION}" == "Xadd" ] ; then
+if [ "$ACTION" = add ] ; then
 
 	case "$DEVTYPE" in
 
@@ -158,10 +159,10 @@ if [ "X${ACTION}" == "Xadd" ] ; then
 fi
 
 # check for various conditions during a "remove" operation
-if [ "X${ACTION}" == "Xremove" ] ; then
+if [ "$ACTION" = remove ] ; then
 
 	# Check for a disk or regular partition
-	if [ "X${DEVTYPE}" == "Xpartition" ] || [ "X${DEVTYPE}" == "Xdisk" ] ; then
+	if [ "$DEVTYPE" = partition ] || [ "$DEVTYPE" = disk ] ; then
 
 		# Flag for unmounting if device exists in /proc/mounts mounted somewhere
 		# under the ${mountdir} directory (currently hardcoded as "/media").  It
@@ -176,30 +177,29 @@ if [ "X${ACTION}" == "Xremove" ] ; then
 	# directory is no longer listed in /proc/mounts.  This makes things more
 	# difficult.  The script has to walk through ${mountdir} and remove all
 	# directories that don't show up in /proc/mounts
-	for dir in $( ls ${mountdir} )
-	do
-		if [ -d ${mountdir}/${dir} ]; then
-			if ! grep -q " ${mountdir}/${dir} " /proc/mounts ; then
-				rm -rf ${mountdir}/${dir}
+	for dir in "$mountdir"/* ; do
+		if [ -d "$mountdir"/"$dir" ] ; then
+			if ! grep -q " $mountdir/$dir " /proc/mounts ; then
+				rm -rf ${mountdir:?}/"$dir"
 			fi
 		fi
 	done
 fi
 
 # If not flagged as a partition, bail out.
-if [ ${partition} -ne 1 ] ; then exit 0 ; fi
+if [ $partition -ne 1 ] ; then exit 0 ; fi
 
 # Also exit if device name is missing.
-if [ -z ${MDEV} ] ; then exit 0 ; fi
+if [ -z "$MDEV" ] ; then exit 0 ; fi
 
 # The "add" action.
-if [ "X${ACTION}" == "Xadd" ] ; then
+if [ "$ACTION" = add ] ; then
 
 	# retrieve the partition name
 	mountname=$(read_label "$MDEV")
 
 	# this should not happen
-	if [ -z ${mountname} ] ; then exit 0 ; fi
+	if [ -z "$mountname" ] ; then exit 0 ; fi
 
 	# retrieve the file system type
 	filesystem_type=$(probe_filesystem "$MDEV")
@@ -208,26 +208,26 @@ if [ "X${ACTION}" == "Xadd" ] ; then
 	mountoptions=$(get_options "$mountname" "$filesystem_type")
 
 	# mount directory already exists and is not empty
-	while [ -d ${mountdir}/${mountname} ] && [ "$(ls -A ${mountdir}/${mountname})" ] ; do 
+	while [ -d "$mountdir"/"$mountname" ] && [ "$(ls -A "$mountdir"/"$mountname")" ] ; do 
 		mountname="${mountname}_"; 
 	done
 
 	# Create the directory in ${mountdir}
 	umask 0022
-	mkdir -p ${mountdir}/${mountname}
+	mkdir -p "$mountdir"/"$mountname"
 
 	# Mount the directory in ${mountdir}
-	mount -t $filesystem_type -o $mountoptions /dev/${MDEV} ${mountdir}/${mountname}
+	mount -t "$filesystem_type" -o "$mountoptions" "/dev/$MDEV" "$mountdir"/"$mountname"
 
 	# print some debug info
 	if [ $MDEV_DEBUG -gt 0 ]; then echo "mounted $MDEV as $mountname with options $mountoptions" >> $MDEV_LOG; fi
 
 # The "remove" action.
-elif [ "X${ACTION}" == "Xremove" ] ; then
-	# Get info from /proc/mounts, and call remove_action to unmount 
-	# the device and remove the associated directory
+elif [ "$ACTION" = remove ] ; then
+	# Get info from /proc/mounts, and call remove_action to 
+	# unmount the device and remove the associated directory
 	procmounts=$(grep "^/dev/${MDEV} ${mountdir}/" /proc/mounts)
-	remove_action ${procmounts}
+	remove_action "$procmounts"
 	# print some debug info
 	if [ $MDEV_DEBUG -gt 0 ]; then echo "unmounted $MDEV from ${mountdir}" >> $MDEV_LOG; fi
 fi
