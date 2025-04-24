@@ -197,9 +197,17 @@ setup_copy_list() {
 				# create $d on target filesystem
 				mkdir -p "${dst_directory}${d}" || return 1
 				# copy (preserve symlinks)
-				cp -d "${src_directory}${s}" "${dst_directory}${s}"
-				touch -r "${src_directory}${s}" "${dst_directory}${s}"
-				echo "$script:  ${indent}Copied file $s"
+				_src="${src_directory}${s}"
+				_dst="${dst_directory}${s}"
+				[ -f "$_src" ] && _h1=$(_checksum "$_src")
+				[ -f "$_dst" ] && _h2=$(_checksum "$_dst")
+				if [ "$_h1" != "$_h2" ]; then 
+					cp -d "${src_directory}${s}" "${dst_directory}${s}"
+					touch -r "${src_directory}${s}" "${dst_directory}${s}"
+					echo "$script:  ${indent}Copied file $s"
+				else
+					echo "$script:  ${indent}Skipped $s"
+				fi
 			else
 				echo "$script:  ${indent}Missing entity $s"
 			fi
@@ -211,16 +219,20 @@ setup_copy_list() {
 # backup configuration files to config directory
 #
 setup_copy_shutdown() {
+	t=$(_timestamp)
 	echo "$script:  Export to ${config_directory}"
 	setup_copy_list "" "${config_directory}" "$NABLA_SYNC_DIRECTORIES $NABLA_SYNC_SHUTDOWN"
+	echo "$script:  Used $(( $(_timestamp) - t )) ms"
 }
 
 #
 # restore configuration from config directory
 #
 setup_copy_startup() {
+	t=$(_timestamp)
 	echo "$script:  Import from ${config_directory}"
 	setup_copy_list "${config_directory}" "" "$NABLA_SYNC_DIRECTORIES"
+	echo "$script:  Used $(( $(_timestamp) - t )) ms"
 }
 
 #
@@ -306,12 +318,12 @@ umask u+w,a+r
 
 case "$1" in
   start)
-	echo "Restoring configuration..."
+	echo "$script: Restoring configuration: "
 	setup_restore
 	echo "Done"
 	;;
   stop|sync)
-	echo "Backing up configuration..."
+	echo "$script: Persisting configuration: "
 	setup_backup
 	echo "Done"
 	;;

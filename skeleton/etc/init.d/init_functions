@@ -114,3 +114,14 @@ _get_irq() {
 	irq=$(grep "$process" /proc/interrupts | awk '{print $1}')
 	echo "${irq%:*}"
 }
+
+# read a timestamp with ms precision
+_timestamp() {
+	sec=$(date +'%S.%3N')
+	echo $(( ${sec%.*} * 1000 + ${sec#*.} ))
+}
+
+# calculat the checksum of a file
+_checksum() {
+	md5sum "$1" | awk '{print $1}'
+}
