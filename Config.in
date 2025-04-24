@@ -93,7 +93,7 @@ choice
 config NABLA_UNCONFIGURED
 	bool "unconfigured"
 	help
-	  Do not pre-select Music Player Demon software. 
+	  No music player software will be included in the build. 
 
 config NABLA_CLIENT
 	bool "client"
