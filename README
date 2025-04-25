@@ -15,8 +15,8 @@ Buildroot configurations exist for selected hardware platforms. The configs dire
 
   Active configurations:
   alix2_defconfig			PC Engines ALIX2 [1]
-  generic_i386_defconfig	32-bit Intel boards, Core2 or newer
-  generic_x86-64_defconfig	64-bit Intel Boards, Core2 or newer [2]
+  generic_x86-64_defconfig	64-bit Intel boards, Core2 or newer [2]
+  n100_defconfig			Intel N100, configured as mpd server (experimental)
   raspberrypi_defconfig		Raspberry 4 Model B [3]
 
 
@@ -69,4 +69,4 @@ Footnotes
 
 [1] This machine is hopelessly outdated, but since it performs quite well, it is still supported
 [2] SoC based mainboards, like J1800 and J1900 were found to perform well as music players
-[3] Only Raspberry 4 is supported, older models did show very poor scheduling jitter results, so were discontinued
+[3] Only Raspberry 4 is supported, older models exhibited very poor scheduling jitter results, so were discontinued
