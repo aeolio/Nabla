@@ -4,23 +4,6 @@
 #
 ################################################################################
 
-# Compiling older releases of kernel sources with GCC 8 results in warnings that
-# are treated as errors. To be able to build the standard kernel for RockPi4
-# without modification, some of these new compiler directives have to be removed.
-# Use for Radxa Rock Pi 4 vendor tree only
-target = $(findstring rockpi4,$(BR2_DEFCONFIG))
-ifeq ($(target),rockpi4)
-ifeq ($(BR2_TOOLCHAIN_GCC_AT_LEAST_8),y)
-LINUX_MAKE_ENV += KCFLAGS='-Wno-packed-not-aligned \
-	-Wno-attribute-alias \
-	-Wno-stringop-truncation \
-	-Wno-array-bounds \
-	-Wno-sizeof-pointer-memaccess \
-	-Wno-stringop-overflow \
-	-Wno-unused-function'
-endif
-endif # rockpi4 && GCC 8
-
 # if a base version patch directory exists, a directory 
 # for the current version should also be present
 define LINUX_PATCH_ASSURANCE
