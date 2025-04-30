@@ -1,0 +1,10 @@
+--- a/arch/x86/boot/Makefile	2025-04-27 09:05:45.105771131 +0200
++++ b/arch/x86/boot/Makefile	2025-04-27 08:48:05.813189396 +0200
+@@ -70,6 +70,7 @@
+ KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
+ KBUILD_CFLAGS	+= $(call cc-option,-fmacro-prefix-map=$(srctree)/=)
+ KBUILD_CFLAGS	+= -fno-asynchronous-unwind-tables
++KBUILD_CFLAGS	+= -std=gnu17
+ GCOV_PROFILE := n
+ UBSAN_SANITIZE := n
+ 
