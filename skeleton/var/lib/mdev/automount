@@ -8,12 +8,29 @@
 MDEV_ERR=/dev/shm/mdev_err.txt
 MDEV_LOG=/dev/shm/mdev_log.txt
 MDEV_CONFIG=/dev/shm/mdev.conf
-MDEV_DEBUG=0
+MDEV_DEBUG=2
 # shellcheck source=/dev/null
 [ -x $MDEV_CONFIG ] && . $MDEV_CONFIG
 
 MDEV_WINDOWS_PARTITIONS="exfat ntfs vfat"
 MDEV_SYSTEM_PARTITIONS="boot NABLA root"
+
+#
+# returns success if string $1 contains word $2, otherweise error
+#
+__contains() {
+	echo "$1" | grep -qw "$2"
+}
+
+#
+# check if a given device representss a disk or a partiton
+#
+__device_type() {
+	case "$1" in
+		sd[a-z]) echo disk ;;
+		sd[a-z][0-9]) echo partition ;;
+	esac
+}
 
 #
 # Retrieves the partition label of a block device. 
@@ -65,8 +82,8 @@ get_options() {
 	# filesystem independent options
 	options_out="$options_out,noatime,nodev,nosuid"
 	# set filesystem specific options
-	if grep -q "$filesystem_type" "$MDEV_WINDOWS_PARTITIONS" && \
-		! grep -iq "$partition_name" "$MDEV_SYSTEM_PARTITIONS" ; then
+	if __contains "$MDEV_WINDOWS_PARTITIONS" "$filesystem_type" && \
+		! __contains "$MDEV_SYSTEM_PARTITIONS" "$partition_name"  ; then
 		# set owner and group to mpd:audio
 		options_out="$options_out,gid=$gid,uid=$uid"
 		# set default permissions for new files /directories
@@ -107,7 +124,7 @@ if [ $MDEV_DEBUG -gt 1 ]; then
 fi
 
 # At bootup, "mdev -s" is called.  It does not pass any environmental
-# variables other than MDEV.  S if no ACTION variable is passed, exit
+# variables other than MDEV. So if no ACTION variable is passed, exit
 # the script.
 
 # Execute only if an action is passed; otherwise exit
@@ -134,6 +151,12 @@ if [ $MDEV_DEBUG -gt 0 ]; then
 	exec 3<>$MDEV_ERR # open file for rw
 	while [ ! $? ]; do read -r <&3; done # seek operation
 	exec 2>&3 # redirect standard error
+fi
+
+# Cold-plugging modules from sysfs during mdev startup seems to omit some 
+# environment variables.  Try to reconstruct DEVTYPE from the MDEV value.
+if [ "$SUBSYSTEM" = block ] && [ -z "$DEVTYPE" ] ; then
+	DEVTYPE=$(__device_type "$MDEV")
 fi
 
 # Check for various conditions during an "add" operation
@@ -168,7 +191,7 @@ if [ "$ACTION" = remove ] ; then
 		# under the ${mountdir} directory (currently hardcoded as "/media").  It
 		# really should be unmounted manually by the user before removal, but
 		# people don't always remember.
-		if grep "^/dev/${MDEV} ${mountdir}/" /proc/mounts 1>/dev/null ; then
+		if grep -q "^/dev/${MDEV} ${mountdir}/" /proc/mounts ; then
 			partition=1
 		fi
 	fi
