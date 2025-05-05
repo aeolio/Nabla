@@ -8,7 +8,7 @@
 MDEV_ERR=/dev/shm/mdev_err.txt
 MDEV_LOG=/dev/shm/mdev_log.txt
 MDEV_CONFIG=/dev/shm/mdev.conf
-MDEV_DEBUG=2
+MDEV_DEBUG=0
 # shellcheck source=/dev/null
 [ -x $MDEV_CONFIG ] && . $MDEV_CONFIG
 
