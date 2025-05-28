@@ -1,0 +1,9 @@
+config BR2_PACKAGE_PIHOLE_WEB
+	bool "pihole-web"
+	depends on BR2_PACKAGE_PIHOLE_FTL
+	help
+	  Pi-hole's Web interface (based off of AdminLTE) provides a central
+	  location to manage your Pi-hole and review the statistics generated
+	  by FTLDNS.
+
+	  https://pi-hole.net

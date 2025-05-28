@@ -1,0 +1,74 @@
+#!/bin/sh
+#
+# S50ftldns		Starts pihole-FTL DNS server.
+#
+# shellcheck disable=SC2317 # functions are called via variable
+
+DAEMON="pihole-FTL"
+PIDFILE="/var/run/$DAEMON.pid"
+
+# Create missing directories
+LOGDIR=/var/log/pihole
+[ ! -d $LOGDIR ] && mkdir -p $LOGDIR && chown pihole:pihole $LOGDIR
+
+umask 077
+
+start() {
+	printf "Starting %s: " "$DAEMON"
+	start-stop-daemon --start --pidfile "$PIDFILE" \
+		--exec "/usr/bin/$DAEMON"
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	return "$status"
+}
+
+stop() {
+	printf "Stopping %s: " "$DAEMON"
+	start-stop-daemon --stop --pidfile "$PIDFILE" \
+		--exec "/usr/bin/$DAEMON"
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	# $DAEMON clears its PID file on exit, but does not delete it
+	while grep -q '[^[:space:]]' "$PIDFILE" ; do
+		sleep 0.1s
+	done
+	rm "$PIDFILE"
+	return "$status"
+}
+
+restart() {
+	stop
+	start
+}
+
+reload() {
+	printf "Reloading %s config: " "$DAEMON"
+	start-stop-daemon --stop --signal HUP -q --pidfile "$PIDFILE" \
+		--exec "/usr/sbin/$DAEMON"
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	return "$status"
+}
+
+case "$1" in
+	start|stop|reload|restart)
+		"$1"
+		;;
+	*)
+		echo "Usage: $0 {start|stop|reload|restart}"
+		exit 1
+esac
+
+exit $?

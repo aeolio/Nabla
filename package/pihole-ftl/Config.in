@@ -1,0 +1,37 @@
+config BR2_PACKAGE_PIHOLE_FTL
+	bool "pihole-ftl"
+	select BR2_PACKAGE_NETTLE	# DNSSEC support
+	select BR2_PACKAGE_LIBCURL	# gravity list download
+	select BR2_PACKAGE_LIBIDN2	# internationalized domain names
+	select BR2_PACKAGE_LIBUNISTRING
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	help
+	  The Pi-hole is a DNS sinkhole that protects your devices from
+	  unwanted content without installing any client-side software..
+
+	  FTLDNS (pihole-FTL) provides an interactive API and also generates
+	  statistics for Pi-hole's Web interface.
+
+	  https://pi-hole.net
+
+if BR2_PACKAGE_PIHOLE_FTL
+
+config BR2_PACKAGE_PIHOLE_FTL_READLINE
+	bool "readline support"
+	select BR2_PAcKAGE_READLINE	# also supplies libhistory
+	select BR2_PACKAGE_NCURSES	# replace libtermcap
+	help
+	  "Build pihole-ftl with readline support."
+
+config BR2_PACKAGE_PIHOLE_FTL_TLS
+	bool "TLS support"
+	# missing LIBMBEDCRYPTO
+	# missing LIBMBEDX509
+	select BR2_PACKAGE_MBEDTLS
+	help
+	  "Enable TLS support in web interface"
+
+endif
+
+comment "pihole-ftl needs a toolchain w/ threads"
+	depends on !BR2_TOOLCHAIN_HAS_THREADS

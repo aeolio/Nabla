@@ -1,0 +1,65 @@
+0008-args-fix-compile-without-mbedtls.patch
+
+	Fix build without mbedtls:
+
+	mbedtls is an optional dependency, but functionality is included 
+	unconditionally in the build, which leads to a linker error: "args.c.o:
+	in function `parse_args': undefined reference to `generate_certificate'"
+	Use HAVE_MBEDTLS symbol declared by CMakeFiles.txt to assert that 
+	respective code is only included, if mbedtls is present in the build. 
+
+0007-signals-uclibc-missing-symbols.patch
+
+	Fix undeclared symbols in signal handler:
+
+	Building with uClibc fails with "error: ‘BUS_MCEERR_AR’ undeclared
+	(first use in this function)". Bracket undeclared symbols with
+	precompiler directives.
+
+0006-netlink-uclibc-missing-symbols.patch
+
+	Fix undeclared symbols in netlink protocol handler:
+
+	Building with uClibc and a Linux 5.x kernel fails with "error:
+	‘ARPHRD_MCTP’ undeclared here". Bracket undeclared symbols with
+	precompiler directives.
+
+0005-signals-uclibc-missing-backtrace.patch
+
+	Let CMake handle execinfo.h detection:
+
+	The __GLIBC__ logic to detect stack backtracing capability fails for
+	uClibc, because uClibc also defines these symbols, but does not provide
+	backtrace functionality. Put a rule into CMakeLists.txt to detect
+	execinfo.h and control backtracing code with a #define. 
+
+0004-centralize-sys-random-handling.patch
+
+	Let CMake handle sys/random.h detection:
+
+	The __GLIBC__ version check causes problems with uClibc, because this
+	library also defines these variables. Put a rule into CMakeLists.txt to
+	detect sys/random.h and control inclusion with a #define. 
+
+0003-civetweb-uclibc-gettid.patch
+
+	uClibc: Fix missing gettid() library function:
+
+	The uClibc library does not implement a function for gettid(). Define a
+	macro that executes a system call if uClibc is detected.
+
+0002-webserver-cmakelists-fix-absolute-include-path.patch
+
+	Fix build error using buildroot:
+
+	Buildroot fails with "gcc: ERROR: unsafe header/library path used in 
+	cross-compilation: '-I/usr/local/include'". Prepend include path with 
+	CMAKE_SYSROOT instead. 
+
+0001-cmakelists-reorder-cflags.patch
+
+    Improve grouping of CFLAGS into HARDENING and DEBUG variables
+    
+    Compiler flags related to stack unwinding are found both in HARDENING
+    and DEBUG variables. Group all stack unwinding flags under DEBUG, and
+    remove double entries from HARDENING.

@@ -68,6 +68,18 @@ config BR2_PACKAGE_NCURSES_WIDE
 	default y if BR2_PACKAGE_NCURSES && BR2_USE_WCHAR
 	select BR2_PACKAGE_NCURSES_WCHAR
 
+# libcurl needs ca-certificates for ssl connections
+config BR2_PACKAGE_LIBCURL_CA_CERTIFICATES
+	bool
+	default y if BR2_PACKAGE_LIBCURL
+	select BR2_PACKAGE_CA_CERTIFICATES
+
+# for libcurl enable zlib support (probably already included)
+config BR2_PACKAGE_LIBCURL_ZLIB
+	bool
+	default y if BR2_PACKAGE_LIBCURL
+	select BR2_PACKAGE_ZLIB
+
 
 #
 # external options menu
@@ -145,3 +157,8 @@ menu "Hardware handling"
 endmenu
 
 endif # BR2_arm || BR2_aarch64
+
+menu "Networking applications"
+	source "$BR2_EXTERNAL_NABLA_PATH/package/pihole-ftl/Config.in"
+	source "$BR2_EXTERNAL_NABLA_PATH/package/pihole-web/Config.in"
+endmenu
