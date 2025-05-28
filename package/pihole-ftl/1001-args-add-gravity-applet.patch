@@ -1,3 +1,6 @@
+Upstream: not sent
+
+Signed-off-by: Andreas Ziegler <br015@umbiko.net>
 --- a/src/args.c
 +++ b/src/args.c
 @@ -70,6 +70,8 @@

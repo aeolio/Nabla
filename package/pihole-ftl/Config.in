@@ -1,16 +1,16 @@
 config BR2_PACKAGE_PIHOLE_FTL
 	bool "pihole-ftl"
+	depends on BR2_TOOLCHAIN_HAS_THREADS
 	select BR2_PACKAGE_NETTLE	# DNSSEC support
 	select BR2_PACKAGE_LIBCURL	# gravity list download
 	select BR2_PACKAGE_LIBIDN2	# internationalized domain names
 	select BR2_PACKAGE_LIBUNISTRING
-	depends on BR2_TOOLCHAIN_HAS_THREADS
 	help
 	  The Pi-hole is a DNS sinkhole that protects your devices from
-	  unwanted content without installing any client-side software..
+	  unwanted content without installing any client-side software.
 
-	  FTLDNS (pihole-FTL) provides an interactive API and also generates
-	  statistics for Pi-hole's Web interface.
+	  FTLDNS (pihole-FTL) provides an interactive API and also
+	  generates statistics for Pi-hole's Web interface.
 
 	  https://pi-hole.net
 
