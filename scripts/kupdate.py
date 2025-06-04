@@ -140,10 +140,14 @@ class KernelPatches(KernelVersions):
 		''' strips a patch file name to retrieve the patch version number '''
 		if basename:
 			r = basename.rstrip(self._pattern[-9:]).split('-')
-			pat = 'rt[0-9]'
-			p = '-'.join(r[[i for i, v in enumerate(r) if search(pat, v)][-1]:])
-			return p
-		return basename
+			pat = [ r'rt[0-9]+', r'rc[0-9]+', ]
+			# isolate patch version rt[0-9]-rc[0-9]
+			r = r[[i for i, v in enumerate(r) if search(pat[0], v)][-1]:]
+			# maximum patch number = 999
+			l = int(r[0].lstrip(pat[0][:2])) * 1000
+			l += int(r[1].lstrip(pat[1][:2])) if len(r) > 1 else 0
+			return l
+		return 0
 
 	def get_version(self, base_version, matching=False):
 		''' overload kernel version: return the latest version (x.y.z)
@@ -346,7 +350,8 @@ def kupdate(argv):
 
 	dirname = os.path.dirname(os.path.realpath(argv[0]))
 	filename = os.path.join(dirname, CONFIG_FILE)
-	while not os.path.ismount(dirname) and not os.path.exists(filename):
+	homedir = os.path.dirname(os.path.realpath('~'))
+	while not os.path.samefile(dirname, homedir) and not os.path.exists(filename):
 		dirname = os.path.dirname(dirname)
 		filename = os.path.join(dirname, CONFIG_FILE)
 
