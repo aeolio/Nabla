@@ -2,11 +2,11 @@
 # from kernel version 6.6.y to 6.x.y bleeding edge
 
 # general setup
-CONFIG_PREEMPT_LAZY=Y
+CONFIG_PREEMPT_LAZY=y
 
 # Processor type and features
-CONFIG_X86_CPU_RESCTRL=Y
-CONFIG_X86_FRED=Y
+CONFIG_X86_CPU_RESCTRL=y
+CONFIG_X86_FRED=y
 
 # General architecture-dependent options
 # CONFIG_STACKPROTECTOR is not set
@@ -14,15 +14,15 @@ CONFIG_X86_FRED=Y
 # Device drivers -> Ethernet driver support
 # CONFIG_NET_VENDOR_HISILICON is not set
 # new Intel devices
-CONFIG_IWLMLD=Y
+CONFIG_IWLMLD=y
 
 # Device drivers -> PIN controllers
 # switch from Baytrail to Alder Lake
 # CONFIG_PINCTRL_BAYTRAIL is not set
-CONFIG_PINCTRL_ALDERLAKE=Y
+CONFIG_PINCTRL_ALDERLAKE=y
 
 # Device drivers -> USB support
-CONFIG_USB_FEW_INIT_RETRIES=Y
+CONFIG_USB_FEW_INIT_RETRIES=y
 CONFIG_USB_UHCI_HCD=m
 
 # Device drivers -> Staging drivers
