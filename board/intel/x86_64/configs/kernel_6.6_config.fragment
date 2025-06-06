@@ -13,4 +13,4 @@ CONFIG_EXPERT=y
 # CONFIG_LDISC_AUTOLOAD is not set
 
 # File systems -> Pseudo file systems
-CONFIG_TMPFS_INODE64=Y
+CONFIG_TMPFS_INODE64=y
