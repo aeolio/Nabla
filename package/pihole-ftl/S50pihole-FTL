@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# S50ftldns		Starts pihole-FTL DNS server.
+# S50pihole-FTL	Starts pihole-FTL DNS server.
 #
 # shellcheck disable=SC2317 # functions are called via variable
 
