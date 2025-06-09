@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-PIHOLE_FTL_VERSION = 6.1
-PIHOLE_FTL_SITE = $(call github,aeolio,pihole-ftl,46d256f)
+PIHOLE_FTL_VERSION = 6.1.2
+PIHOLE_FTL_SITE = $(call github,aeolio,pihole-ftl,655f0e6)
 #PIHOLE_FTL_SITE = /home/iago/staging/pi-hole/pihole-ftl
 #PIHOLE_FTL_SITE_METHOD = local
 PIHOLE_FTL_LICENSE = EUPL-1.2
@@ -70,8 +70,8 @@ endef
 PIHOLE_FTL_POST_INSTALL_TARGET_HOOKS += PIHOLE_FTL_INSTALL_EXTRA_FILES
 
 define PIHOLE_FTL_INSTALL_INIT_SYSV
-	$(INSTALL) -m 0755 -D $(PIHOLE_FTL_PKGDIR)/S50ftldns \
-		$(TARGET_DIR)/etc/init.d/S50ftldns
+	$(INSTALL) -m 0755 -D $(PIHOLE_FTL_PKGDIR)/S50pihole-FTL \
+		$(TARGET_DIR)/etc/init.d/S50pihole-FTL
 endef
 
 # ftldns user
