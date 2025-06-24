@@ -164,7 +164,7 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
 +				trace_seq_printf(trace->seq, "        - ");
 +		}
 +
-+		if (params->user_hist) {
++		if (params->user_data) {
 +			if (data->hist[cpu].user_count) {
 +				double var = ((double) data->hist[cpu].var_user) /
 +					(data->hist[cpu].user_count-1);
