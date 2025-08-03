@@ -18,8 +18,8 @@ if BR2_PACKAGE_PIHOLE_FTL
 
 config BR2_PACKAGE_PIHOLE_FTL_READLINE
 	bool "readline support"
-	select BR2_PAcKAGE_READLINE	# also supplies libhistory
-	select BR2_PACKAGE_NCURSES	# replace libtermcap
+	select BR2_PACKAGE_READLINE	# also supplies libhistory
+	# ncurses is selected by readline, supplies terminfo, which replaces libtermcap
 	help
 	  "Build pihole-ftl with readline support."
 

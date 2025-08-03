@@ -16,6 +16,14 @@ PIHOLE_FTL_DEPENDENCIES += nettle \
 	libidn2 \
 	libunistring
 
+ifeq ($(BR2_PACKAGE_PIHOLE_FTL_READLINE),y)
+PIHOLE_FTL_DEPENDENCIES += readline
+endif
+
+ifeq ($(BR2_PACKAGE_PIHOLE_FTL_TLS),y)
+PIHOLE_FTL_DEPENDENCIES += mbedtls
+endif
+
 # build locations
 PIHOLE_FTL_CMAKEFILE = $(@D)/src/CMakeLists.txt
 # target locations
