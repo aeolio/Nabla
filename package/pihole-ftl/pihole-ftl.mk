@@ -45,8 +45,8 @@ ifeq ($(BR2_TOOLCHAIN_HAS_SSP),)
 define PIHOLE_FTL_DISABLE_STACK_PROTECTOR
 	$(SED) '/HARDENING_FLAGS/ s/-fstack-protector[-a-z]*//' $(PIHOLE_FTL_CMAKEFILE)
 endef
-endif
 PIHOLE_FTL_PRE_CONFIGURE_HOOKS += PIHOLE_FTL_DISABLE_STACK_PROTECTOR
+endif
 
 # development workaround
 define PIHOLE_FTL_GRAVITY
