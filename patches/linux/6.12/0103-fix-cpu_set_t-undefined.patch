@@ -1,0 +1,27 @@
+--- a/tools/tracing/rtla/src/osnoise.c
++++ b/tools/tracing/rtla/src/osnoise.c
+@@ -3,6 +3,7 @@
+  * Copyright (C) 2021 Red Hat Inc, Daniel Bristot de Oliveira <bristot@kernel.org>
+  */
+ 
++#define _GNU_SOURCE
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <pthread.h>
+--- a/tools/tracing/rtla/src/trace.h
++++ b/tools/tracing/rtla/src/trace.h
+@@ -1,4 +1,5 @@
+ // SPDX-License-Identifier: GPL-2.0
++#define _GNU_SOURCE
+ #include <tracefs.h>
+ #include <stddef.h>
+ 
+--- a/tools/tracing/rtla/src/utils.h
++++ b/tools/tracing/rtla/src/utils.h
+@@ -1,5 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0
+ 
++#define _GNU_SOURCE
+ #include <stdint.h>
+ #include <time.h>
+ #include <sched.h>
