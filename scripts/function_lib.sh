@@ -3,6 +3,7 @@
 
 # 2016-06-15 replaced BUILDROOT_TARGET with the predefined TARGET_DIR
 # 2020-04-05 remove user/group functions and replace with standard buildroot functionality
+# 2025-08-07 make get_config_value() compatible with make files
 
 ### add mount point
 add_mountpoint() { 
@@ -52,8 +53,8 @@ is_config_selected() {
 # $1 = file name
 # $2 = variable name
 get_config_value() {
-	CONFIG_SETTING="$2=\".*\""
-	CONFIG_VALUE=$(grep $CONFIG_SETTING $1)
+	CONFIG_PATTERN="$2[[:blank:]]?=[[:blank:]]?\"?.*\"?"
+	CONFIG_VALUE=$(grep -E $CONFIG_PATTERN $1)
 	CONFIG_VALUE=${CONFIG_VALUE##*=}
 	CONFIG_VALUE=$(echo ${CONFIG_VALUE} | sed 's/^"\(.*\)"$/\1/')
 	echo $CONFIG_VALUE
