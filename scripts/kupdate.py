@@ -156,7 +156,7 @@ class KernelPatches(KernelVersions):
 		if matching and base_version in self.patch_versions:
 			return self.patch_versions[base_version]['matching_version']
 		return super().get_version(base_version)
-		
+
 
 class PackageVersion:
 	''' package versions, retrived from release-monitoring.org and github tags '''
