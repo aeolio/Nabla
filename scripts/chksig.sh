@@ -31,7 +31,8 @@ signature_file=$archive_file.sig
 cd $download_dir || exit 1
 
 key_id=0x236e8a58c6db4512
-key_file="max kellermann.asc"
+# key_file="max kellermann pgp_mit_edu.asc"
+key_file="max kellermann de_pgpkeys_eu.asc"
 key_server="https://sks.pgpkeys.eu"
 if ! gpg --with-colons --list-keys $key_id; then
 	if [ ! -f "$key_file" ]; then
