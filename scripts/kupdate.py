@@ -111,6 +111,7 @@ class KernelPatches(KernelVersions):
 						p = s.split()
 						t = mktime(strptime(' '.join(p[1:3]), self._time_format))
 						v = p[0]
+						break	# use the first entry, list is sorted by date
 
 				# matching kernel version
 				mv = v.split('-')
