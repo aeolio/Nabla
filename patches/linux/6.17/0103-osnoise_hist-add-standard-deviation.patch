@@ -1,0 +1,69 @@
+Add standard deviation calculation and printout for osnoise and timerlat
+
+Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+---
+diff -Naur tools/tracing/rtla/src/osnoise_hist.c /home/iago/rpi64/build/linux-6.1.15/tools/tracing/rtla/src/osnoise_hist.c
+--- a/tools/tracing/rtla/src/osnoise_hist.c
++++ b/tools/tracing/rtla/src/osnoise_hist.c
+@@ -21,6 +21,7 @@
+ 
+ 	unsigned long long	min_sample;
+ 	unsigned long long	sum_sample;
++	unsigned long long	var_sample;
+ 	unsigned long long	max_sample;
+ 
+ };
+@@ -98,6 +99,7 @@
+ 	struct osnoise_params *params = tool->params;
+ 	struct osnoise_hist_data *data = tool->data;
+ 	unsigned long long total_duration;
++	unsigned long long variance;
+ 	int entries = data->entries;
+ 	int bucket;
+ 	int *hist;
+@@ -108,11 +110,13 @@
+ 	bucket = duration / data->bucket_size;
+ 
+ 	total_duration = duration * count;
++	variance = total_duration * duration;
+ 
+ 	hist = data->hist[cpu].samples;
+ 	data->hist[cpu].count += count;
+ 	update_min(&data->hist[cpu].min_sample, &duration);
+ 	update_sum(&data->hist[cpu].sum_sample, &total_duration);
++	update_sum(&data->hist[cpu].var_sample, &variance);
+ 	update_max(&data->hist[cpu].max_sample, &duration);
+ 
+ 	if (bucket < entries)
+@@ -329,6 +333,31 @@
+ 
+ 		trace_seq_printf(trace->seq, "%9llu ", data->hist[cpu].max_sample);
+ 
++	}
++	trace_seq_printf(trace->seq, "\n");
++
++	/* standard deviation */
++	if (!params->no_index)
++		trace_seq_printf(trace->seq, "sd:   ");
++
++	for (cpu = 0; cpu < data->nr_cpus; cpu++) {
++		if (params->cpus && !CPU_ISSET(cpu, &params->monitored_cpus))
++			continue;
++
++		if (!data->hist[cpu].count)
++			continue;
++
++		double var = ((double) data->hist[cpu].var_sample) /
++			(data->hist[cpu].count-1);
++		double avg = ((double) data->hist[cpu].sum_sample) * 
++			data->hist[cpu].sum_sample /
++			(data->hist[cpu].count-1) /
++			data->hist[cpu].count;
++
++		if (data->hist[cpu].count)
++			trace_seq_printf(trace->seq, "%9.2f ", sqrth(var - avg));
++		else
++			trace_seq_printf(trace->seq, "        - ");
+ 	}
+ 	trace_seq_printf(trace->seq, "\n");
+ 	trace_seq_do_printf(trace->seq);

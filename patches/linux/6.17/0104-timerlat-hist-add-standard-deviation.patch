@@ -1,0 +1,121 @@
+Add standard deviation calculation and printout for osnoise and timerlat
+
+Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+---
+diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6.1.15/tools/tracing/rtla/src/timerlat_hist.c
+--- a/tools/tracing/rtla/src/timerlat_hist.c
++++ b/tools/tracing/rtla/src/timerlat_hist.c
+@@ -30,14 +30,17 @@
+ 
+ 	unsigned long long	min_irq;
+ 	unsigned long long	sum_irq;
++	unsigned long long	var_irq;
+ 	unsigned long long	max_irq;
+ 
+ 	unsigned long long	min_thread;
+ 	unsigned long long	sum_thread;
++	unsigned long long	var_thread;
+ 	unsigned long long	max_thread;
+ 
+ 	unsigned long long	min_user;
+ 	unsigned long long	sum_user;
++	unsigned long long	var_user;
+ 	unsigned long long	max_user;
+ };
+ 
+@@ -137,6 +140,7 @@
+ {
+ 	struct timerlat_params *params = tool->params;
+ 	struct timerlat_hist_data *data = tool->data;
++	unsigned long long variance;
+ 	int entries = data->entries;
+ 	int bucket;
+ 	int *hist;
+@@ -145,18 +149,22 @@
+ 		latency = latency / params->output_divisor;
+ 
+ 	bucket = latency / data->bucket_size;
++
++	variance = latency * latency;
+ 
+ 	if (!context) {
+ 		hist = data->hist[cpu].irq;
+ 		data->hist[cpu].irq_count++;
+ 		update_min(&data->hist[cpu].min_irq, &latency);
+ 		update_sum(&data->hist[cpu].sum_irq, &latency);
++		update_sum(&data->hist[cpu].var_irq, &variance);
+ 		update_max(&data->hist[cpu].max_irq, &latency);
+ 	} else if (context == 1) {
+ 		hist = data->hist[cpu].thread;
+ 		data->hist[cpu].thread_count++;
+ 		update_min(&data->hist[cpu].min_thread, &latency);
+ 		update_sum(&data->hist[cpu].sum_thread, &latency);
++		update_sum(&data->hist[cpu].var_user, &variance);
+ 		update_max(&data->hist[cpu].max_thread, &latency);
+ 	} else { /* user */
+ 		hist = data->hist[cpu].user;
+@@ -467,6 +475,64 @@
+ 					     false);
+ 	}
+ 	trace_seq_printf(trace->seq, "\n");
++
++	/* standard deviation */
++	if (!params->no_index)
++		trace_seq_printf(trace->seq, "sd:   ");
++
++	for (cpu = 0; cpu < data->nr_cpus; cpu++) {
++		if (params->cpus && !CPU_ISSET(cpu, &params->monitored_cpus))
++			continue;
++
++		if (!data->hist[cpu].irq_count 
++			&& !data->hist[cpu].thread_count 
++			&& !data->hist[cpu].user_count)
++			continue;
++
++		if (!params->no_irq) {
++			if (data->hist[cpu].irq_count) {
++				double var = ((double) data->hist[cpu].var_irq) / 
++					(data->hist[cpu].irq_count-1);
++				double avg = ((double) data->hist[cpu].sum_irq) * 
++					data->hist[cpu].sum_irq / 
++					((data->hist[cpu].irq_count-1) * data->hist[cpu].irq_count);
++				trace_seq_printf(trace->seq, "%9.2f ", sqrth(var - avg));
++			}
++			else
++				trace_seq_printf(trace->seq, "        - ");
++		}
++
++		if (!params->no_thread) {
++			if (data->hist[cpu].thread_count) {
++				double var = ((double) data->hist[cpu].var_thread) /
++					(data->hist[cpu].thread_count-1);
++				double avg = ((double) data->hist[cpu].sum_thread) *
++					data->hist[cpu].sum_thread /
++					(data->hist[cpu].thread_count-1) /
++					data->hist[cpu].thread_count;
++				trace_seq_printf(trace->seq, "%9.2f ", sqrth(var - avg));
++			}
++			else
++				trace_seq_printf(trace->seq, "        - ");
++		}
++
++		if (params->user_data) {
++			if (data->hist[cpu].user_count) {
++				double var = ((double) data->hist[cpu].var_user) /
++					(data->hist[cpu].user_count-1);
++				double avg = ((double) data->hist[cpu].sum_user) *
++					data->hist[cpu].sum_user /
++					(data->hist[cpu].user_count-1) /
++					data->hist[cpu].user_count;
++				trace_seq_printf(trace->seq, "%9.2f ", sqrth(var - avg));
++			}
++			else
++				trace_seq_printf(trace->seq, "        - ");
++		}
++	}
++	trace_seq_printf(trace->seq, "\n");
++	/* end standard deviation */
++	
+ 	trace_seq_do_printf(trace->seq);
+ 	trace_seq_reset(trace->seq);
+ }
