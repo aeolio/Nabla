@@ -11,7 +11,7 @@ if BR2_TOOLCHAIN_HEADERS_LATEST
 
 config NABLA_LINUX_VERSION
 	string
-	default "6.17-rc1"
+	default "6.17-rc2"
 config NABLA_LINUX_PATCH
 	string
 	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.17/patch-6.17-rc1-rt1.patch.xz"
