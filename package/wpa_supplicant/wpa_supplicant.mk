@@ -10,7 +10,7 @@ define WPA_SUPPLICANT_REMOVE_CONFIG
 endef
 WPA_SUPPLICANT_POST_INSTALL_TARGET_HOOKS += WPA_SUPPLICANT_REMOVE_CONFIG
 
-# remove ifupdown scripts that interfere with 
+# remove ifupdown scripts that interfere with
 # wpa_supplicant started from init script
 define WPA_SUPPLICANT_REMOVE_IFUPDOWN_SCRIPTS
 	rm -f $(TARGET_DIR)/etc/network/if-down.d/wpasupplicant

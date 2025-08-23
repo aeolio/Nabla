@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-# if a base version patch directory exists, a directory 
-# for the current version should also be present
+# if a base version patch directory exists,
+# a directory for the current version must also be present
 define LINUX_PATCH_ASSURANCE
 	patch_dirs=$(BR2_GLOBAL_PATCH_DIR); \
 	pkg_name=linux; \

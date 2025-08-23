@@ -26,8 +26,8 @@ define MPD_MODIFY_INIT_SCRIPT
 endef
 MPD_POST_INSTALL_TARGET_HOOKS += MPD_MODIFY_INIT_SCRIPT
 
-# if a base version patch directory exists, a symbolic link 
-# for the current version should also be present
+# if a base version patch directory exists,
+# a directory for the current version must also be present
 define MPD_PATCH_ASSURANCE
 	patch_dirs=$(BR2_GLOBAL_PATCH_DIR); \
 	pkg_name=mpd; \
