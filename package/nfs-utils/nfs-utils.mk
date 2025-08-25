@@ -23,3 +23,11 @@ define NFS_UTILS_CREATE_RECOVERY_DIR
 endef
 NFS_UTILS_POST_INSTALL_TARGET_HOOKS += NFS_UTILS_CREATE_RECOVERY_DIR
 endif
+
+# nfs-utils installs a rule anyway, regardless of udev presence on target system
+ifneq ($(BR2_PACKAGE_HAS_UDEV),y)
+define NFS_UTILS_REMOVE_UDEV
+	rm $(TARGET_DIR)/usr/lib/udev/rules.d/99-nfs.rules
+endef
+NFS_UTILS_POST_INSTALL_TARGET_HOOKS += NFS_UTILS_REMOVE_UDEV
+endif
