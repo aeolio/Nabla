@@ -144,7 +144,7 @@ replace_symbols $RELEASE_FILE
 
 ### remove unnecessary items from target filesystem
 # empty directories
-remove_directories="lib/udev/rules.d usr/lib/ntfs-3g"
+remove_directories="lib/udev/rules.d usr/lib/udev/rules.d usr/lib/ntfs-3g"
 for d in $remove_directories; do
 	[ -d ${TARGET_DIR}/$d ] && rmdir -p ${TARGET_DIR}/$d
 done
