@@ -159,6 +159,44 @@ class KernelPatches(KernelVersions):
 		return super().get_version(base_version)
 
 
+class CIPKernelVersion:
+	''' Supported CIP kernel versions as found on kernel.org '''
+
+	_kernel_branch = '5.10'
+	_kernel_url = \
+		f"https://www.kernel.org/pub/linux/kernel/projects/cip/{_kernel_branch}/"
+	_pattern = r'linux-cip-\d+.\d{1,2}.\d{1,3}-cip\d+-rt\d+.tar.xz'
+	kernel_version = ''
+
+	def __init__(self):
+		requests.request('GET',
+			self._kernel_url,
+			timeout = TIMEOUT,
+			hooks = {'response': self.process_kernel_versions})
+
+	def process_kernel_versions(self, response, **kwargs):
+		''' Response function: retrieve the latest version
+			from the given result page. '''
+		if kwargs:
+			del kwargs	# W0613: unused-argument
+		kernel_versions = {}
+		page = soup(response.text, 'html.parser')
+		a = page.find_all('a')
+		for t in a:
+			r = t.text
+			if search(self._pattern, r):
+				p = r.split('-')
+				v = int(p[-2].replace('cip', ''))
+				p[-1] = p[-1].replace(self._pattern[-7:], '')
+				kernel_versions[v] = '-'.join(p[2:])
+		v = sorted(kernel_versions.keys())[-1]
+		self.kernel_version = f'"{kernel_versions[v]}"'
+
+	def get_latest_version(self):
+		''' get the latest CIP RT version for the configured kernel tree '''
+		return self._kernel_branch, self.kernel_version
+
+
 class PackageVersion:
 	''' package versions, retrived from release-monitoring.org and github tags '''
 
@@ -214,6 +252,7 @@ class PackageVersion:
 # strings for parsing
 CUSTOM_VERSION = 'BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM'
 LATEST_VERSION = 'BR2_TOOLCHAIN_HEADERS_LATEST'
+LATEST_CIP_VERSION = 'BR2_LINUX_KERNEL_LATEST_CIP_RT_VERSION'
 # flags for parsing
 LINUX_VERSION = 1
 LINUX_PATCH = 2
@@ -232,6 +271,7 @@ class LineParser:
 		self.matching = matching
 		self.mtime = mtime
 		self.versions = KernelPatches()
+		self.cip_version = CIPKernelVersion()
 
 	def terminal_error(self, message):
 		''' Terminate the program with an error message '''
@@ -248,7 +288,10 @@ class LineParser:
 			if self._config_symbol == LATEST_VERSION:
 				self._header_version = \
 					self.versions.get_latest_version()[0]
-			if self._config_symbol.startswith(CUSTOM_VERSION):
+			elif self._config_symbol == LATEST_CIP_VERSION:
+				self._header_version = \
+					self.cip_version.get_latest_version()[0]
+			elif self._config_symbol.startswith(CUSTOM_VERSION):
 				self._header_version = \
 					'.'.join(self._config_symbol.split('_')[-2:])
 			if not self._header_version:
@@ -272,7 +315,16 @@ class LineParser:
 		t = line.strip().split(' ')
 		if t[0] == 'default':
 
-			if self._config_block == LINUX_VERSION:
+			if	self._config_block == LINUX_VERSION and \
+				self._config_symbol == LATEST_CIP_VERSION:
+				v = self.cip_version.get_latest_version()[1]
+				if v != t[1]:
+					print(f"{self._config_symbol}: replace {t[1]} with {v}")
+					t[1] = v
+					line = '\t' + ' '.join(list(t)) + '\n'
+					self.changes_made += 1
+
+			elif self._config_block == LINUX_VERSION:
 				kv = self.versions.get_version(self._header_version, matching=self.matching)
 				v = '"' + kv + '"'
 				if v != t[1]:
