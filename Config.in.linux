@@ -58,3 +58,13 @@ config NABLA_LINUX_PATCH
 	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/5.10/patch-5.10.241-rt134.patch.xz"
 
 endif # BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_10
+
+# CIP kernel to eventually trplace Linux kernel 5.10.y
+# this needs Buildroot linux/Config.in to be patched
+if BR2_LINUX_KERNEL_LATEST_CIP_RT_VERSION
+
+config NABLA_LINUX_VERSION
+	string
+	default "5.10.239-cip62-rt27"
+
+endif # BR2_LINUX_KERNEL_LATEST_CIP_RT_VERSION
