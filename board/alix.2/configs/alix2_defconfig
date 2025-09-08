@@ -49,6 +49,8 @@ CONFIG_X86_MSR=y
 CONFIG_X86_CPUID=y
 CONFIG_NOHIGHMEM=y
 CONFIG_VMSPLIT_2G=y
+# not supported by this architecture 
+# CONFIG_MTRR is not set
 CONFIG_HZ_100=y
 # CONFIG_MODIFY_LDT_SYSCALL is not set
 # CONFIG_SUSPEND is not set
