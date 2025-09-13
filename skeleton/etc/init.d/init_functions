@@ -125,3 +125,8 @@ _timestamp() {
 _checksum() {
 	md5sum "$1" | awk '{print $1}'
 }
+
+# check if a directory is empty
+_is_empty() {
+	! ls -Al "$1" | grep -q .
+}
