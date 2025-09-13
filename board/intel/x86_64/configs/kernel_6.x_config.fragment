@@ -1,11 +1,10 @@
 # configuration fragment to upgrade Intel x86_64 based kernels
-# from kernel version 6.6.y to 6.x.y bleeding edge
+# from kernel version 6.12.y to 6.x.y bleeding edge
 
 # general setup
-CONFIG_PREEMPT_LAZY=y
+CONFIG_PREEMPT=y
 
 # Processor type and features
-CONFIG_X86_CPU_RESCTRL=y
 CONFIG_X86_FRED=y
 
 # General architecture-dependent options
@@ -15,6 +14,10 @@ CONFIG_X86_FRED=y
 # CONFIG_NET_VENDOR_HISILICON is not set
 # new Intel devices
 CONFIG_IWLMLD=y
+
+# device drivers -> GPIO support
+# sysfs interface for GPIO is deprecated (6.17+)
+# CONFIG_GPIO_SYSFS_LEGACY is not set
 
 # Device drivers -> PIN controllers
 # switch from Baytrail to Alder Lake
