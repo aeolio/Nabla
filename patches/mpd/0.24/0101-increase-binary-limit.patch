@@ -1,0 +1,11 @@
+--- a/src/client/Client.hxx	2025-07-31 21:58:34.000000000 +0200
++++ b/src/client/Client.hxx	2025-09-11 06:19:43.101915043 +0200
+@@ -75,7 +75,7 @@
+ 	 * The maximum number of bytes transmitted in a binary
+ 	 * response.  Can be changed with the "binarylimit" command.
+ 	 */
+-	size_t binary_limit = 8192;
++	size_t binary_limit = 1024 * 1024;
+ 
+ 	/**
+ 	 * This caches the last "albumart" InputStream instance, to
