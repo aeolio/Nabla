@@ -5,7 +5,7 @@
 
 sysfs=/sys/class/leds
 
-### functions that are used in more than one init script
+# shellcheck source=/dev/null
 [ -x /etc/init.d/init_functions ] && . /etc/init.d/init_functions
 
 # sysfs entries for LEDs will become obsolete with Linux 6.17

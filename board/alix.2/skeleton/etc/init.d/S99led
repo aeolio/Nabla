@@ -5,30 +5,30 @@
 
 sysfs=/sys/class/leds
 
-### functions that are used in more than one init script
+# shellcheck source=/dev/null
 [ -x /etc/init.d/init_functions ] && . /etc/init.d/init_functions
 
 # sysfs entries for LEDs will become obsolete with Linux 6.17
-[ ! -d $sysfs ] || _is_empty "$sysfs" && exit 0
+[ ! -d "$sysfs" ] || _is_empty "$sysfs" && exit 0
 
 start() {
-	echo heartbeat > $sysfs/alix\:1/trigger
-	echo netdev > $sysfs/alix\:2/trigger
-	echo eth0 > $sysfs/alix\:2/device_name
-	echo 1 > $sysfs/alix\:2/tx
-	echo timer > $sysfs/alix\:3/trigger
-	echo 500  > $sysfs/alix\:3/delay_on
-	echo 1500  > $sysfs/alix\:3/delay_off
+	echo heartbeat > $sysfs/alix:1/trigger
+	echo netdev > $sysfs/alix:2/trigger
+	echo eth0 > $sysfs/alix:2/device_name
+	echo 1 > $sysfs/alix:2/tx
+	echo timer > $sysfs/alix:3/trigger
+	echo 500  > $sysfs/alix:3/delay_on
+	echo 1500  > $sysfs/alix:3/delay_off
 }
 
 stop() {
-	echo none > $sysfs/alix\:3/trigger
-	echo none > $sysfs/alix\:2/trigger
-	echo none > $sysfs/alix\:1/trigger
+	echo none > $sysfs/alix:3/trigger
+	echo none > $sysfs/alix:2/trigger
+	echo none > $sysfs/alix:1/trigger
 }
 
 load_module() {
-	grep -q ^$1 /proc/modules || modprobe $1
+	grep -q "^$1" /proc/modules || modprobe "$1"
 }
 
 load_module ledtrig_heartbeat
