@@ -95,9 +95,9 @@ if [ $(is_config_selected "BR2_PACKAGE_AVAHI") -gt 0 ]; then
 	fi
 fi
 
-### nfs-utils selected
+### nfs-utils in server mode 
 ### modify init.d startup file
-if [ $(is_config_selected "BR2_PACKAGE_NFS_UTILS") -gt 0 ]; then
+if [ $(is_config_selected "BR2_PACKAGE_NFS_UTILS_RPC_NFSD") -gt 0 ]; then
 	_ETC_INIT_D="${TARGET_DIR}/etc/init.d"
 	NFS_STARTUP=${_ETC_INIT_D}/S60nfs
 	if [ -f $NFS_STARTUP ] && [ $(grep -c "daemon:daemon" $NFS_STARTUP) -lt 1 ]; then
