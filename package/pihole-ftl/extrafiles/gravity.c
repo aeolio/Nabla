@@ -48,9 +48,9 @@ static bool display_timing = false;
  * command verbs
  */
 enum command_verb {
-	REPAIR = 1,
-	RECOVER,
-	UPGRADE,
+	REPAIR_RECOVER = 1,
+	REPAIR_RECREATE,
+	UPGRADE_SCHEMA,
 } __attribute__ ((packed));
 static int command = 0;
 
@@ -130,7 +130,6 @@ struct config_data configuration;
 
 #define	_PRINT_DEBUG_OUTPUT 1
 #define	_DEBUG_IP_PARSER	0
-#define	_FAKE_CHANGED_UPSTREAM	0
 
 // forward declaration necessary because of function grouping
 static void _add_listentry(struct config_data *, const struct blocklist *);
@@ -321,7 +320,8 @@ static int os_rename( const char *source_file, const char *target_file ) {
 			return (remove(source_file));
 			}
 		}
-	return 0;
+
+	return EXIT_SUCCESS;
 	}
 
 /*
@@ -584,7 +584,7 @@ static int db_sql_exec_batch(const char *db_file, const char *sql_statement) {
 		sqlite3_close(db);
 		}
 
-	return (result == SQLITE_OK ? EXIT_SUCCESS : EXIT_FAILURE);
+	return (result == SQLITE_OK ? EXIT_SUCCESS : result);
 	}
 
 /*
@@ -598,6 +598,43 @@ static int db_sql_exec_file(const char *db_file, const char *sql_file) {
 		return result;
 		}
 	return EXIT_FAILURE;
+	}
+
+
+// === sqlite batch interface =================================================
+
+/*
+ * invoke the sqlite cli to execute a .recover command,  pipe the 
+ * output to a second sqlite cli to create a new database instande
+ */
+static int db_recover_database(const char *db_file, const char *db_recovery_file) {
+	char src_command[FN_LIST], dst_command[FN_LIST];
+	sprintf(src_command, "sqlite3 \"%s\" .recover", db_file);
+	sprintf(dst_command, "sqlite3 \"%s\" >/dev/null", db_recovery_file);
+
+	FILE *src, *dst;
+	int result = EXIT_SUCCESS;
+	if ((src = popen(src_command, "r")) != NULL) {
+		if ((dst = popen(dst_command, "w")) != NULL) {
+			char buffer[PATH_MAX];
+			while (fgets(buffer, PATH_MAX, src) != NULL)
+				fputs(buffer, dst);
+			if (int status = pclose(dst) != EXIT_SUCCESS)
+				printf("\n%s terminated with error %d\n", dst_command, status);
+			else
+				result = result ? EXIT_SUCCESS : EXIT_FAILURE;
+			}
+		else
+			result = EXIT_FAILURE;
+		if (int status = pclose(src) != EXIT_SUCCESS)
+			printf("\n%s terminated with error %d\n", src_command, status);
+		else
+			result = result ? EXIT_SUCCESS : EXIT_FAILURE;
+		}
+	else
+		return EXIT_FAILURE;
+
+	return result;
 	}
 
 
@@ -1134,7 +1171,7 @@ static bool _download_single_list(struct blocklist *plist,
 			fclose(f);
 
 			/*
-			 *	process results
+			 *	process response_code
 			 */
 
 			long response_code = 0;
@@ -1186,13 +1223,8 @@ static bool _download_single_list(struct blocklist *plist,
 					printf("Downloaded new version: %s\n", fn_list);
 					break;
 				case 304:	// not modified
-#if	_FAKE_CHANGED_UPSTREAM
-					plist->file_status = CHANGED_UPSTREAM;
-					printf("Fake change: %s\n", fn_list);
-#else
 					plist->file_status = UNCHANGED;
 					printf("Unchanged: %s\n", fn_list);
-#endif
 					break;
 				default:
 					printf("HTTP error: %ld\n", response_code);
@@ -1286,7 +1318,9 @@ static bool _import_blocklists(struct config_data *pc) {
 				return false;
 				}
 			}
-		if (plist->file_status == CHANGED_UPSTREAM) {
+		// blocklist content is never copied to a new database, so import all valid lists 
+		if (plist->file_status == UNCHANGED ||
+			plist->file_status == CHANGED_UPSTREAM) {
 			printf("Start import: %s\n", plist->address);
 			if (ftl_import_domains(plist->filename, 
 				pc->gravity_db_tmpfile, 
@@ -1407,16 +1441,23 @@ _copy_database_exit:
 #define MAX_BACKUPS 10
 static bool _rotate_backups(const struct config_data *pc) {
 	
-	if (os_is_file(pc->gravity_db_backup_file)) {
-		const char *base_name = pc->gravity_db_backup_file;
-		char fn_name[2][FN_SIZE];
-		for ( int i = MAX_BACKUPS-1 ; i > 1 ; i-- ) {
+	char fn_name[2][FN_SIZE];
+	const char *base_name = pc->gravity_db_backup_file;
+
+	sprintf(fn_name[0], "%s.%d", base_name, 1);
+	if (os_is_file(fn_name[0])) {
+		// simply remove the oldest file
+		sprintf(fn_name[1], "%s.%d", base_name, MAX_BACKUPS);
+		if (os_is_file(fn_name[1]) &&
+			os_remove(fn_name[1]) != EXIT_SUCCESS)
+			return false;
+
+		for ( int i = MAX_BACKUPS-1 ; i > 0 ; i-- ) {
 			sprintf(fn_name[0], "%s.%d", base_name, i);
 			sprintf(fn_name[1], "%s.%d", base_name, i+1);
-			if (os_is_file(fn_name[1]) &&
-				! os_remove(fn_name[1]))
-				return false;
-			if (! os_rename(fn_name[0], fn_name[1]))
+			// move all remaining files one place up
+			if (os_is_file(fn_name[0]) &&
+				os_rename(fn_name[0], fn_name[1]) != EXIT_SUCCESS)
 				return false;
 			}
 		}
@@ -1518,14 +1559,15 @@ static void help_message(char *prg)
 {
 	printf("Usage: %s <options>\n", prg);
 	printf("where options are:\n");
-	printf("  -f  --force         force deletion of existing database\n");
+	printf("  -f  --force         force download of all specified blocklists\n");
 	printf("  -h  --help          show usage message\n");
 	printf("  -r  --repair {recover,recreate} [force]\n");
 	printf("        recover       repair a damaged gravity database file\n");
 	printf("        recover force attempt repair even if no damage detected\n");
 	printf("        recreate      create a new gravity database\n");
 	printf("  -t  --timeit        show execution times for certain steps\n");
-	printf("  -u  --upgrade       upgrade gravity database\n");
+	printf("  -u  --upgrade       upgrade gravity database schema.\n");
+	printf("Calling %s without parameters will update the blocklist(s).\n", prg);
 }
 
 #if _PRINT_DEBUG_OUTPUT
@@ -1573,7 +1615,67 @@ static void __dump_flags__(void) {
 
 
 /*
- * implements gravity --update
+ * implements gravity database recovery
+ */
+static bool gravity_recover(const bool _force_recover) {
+
+	const char *pragma_integrity_check = "PRAGMA integrity_check";
+	const char *pragma_foreign_key_check = "PRAGMA foreign_key_check";
+
+	const char *db_file = configuration.gravity_db_file;
+
+	// check integrity
+	char *msg = (char *) "Checking integrity of existing gravity database";
+	printf("%s - %s", msg, "this can take a while");
+	fflush(stdout);	// message is not visible immediately
+	if (int error = db_sql_exec_batch(db_file, pragma_integrity_check) == EXIT_SUCCESS) {
+		printf("\r%s - %s      \n", msg, "no errors found");
+
+		msg = (char *) "Checking foreign keys of existing gravity database";
+		printf("%s - %s", msg, "this can take a while");
+		fflush(stdout);	// message is not visible immediately
+		if ((error = db_sql_exec_batch(db_file, pragma_foreign_key_check)) == EXIT_SUCCESS) {
+			printf("\r%s - %s      \n", msg, "no errors found");
+			if (!_force_recover)
+				return true;
+		}
+		else {
+			printf("\r%s - %s         \n", msg, "errors found");
+		}
+	}
+	else {
+		printf("\r%s - %s         \n", msg, "errors found");
+	}
+
+	char db_recovery_file[FN_SIZE];
+	strcpy(db_recovery_file, db_file);
+	strcat(db_recovery_file, ".recovered");
+
+	const char *db_oldfile = configuration.gravity_db_oldfile;
+
+	// recover database
+	msg = (char *) "Trying to recover existing gravity database";
+	printf("%s - %s", msg, "this can take a while");
+	fflush(stdout);	// message is not visible immediately
+	// remove residual recovery file
+	os_remove(db_recovery_file);
+	if (db_recover_database(db_file, db_recovery_file) == EXIT_SUCCESS) {
+		printf("\r%s - %s                     \n", msg, "success");
+	printf(" %s has been recovered\n", db_file);
+	os_rename(db_file,  db_oldfile);
+	os_rename(db_recovery_file, db_file);
+	printf(" The old %s has been moved to %s\n", db_file, db_oldfile);
+	}
+	else {
+		printf("\r%s - %s      \n", msg, "errors found\n");
+		printf("Recovery failed. Try 'pihole -r recreate' instead.}n");
+	}
+
+	return true;
+}
+
+/*
+ * implements gravity common function: update blocklist(s)
  */
 static bool gravity_update(void) {
 
@@ -1715,23 +1817,23 @@ static int _parse_args(int argc, char *argv[])
 				// conflicting activity
 				if( command )
 					return i;
-				command = UPGRADE;
+				command = UPGRADE_SCHEMA;
 			}
 			// commands
 			else if( strcmp(cmd, "-r") == 0 || strcmp(cmd, "--repair") == 0 ) {
-				// next verb should be repair or recover
-				if( i+1 < argc && strcmp(argv[i+1], "repair") == 0 ) {
+				// next verb should be recreate or recover
+				if( i+1 < argc && strcmp(argv[i+1], "recreate") == 0 ) {
 					// conflicting activity
 					if( command )
 						return i;
-					command = REPAIR;
+					command = REPAIR_RECREATE;
 					i += 1;
 				}
 				else if( i+1 < argc && strcmp(argv[i+1], "recover") == 0 ) {
 					// conflicting activity
 					if( command )
 						return i;
-					command = RECOVER;
+					command = REPAIR_RECOVER;
 					i += 1;
 					// recover has optional subcommand
 					if( i+1 < argc && strcmp(argv[i+1], "force") == 0 ) {
@@ -1747,8 +1849,7 @@ static int _parse_args(int argc, char *argv[])
 		}
 		return 0;
 	}
-	help_message(argv[0]);
-	exit(EXIT_SUCCESS);
+	return 0;
 }
 
 
@@ -1760,7 +1861,6 @@ static int _parse_args(int argc, char *argv[])
 int gravity_main(const int argc, char *argv[])
 {
 	// enable output to stdout
-//	cli_mode = true;
 	log_ctrl(false, true);
 
 	if( int failed_argument = _parse_args(argc, argv) != 0 ) {
@@ -1768,13 +1868,7 @@ int gravity_main(const int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	if( ! command ) {
-		printf("Nothing to do, exiting.\n");
-		exit(EXIT_FAILURE);
-	}
-
 	print_flags();
-
 
 	if( ! ftl_get_configuration(&configuration) ) {
 		printf("Retrieving configuration values failed\n"); 
@@ -1797,18 +1891,23 @@ int gravity_main(const int argc, char *argv[])
 
 	// ungünstiger Zeitpunkt, sollte vielleicht im Rahmen des cleanups passieren ... 
 	// old backup is removed prior to any database activity
-	if( ! os_remove(configuration.gravity_db_oldfile) )
+	if (! os_remove(configuration.gravity_db_oldfile))
 		exit(EXIT_FAILURE);
 
-	if( command == REPAIR ) {
-		printf("Gravity database repair not implemented\n");
+	if( command == REPAIR_RECOVER ) {
+		if (! gravity_recover(force_recover))
+			exit(EXIT_FAILURE);
 	}
-	else if( command == RECOVER ) {
-		printf("Gravity database recover not implemented \n");
+	else if( command == REPAIR_RECREATE ) {
+		printf("Gravity database repair/recreate not implemented\n");
 	}
-	else if( command == UPGRADE ) {
-		gravity_update();
+	else if( command == UPGRADE_SCHEMA ) {
+		printf("Gravity database schema upgrade not implemented\n");
+		// no list update after database schema upgrade
+		exit(EXIT_SUCCESS);
 	}
+
+	gravity_update();
 
 	exit(EXIT_SUCCESS);
 }
