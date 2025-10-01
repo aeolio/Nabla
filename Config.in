@@ -86,7 +86,7 @@ config BR2_PACKAGE_LIBCURL_ZLIB
 #
 
 # mpd server needs BR2_PACKAGE_MPD_MPG123 to extract mp3 meta data
-# mpd client uses BR2_PACKAGE_MPD_MAD for playback and 
+# mpd client uses BR2_PACKAGE_MPD_MAD for playback and
 # BR2_PACKAGE_MPD_LIBNFS for remote database access
 # mpd standalone needs both BR2_PACKAGE_MPD_MPG123 and BR2_PACKAGE_MPD_MAD
 # both server and standalone can use liburing for async access to local files
@@ -99,13 +99,13 @@ choice
 	prompt "Machine type"
 	default NABLA_UNCONFIGURED
 	help
-	  Enable standard features to configure a system as 
+	  Enable standard features to configure a system as
 	  client /server /standalone music player.
 
 config NABLA_UNCONFIGURED
 	bool "unconfigured"
 	help
-	  No music player software will be included in the build. 
+	  No music player software will be included in the build.
 
 config NABLA_CLIENT
 	bool "client"
@@ -114,14 +114,16 @@ config NABLA_CLIENT
 	select BR2_PACKAGE_MPD_MAD		# mp3 playback
 	select BR2_PACKAGE_MPD_LIBNFS	# remote database access
 	help
-	  A client machine accesses a remote database and plays music locally. 
+	  A client machine accesses a remote database
+	  and plays music locally.
 
 config NABLA_SERVER
 	bool "server"
 	select BR2_PACKAGE_MPD_MPG123	# mp3 meta data extraction
 	select BR2_PACKAGE_MPD_IO_URING	# async access to local files
 	help
-	  A server machine manages a local database and does not play music. 
+	  A server machine manages a local database
+	  and is not used to play music.
 
 config NABLA_STANDALONE
 	bool "standalone"
@@ -131,34 +133,34 @@ config NABLA_STANDALONE
 	select BR2_PACKAGE_MPD_MAD		# mp3 playback
 	select BR2_PACKAGE_MPD_IO_URING	# async access to local files
 	help
-	  A standalone machine has both a local database and 
-	  local playback capability
+	  A standalone machine has both a local database
+	  and local playback capability
 
 endchoice # Machine type
 
 comment "additional packages"
 menu "Audio and video applications"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/brutefir/Config.in"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/folve/Config.in"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/zita-convolver/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/brutefir/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/folve/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/zita-convolver/Config.in"
 endmenu
 
 menu "Debugging, profiling and benchmark"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/interbench/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/interbench/Config.in"
 endmenu
 
 if BR2_arm || BR2_aarch64
 
 menu "Hardware handling"
-	menu "Firmware"
-		source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
-		source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
-	endmenu
+menu "Firmware"
+source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
+endmenu
 endmenu
 
 endif # BR2_arm || BR2_aarch64
 
 menu "Networking applications"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/pihole-ftl/Config.in"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/pihole-web/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/pihole-ftl/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/pihole-web/Config.in"
 endmenu
