@@ -1,3 +1,10 @@
+Backport compiler and linker flags from Linux 4.4 to prevent boot 
+failure on x86 hardware.
+
+Upstream: n/a (kernel version is obsolete)
+
+Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+---
 diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
 index 0a291cd..c1c1f83 100644
 --- a/arch/x86/boot/compressed/Makefile

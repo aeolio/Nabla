@@ -21,7 +21,7 @@ start() {
 	echo timer > $sysfs/PWR/trigger
 	echo 500  > $sysfs/PWR/delay_on
 	echo 1500  > $sysfs/PWR/delay_off
-} 
+}
 
 stop() {
 	echo 0 > $sysfs/ACT/brightness
@@ -32,14 +32,14 @@ case "$1" in
 	start)
 		start
 		;;
-	stop) 
+	stop)
 		stop
 		;;
-	restart|reload) 
+	restart|reload)
 		stop
 		start
 		;;
 	*)
-		echo "Usage: $0 {start|stop|restart}" 
+		echo "Usage: $0 {start|stop|restart}"
 		exit 1
 esac
