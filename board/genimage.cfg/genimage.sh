@@ -6,14 +6,15 @@
 
 set -e
 
-BOARD_DIR="$(dirname $0)"
-BOARD_NAME="$(basename $(dirname ${BOARD_DIR}))"
+BOARD_DIR=$(dirname "$0")
+BOARD_NAME=$(basename "$(dirname "${BOARD_DIR}")")
 GENIMAGE_CFG="${BOARD_DIR}/genimage-${BOARD_NAME}.cfg"
 GENIMAGE_TMP="${BUILD_DIR}/genimage.tmp"
 GENIMAGE_INC="${BR2_EXTERNAL_NABLA_PATH}/board/genimage.cfg"
 
-### bind function library
+### bind function library/home/iago/br2-external/board/genimage.cfg/genimage.sh
 script_dir=$BR2_EXTERNAL_NABLA_PATH/scripts
+# shellcheck source=/dev/null
 [ -x "$script_dir/function_lib.sh" ] && . "$script_dir/function_lib.sh"
 
 KERNEL_CONFIG=$(get_kernel_config)
@@ -24,7 +25,7 @@ do
 		--add-config-dir)
 		if [ ! -d "${BINARIES_DIR}/.config" ]; then
 			echo "Creating config directory for image."
-			mkdir -p ${BINARIES_DIR}/.config
+			mkdir -p "${BINARIES_DIR}/.config"
 		fi
 		;;
 
@@ -32,9 +33,9 @@ do
 		SYSLINUX=/usr/bin/syslinux
 		if [ ! -f "${BINARIES_DIR}/syslinux.cfg" ]; then
 			echo "Creating syslinux.cfg file for image."
-			$HOST_DIR/bin/python $script_dir/syslinux.py \
-				$BR2_CONFIG \
-				$KERNEL_CONFIG \
+			"$HOST_DIR/bin/python" "$script_dir/syslinux.py" \
+				"$BR2_CONFIG" \
+				"$KERNEL_CONFIG" \
 				"${BINARIES_DIR}/syslinux.cfg"
 		fi
 		;;
@@ -68,12 +69,11 @@ genimage \
 	--config "$GENIMAGE_CFG"
 
 # remove intermediate files
-rm -fr $BINARIES_DIR/*.vfat
+rm -fr "$BINARIES_DIR"/*.vfat
 
 # there is no host-syslinux; use the installation on the host machine, if present
-if [ -x "$SYSLINUX" ]; then 
-	$SYSLINUX -t 0x100000 -d boot/syslinux ${BINARIES_DIR}/sdcard.img
+if [ -x "$SYSLINUX" ]; then
+	$SYSLINUX -t 0x100000 -d boot/syslinux "${BINARIES_DIR}/sdcard.img"
 fi
 
 exit $?
-
