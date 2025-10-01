@@ -148,5 +148,5 @@ elif [ "$1" = "stop" ]; then
 	echo "Done"
 
 else
-        echo "Usage: $0 {start | stop | sync}"
+	echo "Usage: $0 {start | stop | sync}"
 fi

@@ -29,7 +29,6 @@ cmd_stop="shutdown"
 # additional files to save only on shutdown
 NABLA_SYNC_SHUTDOWN="/var/log"
 
-
 #
 # finds out if a partition is mounted writeable or read-only
 # unmounted partitions will be assumed read-only
@@ -317,17 +316,17 @@ setup_restore() {
 umask u+w,a+r
 
 case "$1" in
-  start)
-	echo "$script: Restoring configuration: "
-	setup_restore
-	echo "Done"
-	;;
-  stop|sync)
-	echo "$script: Persisting configuration: "
-	setup_backup
-	echo "Done"
-	;;
-  *)
-	echo "Usage: $0 {start|stop|sync}"
-	exit 1
+	start)
+		echo "$script: Restoring configuration: "
+		setup_restore
+		echo "Done"
+		;;
+	stop|sync)
+		echo "$script: Persisting configuration: "
+		setup_backup
+		echo "Done"
+		;;
+	*)
+		echo "Usage: $0 {start|stop|sync}"
+		exit 1
 esac

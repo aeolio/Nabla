@@ -28,7 +28,6 @@ change_cpufreq_settings() {
 	fi
 }
 
-
 ### modify processor frequency setup if enabled in nabla config
 if [ "$CPUFREQ_OPTIMIZATION" = Y ]; then
 	sysfs_cpu="/sys/devices/system/cpu"

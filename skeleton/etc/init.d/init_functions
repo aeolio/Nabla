@@ -127,6 +127,7 @@ _checksum() {
 }
 
 # check if a directory is empty
+# shellcheck disable=SC2010	# use of ls is mandatory
 _is_empty() {
 	! ls -Al "$1" | grep -q .
 }
