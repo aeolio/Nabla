@@ -1,7 +1,9 @@
 Add missing malloc.h header include
 
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+Upstream: n/a
 
+Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+---
 --- brutefir.orig/emalloc.c
 +++ brutefir-1.0o/emalloc.c
 @@ -6,7 +6,7 @@

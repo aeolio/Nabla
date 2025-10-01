@@ -1,7 +1,9 @@
 Fixes segment violation due to uninitialized devices
 
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+Upstream: n/a
 
+Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+---
 --- brutefir.orig/bfio_alsa.c
 +++ brutefir-1.0o/bfio_alsa.c
 @@ -446,7 +446,8 @@

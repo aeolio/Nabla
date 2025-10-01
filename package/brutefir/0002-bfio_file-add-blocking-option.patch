@@ -1,8 +1,10 @@
 Adds 'block' option to control O_NONBLOCK flag during 
 creation of files
 
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+Upstream: n/a
 
+Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+---
 --- brutefir.orig/bfio_file.c
 +++ brutefir-1.0o/bfio_file.c
 @@ -66,6 +66,7 @@
