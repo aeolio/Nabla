@@ -1,20 +1,35 @@
-#!/usr/bin/python
-# Generate a syslinux.cfg boot configuration, based on values configured 
-# in Buildroot and Linux kernel configurations.
-# Configuration files will be passed as (optional) program parameters, the 
-# last parameter in the list will be used for storing the boot configuration
+#!/bin/python
 
-import io
+'''
+	Generate a syslinux.cfg boot configuration, based on values configured
+	in Buildroot and Linux kernel configurations.
+	Configuration files will be passed as (optional) program parameters, the
+	last parameter in the list will be used for storing the boot configuration
+'''
+
 import sys
 
-port_id = None
-port_type = 'console'
-port_number = -1
-port_baudrate = -1
-processor_name = None
-processor_count = 1
-multiprocessing = False
+from dataclasses import dataclass
 
+@dataclass
+class BootParameters:
+	''' Holds the parameters parsed from Buildroot and Linux .config'''
+	port_id : str
+	port_type : str
+	port_number : int
+	port_baudrate : int
+	processor_name : str
+	processor_count : int
+	multiprocessing : bool
+
+	def __init__(self):
+		self.port_id = None
+		self.port_type = 'console'
+		self.port_number = -1
+		self.port_baudrate = -1
+		self.processor_name = None
+		self.processor_count = 1
+		self.multiprocessing = False
 
 main_config = [
 	"DEFAULT nabla\n",
@@ -25,53 +40,50 @@ main_config = [
 	"  KERNEL /boot/bzImage\n",
 	]
 
+DEBUG_OUTPUT = False
 
-def preamble():
-	if port_type == 'serial':
-		return 'SERIAL %d %d\n\n' % ( port_number, port_baudrate )
+
+def preamble(p: BootParameters):
+	''' for serial consoles, define baud rate '''
+	if p.port_type == 'serial':
+		return f"SERIAL {p.port_number} {p.port_baudrate}\n\n"
 	return None
 
 
-def kernel_parameters():
+def kernel_parameters(p):
+	''' generate kernel parameters '''
 	s = '  APPEND'
-	if multiprocessing or processor_count > 1:
-		n = processor_count - 1
-		s += ' isolcpus=nohz,domain,managed_irq,%d nohz_full=%d' % ( n, n )
-	if port_type == 'serial':
-		s += ' console=%s,%dn8' % ( port_id, port_baudrate )
+	if p.multiprocessing or p.processor_count > 1:
+		n = p.processor_count - 1
+		s += f" isolcpus=nohz,domain,managed_irq,{n} nohz_full={n}"
+	if p.port_type == 'serial':
+		s += f" console={p.port_id},{p.port_baudrate}n8"
 	s += ' quiet\n'
 	return s
 
 
-def write_config(target):
+def write_config(p, target_file):
+	''' generate a syslinux.cfg file '''
 
-	if False:
-		print('port_id = %s' % port_id)
-		print('port_type = %s' % port_type)
-		print('port_number = %d' % port_number)
-		print('port_baudrate = %d' % port_baudrate)
-		print('processor_name = %s' % processor_name)
-		print('processor_count = %d' % processor_count)
-		print('multiprocessing = ', multiprocessing)
+	if DEBUG_OUTPUT:
+		print(f"port_id = {p.port_id}")
+		print(f"port_type = {p.port_type}")
+		print(f"port_number = {p.port_number}")
+		print(f"port_baudrate = {p.port_baudrate}")
+		print(f"processor_name = {p.processor_name}")
+		print(f"processor_count = {p.processor_count}")
+		print(f"multiprocessing = {p.multiprocessing}")
 
-	with open(target, mode="w") as config_file:
-		s = preamble()
-		print(s, file=config_file, end='') if s else None
+	with open(target_file, mode="w", encoding='UTF8') as config_file:
+		print(preamble(p), file=config_file, end='')
 		for s in main_config:
 			print(s, file=config_file, end='')
-		s = kernel_parameters()
+		s = kernel_parameters(p)
 		print(s, file=config_file, end='')
 
 
-def parse(text):
-	global port_id
-	global port_type
-	global port_number
-	global port_baudrate
-	global processor_name
-	global processor_count
-	global multiprocessing
-
+def parse(p, text):
+	''' extract information from buildroot or kernel config file '''
 	try:
 		if text and text[0] != '#':
 			symbol, value = text.split('=')
@@ -79,36 +91,40 @@ def parse(text):
 			value = value.lstrip().strip('\"')
 			### from buildroot config
 			if symbol == 'BR2_TARGET_GENERIC_GETTY_PORT':
-				port_id = value
-				if port_id[3] == 'S':
-					port_type = 'serial'
-					port_number = int(port_id[-1])
+				p.port_id = value
+				if p.port_id[3] == 'S':
+					p.port_type = 'serial'
+					p.port_number = int(p.port_id[-1])
 			if symbol == 'BR2_TARGET_GENERIC_GETTY_BAUDRATE':
-				port_baudrate = int(value)
+				p.port_baudrate = int(value)
 			### from kernel config
-			if symbol == 'CONFIG_MGEODE_LX':
-				processor_name = 'geode' if value == 'y' else None
-			if symbol == 'CONFIG_SMP':
-				multiprocessing = True if value == 'y' else False
+			if symbol == 'CONFIG_MGEODE_LX' and value == 'y':
+				p.processor_name = 'geode'
+			if symbol == 'CONFIG_SMP' and value == 'y':
+				p.multiprocessing = True
 			if symbol == 'CONFIG_NR_CPUS':
-				processor_count = int(value)
+				p.processor_count = int(value)
 
+	# line with second assignment in value part
 	except ValueError:
-		print(text)
+		if DEBUG_OUTPUT:
+			print(text)
 
 
-def syslinux(config, target):
-
-	for filename in config:
-		with open(filename) as config_file:
+def syslinux(config_files, target_file):
+	''' Main function of the module '''
+	p = BootParameters()
+	for c in config_files:
+		with open(c, encoding='UTF8') as config_file:
 			for line in config_file:
-				line = parse(line.strip())
-
-	write_config(target)
+				parse(p, line.strip())
+	write_config(p, target_file)
+	return 0
 
 
 if __name__ == '__main__':
+	# last parameter is the output file
 	target = sys.argv[-1]
-	config = sys.argv[1:-1]
-	sys.exit(syslinux(config, target))
-
+	# Linux and Buildroot config files
+	configs = sys.argv[1:-1]
+	sys.exit(syslinux(configs, target))
