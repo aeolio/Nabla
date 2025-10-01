@@ -1,6 +1,19 @@
---- a/openbsd-compat/openbsd-compat.h
-+++ b/openbsd-compat/openbsd-compat.h
-@@ -342,6 +342,14 @@
+Missing function declaration for re[c]allocarray(void leads to an 
+implicit interger conversion of the return value. The result is a 
+segmentation fault when the pointer is accessed. 
+
+Add function declarations to the main header file.
+
+Upstream: n/a
+
+Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+---
+[rebase for version 10]
+Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+---
+--- a/openbsd-compat/openbsd-compat.h 2025-04-09 09:02:43.000000000 +0200
++++ b/openbsd-compat/openbsd-compat.h   2025-09-25 10:23:55.333450106 +0200
+@@ -370,6 +370,14 @@
  #include "port-net.h"
  #include "port-uw.h"
  
@@ -15,4 +28,3 @@
  /* _FORTIFY_SOURCE breaks FD_ISSET(n)/FD_SET(n) for n > FD_SETSIZE. Avoid. */
  #if defined(HAVE_FEATURES_H) && defined(_FORTIFY_SOURCE)
  # include <features.h>
-
