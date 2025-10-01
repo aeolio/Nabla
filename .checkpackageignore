@@ -1,0 +1,92 @@
+# more space around code blocks
+Config.in lib_config.ConsecutiveEmptyLines
+Config.in.linux lib_config.ConsecutiveEmptyLines
+# false positive
+local.mk lib_mk.PackageHeader
+# these are no Buildroot defconfigs
+board/alix.2/configs/alix2_defconfig lib_defconfig.ForceCheckHash
+board/intel/i386/configs/linux_i386_defconfig lib_defconfig.ForceCheckHash
+board/intel/x86_64/configs/intel_x86_64_defconfig lib_defconfig.ForceCheckHash
+board/raspberrypi/configs/bcm2711_defconfig lib_defconfig.ForceCheckHash
+# not maintained
+board/radxa/rockpi4/patches/linux/common/0001-mainline-rk3399-rock-pi-4-dts.patch lib_patch.Sob lib_patch.Upstream
+board/radxa/rockpi4/patches/linux/common/0002-brcm-firmware-path.patch lib_patch.Sob lib_patch.Upstream
+board/radxa/rockpi4/patches/linux/common/0003-drivers-media-common-siano-remove-redefinition-ir_default_timeout.patch lib_patch.Sob lib_patch.Upstream
+board/radxa/rockpi4/patches/linux/radxa-4.4.y-rt/0001-radxa-rockpi-4b-linux-dts.patch lib_patch.Sob lib_patch.Upstream
+board/radxa/rockpi4/patches/linux/radxa-4.4.y-rt/0002-add-wifi-6256-chip.patch lib_patch.Sob lib_patch.Upstream
+board/radxa/rockpi4/patches/linux/radxa-4.4.y/0001-mainline-rk3399-rock-pi-4-dts.patch lib_patch.Sob lib_patch.Upstream
+board/radxa/rockpi4/patches/linux/radxa-4.4.y/0002-brcm-firmware-path.patch lib_patch.Sob lib_patch.Upstream
+board/radxa/rockpi4/patches/linux/radxa-4.4.y/0003-drivers-media-common-siano-remove-redefinition-ir_default_timeout.patch lib_patch.Sob lib_patch.Upstream
+board/radxa/rockpi4/patches/linux/radxa-4.4.y/patch-4.4.157-rt174.patch lib_patch.ApplyOrder lib_patch.Sob lib_patch.Upstream
+board/radxa/rockpi4/patches/linux/radxa-4.4.y/patch-bcmhcd-use-simple-wait-queues.patch lib_patch.ApplyOrder lib_patch.Sob lib_patch.Upstream
+board/radxa/rockpi4/patches/linux/radxa-4.4.y/patch-input-keybord-rk_keys-for-RT_PREEMPT.patch lib_patch.ApplyOrder lib_patch.Sob lib_patch.Upstream
+board/radxa/rockpi4/patches/linux/rockchip-linux/0001-radxa-rockpi-4b-linux-dts.patch lib_patch.Sob lib_patch.Upstream
+board/radxa/rockpi4/patches/linux/rockchip-linux/0002-radxa-rockpi-4b-overlays.patch lib_patch.Sob lib_patch.Upstream
+board/radxa/rockpi4/patches/linux/rockchip-linux/0003-rkwifi-bcmdhd-pm_suspend.patch lib_patch.Sob lib_patch.Upstream
+board/radxa/rockpi4/scripts/post-build.sh Shellcheck
+board/radxa/rockpi4/scripts/post-image.sh Shellcheck
+# not maintained
+board/wandboard/patches/alsa-lib/0001-add_conf_for_multichannel_support_in_imx.patch lib_patch.Upstream
+board/wandboard/patches/do_not_patch.linux/0000-patch-3.14.28-rt25.patch lib_patch.Sob lib_patch.Upstream
+board/wandboard/patches/do_not_patch.linux/0001-squeezelite_spdif.patch lib_patch.Sob lib_patch.Upstream
+board/wandboard/patches/do_not_patch.linux/0011-fix-build.patch lib_patch.Upstream
+board/wandboard/patches/do_not_patch.linux/0012-fix-build-with-rt-enabled.patch lib_patch.Upstream
+board/wandboard/patches/do_not_patch.linux/0013-no-split-ptlocks.patch lib_patch.Upstream
+board/wandboard/patches/do_not_patch.linux/0014-imx-sdma-channel-use-raw-spinlock.patch lib_patch.Upstream
+board/wandboard/patches/linux/0001-squeezelite_spdif.patch lib_patch.Sob lib_patch.Upstream
+# does not start a daemon
+board/alix.2/skeleton/etc/init.d/S99led lib_sysv.Variables
+board/raspberrypi/skeleton/etc/init.d/S99led lib_sysv.Variables
+# do not force hash check
+configs/alix2_defconfig lib_defconfig.ForceCheckHash
+configs/generic_i386_defconfig lib_defconfig.ForceCheckHash
+configs/generic_x86_64_defconfig lib_defconfig.ForceCheckHash
+configs/n100_defconfig lib_defconfig.ForceCheckHash
+configs/raspberrypi_defconfig lib_defconfig.ForceCheckHash
+configs/wandboard_defconfig lib_defconfig.ForceCheckHash
+# Linux patches
+patches/linux/3.18.140/0001-patch-enum-netdev_priv_flags.patch lib_patch.Sob lib_patch.Upstream
+patches/linux/3.18.140/0002-patch-rtl8188eu.patch lib_patch.Sob lib_patch.Upstream
+patches/linux/3.18.140/0003-patch-rtl8188eu_recv_c.patch lib_patch.Sob lib_patch.Upstream
+patches/linux/4.4.302/0001-upgrade-rtl8188eu-from-upstream.patch lib_patch.Sob lib_patch.Upstream
+patches/linux/5.10/0001-arch-x86-boot-fix-gcc15-build.patch lib_patch.Sob lib_patch.Upstream
+patches/linux/6.12/0001-timerlat_u-uclibc-settid.patch lib_patch.Upstream
+patches/linux/6.12/0101-timerlat_hist-display-average-with-two-digit-precision.patch lib_patch.Upstream
+patches/linux/6.12/0102-osnoise-timerlat-hist-add-standard-deviation.patch lib_patch.Upstream
+patches/linux/6.12/0103-fix-cpu_set_t-undefined.patch lib_patch.Sob lib_patch.Upstream
+patches/linux/6.17/0001-timerlat_u-uclibc-settid.patch lib_patch.Upstream
+patches/linux/6.17/0002-add-missing-_GNU_SOURCE.patch lib_patch.Sob lib_patch.Upstream
+patches/linux/6.17/0101-timerlat_hist-display-average-with-two-digit-precision.patch lib_patch.Upstream
+patches/linux/6.17/0102-utils-add-sqrth.patch lib_patch.Upstream
+patches/linux/6.17/0103-osnoise_hist-add-standard-deviation.patch lib_patch.Upstream
+patches/linux/6.17/0104-timerlat-hist-add-standard-deviation.patch lib_patch.Upstream
+patches/linux/6.6/0001-timerlat_u-uclibc-settid.patch lib_patch.Upstream
+patches/linux/6.6/0101-timerlat_hist-display-average-with-two-digit-precision.patch lib_patch.Upstream
+patches/linux/6.6/0102-osnoise-timerlat-hist-add-standard-deviation.patch lib_patch.Upstream
+# mpd patches are not intended for public use
+patches/mpd/0.24/0001-meson.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0.24/0002-main.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0.24/0003-config.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0.24/0004-event.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0.24/0005-output.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0.24/0006-thread.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0.24/0100-filecommand.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0.24/0101-increase-binary-limit.patch lib_patch.Sob lib_patch.Upstream
+# internal patch
+patches/python-installer/0.7/0001-destinations-overwrite-existing-files.patch lib_patch.Sob lib_patch.Upstream
+# not maintained
+patches/rtl8723bs-master/0001-patch-makefile-for-cross-compile.patch lib_patch.Sob lib_patch.Upstream
+patches/rtl8723bs-master/0002-patch-rtw_debug.h-_seqdump-return-value.patch lib_patch.Sob lib_patch.Upstream
+# prefer pylint
+scripts/kupdate.py Flake8
+scripts/syslinux.py Flake8
+# lots of trailing spaces ... 
+scripts/function_lib.sh lib_shellscript.TrailingSpace
+skeleton/etc/init.d/init_functions lib_shellscript.TrailingSpace
+skeleton/etc/init.d/S19setup lib_sysv.TrailingSpace lib_sysv.Variables
+skeleton/etc/init.d/S49clock lib_sysv.Variables
+skeleton/etc/init.d/S87localopt lib_sysv.TrailingSpace lib_sysv.Variables
+skeleton/etc/init.d/S89rtopt lib_sysv.TrailingSpace lib_sysv.Variables
+skeleton/etc/init.d/S95automount lib_sysv.TrailingSpace lib_sysv.Variables
+skeleton/var/lib/mdev/automount lib_shellscript.TrailingSpace
+# test
