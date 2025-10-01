@@ -1,3 +1,7 @@
+Adapt coremark to own environment
+Upstream: configuration change
+Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+---
 --- a/linux/core_portme.h
 +++ b/linux/core_portme.h
 @@ -30,7 +30,7 @@
