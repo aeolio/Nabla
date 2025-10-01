@@ -19,6 +19,10 @@ Add a condition on !__UCLIBC__ when selecting a symbol to detect pthread
 usage so it picks the intended pthread_cancel().
 
 Signed-off-by: Chris Packham <chris.packham@alliedtelesis.co.nz>
+Upstream: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=111322
+Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+[Rebase for 14.3.0]
+Signed-off-by: Andreas Ziegler <br025@umbiko.net>
 [Rebase for gcc 15.1.0]
 Signed-off-by: Andreas Ziegler <br015@umbiko.net>
 ---
