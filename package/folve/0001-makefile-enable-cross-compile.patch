@@ -1,7 +1,9 @@
 Fix make variables to be used in a Buildroot environment
 
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+Upstream: n/a
 
+Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+---
 --- a/Makefile
 +++ b/Makefile
 @@ -2,14 +2,14 @@

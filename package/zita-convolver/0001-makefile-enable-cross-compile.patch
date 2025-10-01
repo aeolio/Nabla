@@ -1,5 +1,7 @@
 Fix Makefile to be used in a Buildroot environment
 
+Upstream: n/a
+
 Signed-off-by: Andreas Ziegler <br015@umbiko.net>
 
 --- a/source/Makefile

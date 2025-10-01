@@ -1,3 +1,13 @@
+The original file is provided by mpd, and
+can be found in the Buildroot package directory.
+
+Instead of creating an overlay file and having to check manually, whenever
+changes are made within Buildroot, patch the master file with additional code
+
+Upstream: configuration change
+
+Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+---
 --- buildroot/package/mpd/S95mpd	2024-07-22 06:14:03.773465724 +0200
 +++ target/etc/init.d/S95mpd	2024-07-21 19:02:01.543461548 +0200
 @@ -5,17 +5,89 @@

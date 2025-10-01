@@ -1,10 +1,12 @@
-The original file is provided by Busybox, and 
-can be found in the Buildroot package directory. 
+The original file is provided by openssh, and
+can be found in the Buildroot package directory.
 
-Instead of creating an overlay file and having to check manually, whenever 
+Instead of creating an overlay file and having to check manually, whenever
 changes are made within Buildroot, patch the master file with additional code
 
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+Upstream: configuration change
+
+Signed-off-by: Andreas Ziegler <br025@umbiko.net>
 
 --- a/etc/init.d/S50sshd
 +++ b/etc/init.d/S50sshd

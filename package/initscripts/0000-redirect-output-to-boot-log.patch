@@ -1,7 +1,9 @@
 During startup, redirect all output to /var/log/boot.log. 
 
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+Upstream: configuration change
 
+Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+---
 --- a/etc/init.d/rcS
 +++ a/etc/init.d/rcS
 @@ -1,5 +1,6 @@
