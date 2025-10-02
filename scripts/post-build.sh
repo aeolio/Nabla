@@ -3,6 +3,7 @@
 
 ### bind function library
 _path=$BR2_EXTERNAL_NABLA_PATH/scripts
+# shellcheck source=/dev/null
 [ -x "$_path/function_lib.sh" ] && . "$_path/function_lib.sh"
 
 KERNEL_CONFIG=$(get_kernel_config)
@@ -37,7 +38,7 @@ if [ $(is_config_selected "BR2_PACKAGE_LINUX_FIRMWARE") -gt 0 ]; then
 		[ $(grep -c "CONFIG_RT_2X00=[my]" $KERNEL_CONFIG) -gt 0 ]; then
 		FW_PKG_LIST="$FW_PKG_LIST rt2561.bin rt2561s.bin rt2661.bin rt2860.bin rt2870.bin rt3070.bin rt3071.bin rt3090.bin rt3290.bin rt73.bin"
 	fi
-	# Intel wireless firmware 
+	# Intel wireless firmware
 	if [ $(grep -c "CONFIG_WLAN_VENDOR_INTEL=[my]" $KERNEL_CONFIG) -gt 0 ] || \
 		[ $(grep -c "CONFIG_IWLWIFI=[my]" $KERNEL_CONFIG) -gt 0 ]; then
 		FW_PKG_LIST="$FW_PKG_LIST iwlwifi-6000g2a-6.ucode iwlwifi-6000g2b-6.ucode iwlwifi-7265-17.ucode iwlwifi-7265D-29.ucode"
@@ -95,7 +96,7 @@ if [ $(is_config_selected "BR2_PACKAGE_AVAHI") -gt 0 ]; then
 	fi
 fi
 
-### nfs-utils in server mode 
+### nfs-utils in server mode
 ### modify init.d startup file
 if [ $(is_config_selected "BR2_PACKAGE_NFS_UTILS_RPC_NFSD") -gt 0 ]; then
 	_ETC_INIT_D="${TARGET_DIR}/etc/init.d"
