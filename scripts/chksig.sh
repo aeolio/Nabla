@@ -1,14 +1,15 @@
 #!/bin/sh
 
-'''
-	This script handles mpd exclusively
-'''
+###
+###	This script handles mpd exclusively
+###
 
+buildroot_package=mpd
 buildroot_dir=~/buildroot
 external_dir=~/br2-external
-package_dir=$buildroot_dir/package/mpd
-download_dir=$buildroot_dir/dl/mpd
-makefile=$package_dir/mpd.mk
+package_dir=$buildroot_dir/package/$buildroot_package
+download_dir=$buildroot_dir/dl/$buildroot_package
+makefile=$package_dir/$buildroot_package.mk
 
 # shellcheck source=/dev/null
 . $external_dir/scripts/function_lib.sh
@@ -18,7 +19,7 @@ mpd_minor=$(get_config_value $makefile MPD_VERSION)
 mpd_minor=${mpd_minor##*.}
 mpd_version=$mpd_major.$mpd_minor
 
-archive_file=mpd-$mpd_version.tar.xz
+archive_file=$buildroot_package-$mpd_version.tar.xz
 signature_file=$archive_file.sig
 
 # this does unfortunately not work
