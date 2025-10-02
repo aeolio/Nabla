@@ -5,6 +5,7 @@ set -e
 
 ### bind function library
 _path=$BR2_EXTERNAL_NABLA_PATH/scripts
+# shellcheck source=/dev/null
 [ -x "$_path/function_lib.sh" ] && . "$_path/function_lib.sh"
 
 ###
@@ -18,13 +19,13 @@ _SOURCE_DIR=$BINARIES_DIR
 _TARGET_DIR=$BACKUP_DIR/$PROJECT_NAME/$(date +%Y%m%d%H%M%S)
 _EXCLUDE_PATTERN="--exclude=*.vfat --exclude=*.cpio --exclude=*.img"
 
-mkdir -p $_TARGET_DIR
-rsync -qrlt $_EXCLUDE_PATTERN --delete $_SOURCE_DIR/ $_TARGET_DIR/
+mkdir -p "$_TARGET_DIR"
+rsync -qrlt "$_EXCLUDE_PATTERN" --delete "$_SOURCE_DIR/" "$_TARGET_DIR/"
 
 n=0
-for d in $(ls -d --time=ctime $BACKUP_DIR/$PROJECT_NAME/[0-9]*); do
+for d in $(find "$BACKUP_DIR/$PROJECT_NAME" -type d -regex ".*/[0-9]+" | sort -r); do
 	n=$((n+1))
-	if [ $n -gt $GENERATIONS ]; then
-		rm -fr $d
+	if [ "$n" -gt "$GENERATIONS" ]; then
+		rm -fr "$d"
 	fi
 done
