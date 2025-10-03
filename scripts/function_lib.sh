@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # function library to be used in setup scripts
 
@@ -16,7 +16,7 @@ add_mountpoint() {
 	touch "$_etc_fstab" 
 	# $1 can appear multiple times, so add $2 to the search pattern
 	if ! grep -qE "$1[[:blank:]]+$2" "$_etc_fstab"; then
-		echo -e "$1\t\t$2\t\t$3\t$4\t0\t0" >> "$_etc_fstab" 
+		printf "%s\t\t%s\t\t%s\t%s\t0\t0\n" "$1" "$2" "$3" "$4" >> "$_etc_fstab" 
 	fi 
 } 
 
@@ -61,8 +61,7 @@ get_config_value() {
 	config_pattern="$2[[:blank:]]?=[[:blank:]]?\"?.*?\"?"
 	config_value=$(grep -E "$config_pattern" "$1")
 	config_value=${config_value##*=}	# everything after equal sign
-	config_value=${config_value/#\"/}	# remove leading quote
-	config_value=${config_value/%\"/}	# remove trailing quote
+	config_value=$(echo "$config_value" | xargs)	# strip
 	echo "$config_value"
 }
 
