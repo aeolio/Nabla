@@ -66,7 +66,7 @@ if [ "$(is_config_selected "BR2_PACKAGE_LINUX_FIRMWARE")" -gt 0 ]; then
 			# entry corresponds to a directory
 			elif [ -d "$_source_dir/$fw_pkg" ]; then
 				mkdir -p "$_target_dir/$fw_pkg" || exit 3
-				cp -rf "$_source_dir}/$fw_pkg/*" "$_target_dir/$fw_pkg" || exit 4
+				cp -f "$_source_dir/$fw_pkg"/* "$_target_dir/$fw_pkg" || exit 4
 			# locate the file using WHENCE from the firmware package
 			else
 				install_firmware "$fw_pkg" "$_source_dir" "$_target_dir" || exit 5
@@ -144,8 +144,13 @@ _etc_init_d="${TARGET_DIR}/etc/init.d"
 [ -f "$_etc_init_d/S01seedrng" ] && mv "$_etc_init_d/S01seedrng" "$_etc_init_d/S20seedrng"
 
 ### modify os-release
-release_file="$TARGET_DIR/usr/lib/os-release"
-replace_symbols "$release_file"
+(
+	# execute in a subshell with exit-on-error reset, 
+	# otherwise grep will abort the script
+	set +e
+	release_file="$TARGET_DIR/usr/lib/os-release"
+	replace_symbols "$release_file"
+)
 
 ### remove unnecessary items from target filesystem
 # empty directories

@@ -49,7 +49,7 @@ install_firmware() {
 # $1 = config variable
 is_config_selected() {
 	config_setting="$1=y"
-	result=$(grep -c "$config_setting" "$BR2_CONFIG")
+	result=$(grep -c "$config_setting" "$BR2_CONFIG") || true
 	echo "$result"
 }
 
