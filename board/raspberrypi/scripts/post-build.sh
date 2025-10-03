@@ -1,6 +1,8 @@
 #!/bin/sh
 # post-build.sh for Raspberry Pi
 
+set -e
+
 ### bind function library
 _path=$BR2_EXTERNAL_NABLA_PATH/scripts
 # shellcheck source=/dev/null

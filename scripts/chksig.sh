@@ -4,6 +4,8 @@
 ###	This script handles mpd exclusively
 ###
 
+set -e
+
 buildroot_package=mpd
 buildroot_dir=~/buildroot
 external_dir=~/br2-external
