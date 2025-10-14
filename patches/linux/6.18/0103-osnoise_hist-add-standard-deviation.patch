@@ -13,15 +13,15 @@ diff -Naur tools/tracing/rtla/src/osnoise_hist.c /home/iago/rpi64/build/linux-6.
  	unsigned long long	max_sample;
  
  };
-@@ -98,6 +99,7 @@
- 	struct osnoise_params *params = tool->params;
+@@ -103,6 +104,7 @@
+ 	struct osnoise_params *params = to_osnoise_params(tool->params);
  	struct osnoise_hist_data *data = tool->data;
  	unsigned long long total_duration;
 +	unsigned long long variance;
  	int entries = data->entries;
  	int bucket;
  	int *hist;
-@@ -108,11 +110,13 @@
+@@ -113,11 +115,13 @@
  	bucket = duration / data->bucket_size;
  
  	total_duration = duration * count;
@@ -35,7 +35,7 @@ diff -Naur tools/tracing/rtla/src/osnoise_hist.c /home/iago/rpi64/build/linux-6.
  	update_max(&data->hist[cpu].max_sample, &duration);
  
  	if (bucket < entries)
-@@ -329,6 +333,31 @@
+@@ -334,6 +338,31 @@
  
  		trace_seq_printf(trace->seq, "%9llu ", data->hist[cpu].max_sample);
  

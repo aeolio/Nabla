@@ -5,7 +5,7 @@ Signed-off-by: Andreas Ziegler <br015@umbiko.net>
 diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6.1.15/tools/tracing/rtla/src/timerlat_hist.c
 --- a/tools/tracing/rtla/src/timerlat_hist.c
 +++ b/tools/tracing/rtla/src/timerlat_hist.c
-@@ -30,14 +30,17 @@
+@@ -29,14 +29,17 @@
  
  	unsigned long long	min_irq;
  	unsigned long long	sum_irq;
@@ -23,16 +23,16 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
  	unsigned long long	max_user;
  };
  
-@@ -137,6 +140,7 @@
+@@ -140,6 +143,7 @@
  {
- 	struct timerlat_params *params = tool->params;
+ 	struct timerlat_params *params = to_timerlat_params(tool->params);
  	struct timerlat_hist_data *data = tool->data;
 +	unsigned long long variance;
  	int entries = data->entries;
  	int bucket;
  	int *hist;
-@@ -145,18 +149,22 @@
- 		latency = latency / params->output_divisor;
+@@ -148,18 +152,22 @@
+ 		latency = latency / params->common.output_divisor;
  
  	bucket = latency / data->bucket_size;
 +
@@ -54,7 +54,7 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
  		update_max(&data->hist[cpu].max_thread, &latency);
  	} else { /* user */
  		hist = data->hist[cpu].user;
-@@ -467,6 +475,64 @@
+@@ -470,6 +478,64 @@
  					     false);
  	}
  	trace_seq_printf(trace->seq, "\n");
