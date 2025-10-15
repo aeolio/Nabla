@@ -156,7 +156,7 @@ _etc_init_d="${TARGET_DIR}/etc/init.d"
 # empty directories
 remove_directories="lib/udev/rules.d usr/lib/udev/rules.d usr/lib/ntfs-3g"
 for d in $remove_directories; do
-	[ -d "${TARGET_DIR:?}/$d" ] && rmdir -p "${TARGET_DIR:?}/$d"
+	[ -d "${TARGET_DIR:?}/$d" ] && rmdir -p "${TARGET_DIR:?}/$d" || true
 done
 # unused directories or single files
 remove_files=""
