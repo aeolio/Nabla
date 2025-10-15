@@ -1,0 +1,22 @@
+bfconf.c: In function ‘bfconf_init’:
+bfconf.c:2562:61: warning: the comparison will always evaluate as ‘true’ for the address of ‘name’ will never be NULL [-Waddress]
+ 2562 |                  coeffs[i] != NULL && coeffs[i]->coeff.name != NULL;
+      |                                                             ^~
+In file included from bfrun.h:15,
+                 from bfconf.c:25:
+bfmod.h:108:10: note: ‘name’ declared here
+  108 |     char name[BF_MAXOBJECTNAME];
+      |          ^~~~
+
+--- b/bfconf.c
++++ b/bfconf.c
+@@ -2557,7 +2559,7 @@
+ 	} else {
+ 	    pfilters[n]->fctrl.coeff = -1;
+ 	    for (i = 0;
+-                 coeffs[i] != NULL && coeffs[i]->coeff.name != NULL;
++                 coeffs[i] != NULL && coeffs[i]->coeff.name[0] != 0;
+                  i++)
+             {
+ 		if (strcmp(coeffs[i]->coeff.name,
+
