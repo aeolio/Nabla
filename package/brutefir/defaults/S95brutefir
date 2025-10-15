@@ -1,47 +1,83 @@
 #!/bin/sh
 #
-# Start BruteFIR...
+# S95brutefir	Starts bruteFIR daemon.
 #
+# shellcheck disable=SC2317 # functions are called via variable
+
+# BruteFIR directories
+BF_CONFIG=/etc/bruteFIR
+BF_LOG=/var/log/bruteFIR
+BF_FIFO=/var/run/bruteFIR
+
+DAEMON="brutefir"
+DAEMON_ARGS="-daemon $BF_CONFIG/brutefir.config"
 
 ### initialize system variables
+# shellcheck source=/dev/null
 [ -x /etc/nabla.conf ] && . /etc/nabla.conf
 
 ### check if BruteFIR should run
 [ "$NABLA_USE_CONVOLUTION" != "Y" ] && exit 0
 
-### BruteFIR configuration and log directories
-BF_CONFIG=/etc/bruteFIR
-BF_LOG=/var/log/bruteFIR
-BF_FIFO=/var/run/bruteFIR
+### exit if no configuration
+[ -d $BF_CONFIG ] || exit 0
 
-### exit if no configuration, otherwise create directories
-[ -d $BF_CONFIG ] || exit 0;
-mkdir -p $BF_LOG
-mkdir -p $BF_FIFO && chmod a+w $BF_FIFO
+prepare() {
+	# create directories
+	mkdir -p "$BF_LOG"
+	mkdir -p "$BF_FIFO" && chmod a+w "$BF_FIFO"
 
-### create named pipes
-[ ! -p $BF_FIFO/bf_inp ] && mkfifo $BF_FIFO/bf_inp && chmod a+w $BF_FIFO/bf_inp
-[ ! -p $BF_FIFO/bf_out ] && mkfifo $BF_FIFO/bf_out && chmod a+w $BF_FIFO/bf_out
+	# save last generation log file
+	[ -f "$BF_LOG/brutefir.log" ] && mv "$BF_LOG/brutefir.log" "$BF_LOG/brutefir.log.1"
 
-### save last generation log file
-[ -f $BF_LOG/brutefir.log ] && mv $BF_LOG/brutefir.log $BF_LOG/brutefir.log.1
+	# create named pipes
+	[ ! -p "$BF_FIFO/bf_inp" ] && mkfifo "$BF_FIFO/bf_inp" && chmod a+w "$BF_FIFO/bf_inp"
+	[ ! -p "$BF_FIFO/bf_out" ] && mkfifo "$BF_FIFO/bf_out" && chmod a+w "$BF_FIFO/bf_out"
+}
+
+start() {
+	prepare
+	printf "Starting %s: " "$DAEMON"
+	start-stop-daemon --start \
+		--output $BF_LOG/brutefir.log \
+		--exec /usr/bin/$DAEMON -- $DAEMON_ARGS
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	return "$status"
+}
+
+stop() {
+	printf "Stopping %s: " "$DAEMON"
+	start-stop-daemon --stop \
+		--exec "/usr/bin/$DAEMON"
+	status=$?
+	if [ "$status" -eq 0 ]; then
+		echo "OK"
+	else
+		echo "FAIL"
+	fi
+	return "$status"
+}
+
+restart() {
+	stop
+	start
+}
+
+reload() {
+	restart
+}
 
 case "$1" in
-	start)
-		echo "Starting BruteFIR..."
-		brutefir -daemon $BF_CONFIG/brutefir.config < /dev/null > $BF_LOG/brutefir.log 2>&1
-		;;
-	stop)
-		echo "Stopping BruteFIR..."
-		kill -9 $(ps -w | grep brutefir | awk '{print $1; exit}')
-		;;
-	restart|reload)
-		$0 stop
-		usleep 5000000
-		$0 start
+	start|stop|reload|restart)
+		"$1"
 		;;
 	*)
-		echo "Usage: $0 {start|stop|restart}"
+		echo "Usage: $0 {start|stop|reload|restart}"
 		exit 1
 esac
 
