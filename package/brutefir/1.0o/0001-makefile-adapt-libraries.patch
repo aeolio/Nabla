@@ -1,5 +1,8 @@
-Fixes library and include paths, and prevents 
-inclusion of unused libraries in build. 
+x86_64-buildroot-linux-uclibc-gcc: ERROR: unsafe header/library path used in cross-compilation: '-I/usr/local/include'
+x86_64-buildroot-linux-uclibc-gcc: ERROR: unsafe header/library path used in cross-compilation: '-I/usr/local/include'
+
+Fix library and include paths
+Prevent inclusion of unused libraries in build. 
 
 Upstream: n/a
 
