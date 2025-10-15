@@ -20,8 +20,9 @@ define BRUTEFIR_BUILD_CMDS
 endef
 
 define BRUTEFIR_INSTALL_TARGET_CMDS
+	$(INSTALL) -d -m 0755 $(TARGET_DIR)/usr/lib/brutefir
 	$(INSTALL) -D -m 0755 $(@D)/brutefir $(TARGET_DIR)/usr/bin
-	$(INSTALL) -D -m 0755 $(@D)/*.bfio $(TARGET_DIR)/usr/lib/brutefir
+	$(INSTALL) -D -m 0644 $(@D)/*.bfio $(TARGET_DIR)/usr/lib/brutefir
 	$(INSTALL) -D -m 0644 $(@D)/*.bflogic $(TARGET_DIR)/usr/lib/brutefir
 	$(INSTALL) -D -m 0755 $(BRUTEFIR_DEFAULTS_DIR)/S95brutefir $(TARGET_DIR)/etc/init.d
 	$(INSTALL) -D -m 0644 $(BRUTEFIR_DEFAULTS_DIR)/asound.conf $(TARGET_DIR)/etc/asound.conf
