@@ -84,5 +84,7 @@ writeback_cpumask=$writeback/cpumask
 # shellcheck disable=SC2154	# _get_nrt_cpumask is from init_functions
 [ -f $writeback_cpumask ] && echo "$_get_nrt_cpumask" > $writeback_cpumask
 
-# increase maximum allocatable memory for USB device (drivers/usb/core/devio.c) 
-[ -d /sys/module/usbcore/parameters ] && echo 64 > /sys/module/usbcore/parameters/usbfs_memory_mb
+# increase maximum allocatable memory for USB filesystems 
+# see (drivers/usb/core/devio.c)
+usbcore_parameters=/sys/module/usbcore/parameters
+[ -d $usbcore_parameters ] && echo 64 > $usbcore_parameters/usbfs_memory_mb
