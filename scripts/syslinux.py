@@ -55,7 +55,7 @@ def kernel_parameters(p):
 	s = '  APPEND'
 	if p.multiprocessing or p.processor_count > 1:
 		n = p.processor_count - 1
-		s += f" isolcpus=nohz,domain,managed_irq,{n} nohz_full={n}"
+		s += f" isolcpus=nohz,domain,managed_irq,{n} nohz_full={n} rcu_nocbs={n}"
 	if p.port_type == 'serial':
 		s += f" console={p.port_id},{p.port_baudrate}n8"
 	s += ' quiet\n'

@@ -27,6 +27,10 @@ fi
 if ! grep -q 'nohz_full=' "${BOOT_FILE}"; then
 	sed -i 's/$/ nohz_full=3/' "${BOOT_FILE}"
 fi
+# append rcu_nocbs parameter
+if ! grep -q 'rcu_nocbs=' "${BOOT_FILE}"; then
+	sed -i 's/$/ rcu_nocbs=3/' "${BOOT_FILE}"
+fi
 
 ### modify config.txt
 CONFIG_FILE=$BINARIES_DIR/rpi-firmware/config.txt
