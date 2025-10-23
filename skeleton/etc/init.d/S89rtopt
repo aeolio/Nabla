@@ -72,6 +72,7 @@ echo "1000000" > /proc/sys/kernel/sched_rt_period_us # accounting period
 
 # Delay vm statistics timer.  This may be obsolete since Christoph Lameter's 
 # vm shepherd patch.  For reference see lkml.org/lkml/2013/9/4/379
+# aarch64 still has this setting [2025-10-23]
 vm_statistics=/proc/sys/vm/stat_interval
 [ -f $vm_statistics ] && echo 300 > $vm_statistics
 
@@ -80,7 +81,7 @@ writeback=/sys/bus/workqueue/devices/writeback
 writeback_numa=$writeback/numa
 [ -f $writeback_numa ] && echo 0 > $writeback_numa
 writeback_cpumask=$writeback/cpumask
-			# shellcheck disable=SC2154	# _get_nrt_cpumask is from init_functions
+# shellcheck disable=SC2154	# _get_nrt_cpumask is from init_functions
 [ -f $writeback_cpumask ] && echo "$_get_nrt_cpumask" > $writeback_cpumask
 
 # increase maximum allocatable memory for USB device (drivers/usb/core/devio.c) 
