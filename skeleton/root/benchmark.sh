@@ -6,7 +6,7 @@ if ! dmesg | grep -q PREEMPT_RT; then echo 'PREEMPT_RT is OFF'; fi
 # run the usual tests
 printf "uname = " && uname -r
 printf "tasks = " && ps | wc -l
-printf "free = " && free | awk '/Mem:/ { print $3 " /" ($2 - $7) }'
+printf "u.ram = " && free | awk '/Mem:/ { print $3 " /" ($2 - $7) }'
 case "$1" in
   -c)
     # start interbench without console interaction
