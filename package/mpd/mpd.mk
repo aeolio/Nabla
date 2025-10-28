@@ -25,22 +25,3 @@ define MPD_MODIFY_INIT_SCRIPT
 	fi
 endef
 MPD_POST_INSTALL_TARGET_HOOKS += MPD_MODIFY_INIT_SCRIPT
-
-# if a base version patch directory exists,
-# a directory for the current version must also be present
-define MPD_PATCH_ASSURANCE
-	patch_dirs=$(BR2_GLOBAL_PATCH_DIR); \
-	pkg_name=mpd; \
-	pkg_version=$(MPD_VERSION); \
-	base_version=$$(expr match $$pkg_version '\([0-9]\+.[0-9]\+\)'); \
-	if [ $${pkg_version} != $${base_version} ]; then \
-		for p in $${patch_dirs}; do \
-			if	[ -d "$$p/$$pkg_name/$${base_version}" ] && \
-				[ ! -h "$$p/$$pkg_name/$${pkg_version}" ]; then \
-				echo "patch directory link missing for $${pkg_version}"; \
-				exit -1; \
-			fi \
-		done \
-	fi
-endef
-MPD_PRE_PATCH_HOOKS += MPD_PATCH_ASSURANCE
