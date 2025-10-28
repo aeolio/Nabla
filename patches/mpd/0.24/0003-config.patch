@@ -1,14 +1,14 @@
 --- a/src/config/Option.hxx
 +++ b/src/config/Option.hxx
-@@ -9,6 +9,8 @@
- #pragma GCC diagnostic push
+@@ -10,6 +10,8 @@
  #pragma GCC diagnostic ignored "-Wshadow"
  #endif
-+
-+#include "config.h"
  
++#include "config.h"
++
  enum class ConfigOption {
  	MUSIC_DIR,
+ 	PLAYLIST_DIR,
 @@ -75,6 +77,9 @@
  	RESAMPLER,
  	AUDIO_FILTER,

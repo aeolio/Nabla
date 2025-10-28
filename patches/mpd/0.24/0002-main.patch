@@ -11,7 +11,7 @@
  #ifdef ENABLE_DAEMON
  #include "unix/Daemon.hxx"
  #endif
-@@ -326,6 +330,11 @@
+@@ -330,6 +334,11 @@
  
  	log_init(raw_config, options.verbose, options.log_stderr);
  
@@ -23,14 +23,14 @@
  	Instance instance;
  	global_instance = &instance;
  
-@@ -369,6 +378,10 @@
- 	spl_global_init(raw_config);
- #ifdef ENABLE_ARCHIVE
+@@ -375,6 +384,10 @@
  	const ScopeArchivePluginsInit archive_plugins_init{raw_config};
-+#endif
-+
-+#ifdef ENABLE_RTOPT
-+	RealtimeOption::LockMemory();
  #endif
  
++#ifdef ENABLE_RTOPT
++	RealtimeOption::LockMemory();
++#endif
++
  	pcm_convert_global_init(raw_config);
+ 
+ 	const ScopeDecoderPluginsInit decoder_plugins_init(raw_config);

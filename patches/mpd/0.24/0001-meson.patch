@@ -1,16 +1,16 @@
 --- a/meson.build
 +++ b/meson.build
-@@ -319,6 +319,9 @@
- conf.set('ENABLE_INOTIFY', enable_inotify)
+@@ -323,6 +323,9 @@
  
  conf.set('ENABLE_DSD', get_option('dsd'))
-+
+ 
 +enable_rtopt = get_option('rtopt')
 +conf.set('ENABLE_RTOPT', enable_rtopt)
- 
++
  inc = include_directories(
    'src',
-@@ -451,6 +454,12 @@
+ 
+@@ -448,6 +451,12 @@
    ]
  endif
  
@@ -25,12 +25,12 @@
      'src/CommandLine.cxx',
 --- a/meson_options.txt
 +++ b/meson_options.txt
-@@ -12,6 +12,8 @@
- 
+@@ -13,6 +13,8 @@
  option('systemd_system_unit_dir', type: 'string', description: 'systemd system service directory')
  option('systemd_user_unit_dir', type: 'string', description: 'systemd user service directory')
-+
-+option('rtopt', type: 'boolean', value: false, description: 'Yan\'s RT patch')
  
++option('rtopt', type: 'boolean', value: false, description: 'Yan\'s RT patch')
++
  #
  # Options for developers
+ #

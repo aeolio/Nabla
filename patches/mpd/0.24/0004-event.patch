@@ -1,6 +1,6 @@
 --- a/src/event/Thread.cxx
 +++ b/src/event/Thread.cxx
-@@ -47,6 +47,7 @@
+@@ -48,6 +48,7 @@
  	event_loop.SetThread(ThreadId::GetCurrent());
  
  	if (realtime) {
@@ -8,7 +8,7 @@
  		SetThreadTimerSlack(std::chrono::microseconds(10));
  
  		try {
-@@ -56,6 +57,7 @@
+@@ -57,6 +58,7 @@
  				"RTIOThread could not get realtime scheduling, continuing anyway: {}",
  				std::current_exception());
  		}
