@@ -3,24 +3,30 @@
 # clock	Set the system clock from the internet.
 #
 
-wait_for_network() {
+router_address() {
 	# shellcheck disable=SC2034 # unused iteration variable
 	for i in $(seq 20); do
-		address=$(ip addr show | grep -w 'inet' | awk '/global/ {print $2; exit}')
+		address=$(ip route | awk '/default via/ {print $3; exit}')
 		[ "$address" ] && break
 		usleep 500000
 	done
+	echo "$address"
 }
 
 case "$1" in
-	start|stop|restart|reload)
-		[ "$1" = "start" ] && wait_for_network
+	start|restart|reload)
+		router=$(router_address)
 		printf "Set system time: "
-		# read current time from a HTTP page -- musl does not support %Z (timezone)
-		pattern="^ *Date: *"; date -s "$(wget -qSO /dev/null ntp.org 2>&1 | \
-			sed -n '1,/'"$pattern"'/{s/'"$pattern"'//p}')" -D "%a, %d %b %Y %T"
+		# read current time from HTTP header -- musl does not support %Z (timezone)
+		pattern="^ *Date: *"; date -s \
+			"$(wget -qSO /dev/null http://$router 2>&1 | \
+			sed -n '1,/'"$pattern"'/{s/'"$pattern"'//p}')" \
+			-D "%a, %d %b %Y %T"
 		# set the hardware clock, if present
 		[ -e /dev/rtc0 ] && hwclock -su ;;
+
+	stop)
+		exit 0 ;;
 
 	*)
 		echo "Usage: $0 {start|stop|restart|reload}"
