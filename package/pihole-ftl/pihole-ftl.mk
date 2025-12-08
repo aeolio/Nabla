@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-PIHOLE_FTL_VERSION = 6.1.4
+PIHOLE_FTL_VERSION = 6.3.3
 PIHOLE_FTL_SITE = $(call github,aeolio,pihole-ftl,e3b0ecb)
 #PIHOLE_FTL_SITE = /home/iago/staging/pi-hole/pihole-ftl
 #PIHOLE_FTL_SITE_METHOD = local
