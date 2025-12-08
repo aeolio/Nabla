@@ -6,12 +6,13 @@
 # Toolchain/Custom kernel headers series is selected before everything else
 
 
-# latest release candidate
+# latest release candidate for testing
 if BR2_TOOLCHAIN_HEADERS_LATEST
 
 config NABLA_LINUX_VERSION
 	string
 	default "6.18"
+
 config NABLA_LINUX_PATCH
 	string
 	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.18/patch-6.18-rc4-rt3.patch.xz"
@@ -20,11 +21,26 @@ endif # BR2_TOOLCHAIN_HEADERS_LATEST
 
 
 # latest LTS kernel for 64-bit systems
+if BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_18
+
+config NABLA_LINUX_VERSION
+	string
+	default "6.18"
+
+config NABLA_LINUX_PATCH
+	string
+	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.18/patch-6.18-rc4-rt3.patch.xz"
+
+endif # BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_18
+
+
+# last LTS kernel for 64-bit systems
 if BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_12
 
 config NABLA_LINUX_VERSION
 	string
 	default "6.12.61"
+
 config NABLA_LINUX_PATCH
 	string
 	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.12/patch-6.12.57-rt14.patch.xz"
@@ -32,21 +48,7 @@ config NABLA_LINUX_PATCH
 endif # BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_12
 
 
-# last LTS kernel for 64-bit systems
-if BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_6 && (BR2_aarch64 || BR2_x86_64)
-
-config NABLA_LINUX_VERSION
-	string
-	default "6.6.119"
-
-config NABLA_LINUX_PATCH
-	string
-	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.6/patch-6.6.116-rt66.patch.xz"
-
-endif # BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_6
-
-
-# LTS kernel for older architectures
+# older LTS kernel for 32-bit architectures
 if BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_10 && BR2_i386
 
 config NABLA_LINUX_VERSION
