@@ -1,12 +1,12 @@
 Description
 
-Nabla is a compact GNU/Linux image for a few selected hardware configurations. Currently PC Engines Alix2, Raspberry Pi 4, Intel 32 and 64 bit are supported. Recommended hardware is Intel 64 bit and Raspberry Pi 4. Intel 32 bit will be discontinued in the future. 
+Nabla is a compact GNU/Linux image, dedicated to run Music Player Daemon (mpd), for a few selected hardware configurations. Currently PC Engines Alix2, Raspberry Pi 4, Intel 32 and 64 bit are supported. Recommended hardware is Intel 64 bit and Raspberry Pi 4. Intel 32 bit is not maintained any more and will be discontinued in the future. 
 
 In addition to this repository, a Buildroot installation is required to generate Nabla images. 
 
 Resulting firmware images can be started via syslinux or isolinux from a USB stick or SD card and run completely within a ram disk. Configurations will be read from /written back to a hidden directory on the boot device. 
 
-Nabla uses mpd for music playback and can access local hard drives or remote directories via NFS or SMB. Filesystems must be mounted locally to be accessible. USB drives are recognized and mounted automatically. 
+Nabla uses mpd for music playback and can access local hard drives or remote directories via NFS or SMB. Temote filesystems must be mounted locally to be accessible. USB drives are recognized and mounted automatically. 
 
 
 Configuration
@@ -51,8 +51,12 @@ Raspberry Pi does not use image files; transfer the files in the folder rpi-firm
 Upgrade
 
 Using a terminal, connect via ssh to the embedded system and make the boot partition writeable:
-  $ ssh nabla
+  $ ssh root@nabla
   [nabla]# mount -o remount,rw /media/boot
+
+Nabla has a single user (root) configured. The password is created individually during the first build and can be found in the Buildroot configuration file:
+
+  $ grep BR2_TARGET_GENERIC_ROOT_PASSWD nabla/.config
 
 Using a file browser, connect via sftp to the embedded system and copy bzImage (for Raspberry Pi: bcm2711-rpi-4-b.dtb, Image, rootfs.cpio.gz) to the boot partition mounted on /media/boot. 
 
