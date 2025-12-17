@@ -11,11 +11,11 @@ if BR2_TOOLCHAIN_HEADERS_LATEST
 
 config NABLA_LINUX_VERSION
 	string
-	default "6.18.1"
+	default "6.19-rc1"
 
 config NABLA_LINUX_PATCH
 	string
-	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.18/patch-6.18-rc4-rt3.patch.xz"
+	default ""
 
 endif # BR2_TOOLCHAIN_HEADERS_LATEST
 
