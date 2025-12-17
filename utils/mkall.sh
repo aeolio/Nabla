@@ -60,7 +60,7 @@ deploy_image_files() {
 		. ./$cfgfile
 		local logfile=/tmp/$HOSTNAME.log
 		if ssh -o ConnectTimeout=2 -q root@$HOSTNAME true; then
-			printf ">>>   Image deployment to %s\n" $HOSTNAME
+			printf "${blackonwhite}>>>   Image deployment to %s${reset}\n" $HOSTNAME
 			ssh root@$HOSTNAME $mrw
 			rsync $rsync_options $IMAGEFILES root@$HOSTNAME:$TARGETDIR 2>&1 > $logfile || exit 1
 			changes=$(awk 'BEGIN{FS=":"} /'"$transferred_files"'/ {gsub(/ /, "", $2); print $2}' $logfile)
@@ -147,7 +147,7 @@ for t in $targets; do
 	if ! [ -d $p/build ]; then continue; fi
 	# ignore specified projects
 	if (echo ${exclusion_list} | grep -q "$pn"); then continue; fi
-	echo "\t${highlight}###" $pn "###${reset}"
+	printf "\t${highlight}### %s ###${reset}\n" $pn
 	cd $p
 	# exclusively execute make target if specified
 	if [ -n "$command" ]; then
