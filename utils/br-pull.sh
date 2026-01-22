@@ -28,7 +28,7 @@ pull_instance() {
 		backup_wip
 		git checkout master || exit 1
 		git pull || exit 2
-		git checkout nabla || exit 3
+		git checkout $merge_branch || exit 3
 		restore_wip
 	else
 		git pull || exit 2
