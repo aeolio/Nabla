@@ -1,17 +1,21 @@
 The original file is provided by mpd, and
 can be found in the Buildroot package directory.
 
-Instead of creating an overlay file and having to check manually, whenever
+Instead of creating an overlay file, having to check this manually whenever
 changes are made within Buildroot, patch the master file with additional code
 
 Upstream: configuration change
 
 Signed-off-by: Andreas Ziegler <br025@umbiko.net>
 ---
---- buildroot/package/mpd/S95mpd	2024-07-22 06:14:03.773465724 +0200
-+++ target/etc/init.d/S95mpd	2024-07-21 19:02:01.543461548 +0200
-@@ -5,17 +5,89 @@
- # shellcheck disable=SC2317 # functions are called via variable
+--- a/etc/init.d/S95mpd	2026-01-24 07:55:04.732178754 +0100
++++ b/etc/init.d/S95mpd	2026-01-24 11:19:30.911692102 +0100
+@@ -2,20 +2,93 @@
+ #
+ # S95mpd	Starts Music Player daemon.
+ #
++# shellcheck source=/dev/null # do not follow included files
+ # shellcheck disable=SC2329 # functions are called via variable
  
  DAEMON="mpd"
 -PIDFILE="/var/run/$DAEMON.pid"
@@ -43,23 +47,22 @@ Signed-off-by: Andreas Ziegler <br025@umbiko.net>
 +
 +# unmute all alsa devices found on machine
 +unmute() {
-+	local mixer="/usr/bin/amixer"
-+	local procfs="/proc/asound"
++	amixer="/usr/bin/amixer"
++	procfs="/proc/asound"
 +
-+	sound_cards=$procfs/card[0-9]
-+	if [ -f $mixer ] && [ ! "$sound_cards" = "$(echo $sound_cards)" ] ; then
++	if [ -x "$amixer" ]; then
 +		# loop through all sound devices
-+		for card in `ls -d $sound_cards`; do
-+			# touch only USB devices
-+			if [ ! -f $card/usbid ]; then continue; fi
++		for card in "$procfs"/card[0-9]; do
++			# ignore non-USB devices
++			if [ ! -f "$card/usbid" ]; then continue; fi
 +			# extract device id
 +			id=${card##*/card}
 +			# unmute all simple controls on this device
-+			amixer -c $id scontrols | \
++			amixer -c "$id" scontrols | \
 +				sed -e 's/^Simple mixer control//' | \
-+				while read line; do 
-+				amixer -c $id sset "$line" 100% unmute > /dev/null 2>&1
-+			done
++				while read -r line; do 
++					amixer -c "$id" sset "$line" 100% unmute > /dev/null 2>&1
++				done
 +		done
 +	fi
 +}
@@ -67,18 +70,18 @@ Signed-off-by: Andreas Ziegler <br025@umbiko.net>
 +# create directories and link to music libraries
 +initialize() {
 +	_owner="mpd:audio"
-+	mkdir -p $MPD_LIB && chown -R $_owner $MPD_LIB
-+	mkdir -p $MPD_CACHE && chown -R $_owner $MPD_CACHE
-+	mkdir -p $MPD_LOG && chown -R $_owner $MPD_LOG
-+	mkdir -p $MPD_RUN && chown -R $_owner $MPD_RUN
++	mkdir -p "$MPD_LIB" && chown -R "$_owner" "$MPD_LIB"
++	mkdir -p "$MPD_CACHE" && chown -R "$_owner" "$MPD_CACHE"
++	mkdir -p "$MPD_LOG" && chown -R "$_owner" "$MPD_LOG"
++	mkdir -p "$MPD_RUN" && chown -R "$_owner" "$MPD_RUN"
 +	# this is the $DAEMON link to the music directory
-+	if [ ! -h $MPD_MUSIC ]; then
-+		ln -s $HOTPLUG_DIR $MPD_MUSIC
++	if [ ! -h "$MPD_MUSIC" ]; then
++		ln -s "$HOTPLUG_DIR" "$MPD_MUSIC"
 +	fi
 +	# create ignore list
-+	echo "$NABLA_PARTITION" > $HOTPLUG_DIR/.mpdignore
++	echo "$NABLA_PARTITION" > "$HOTPLUG_DIR"/.mpdignore
 +	# library file attributes may be broken by import
-+	find $MPD_LIB -type f -exec chmod u=rw,g=rw,o=r {} \;
++	find "$MPD_LIB" -type f -exec chmod u=rw,g=rw,o=r {} \;
 +}
  
  start() {
@@ -87,17 +90,18 @@ Signed-off-by: Andreas Ziegler <br025@umbiko.net>
 +	unmute
 +	# increase max locked memory limit for io_uring 
 +	# increase real-time priority limit to enable real-time scheduling
-+	ulimit -HS -l $IO_URING_MEMLIMIT -r $(expr $HARDIRQ_PRIORITY - 1)
++	# shellcheck disable=SC3045 # busybox sh provides ulimit builtin
++	ulimit -HS -l "$IO_URING_MEMLIMIT" -r $((HARDIRQ_PRIORITY-1))
  	start-stop-daemon --start --pidfile "$PIDFILE" \
  		--exec "/usr/bin/$DAEMON"
  	status=$?
  	if [ "$status" -eq 0 ]; then
 +		# set processor affinity
 +		cpu_id=$(_get_rt_cpuid)
-+		pid=$(cat $PIDFILE)
-+		taskset -p $(_get_cpumask $cpu_id) $pid
++		pid=$(cat "$PIDFILE")
++		taskset -p "$(_get_cpumask "$cpu_id")" "$pid"
 +		# thread priority is set by process, so this might be unnecessary
-+		chrt $(_chrt_policy) -p $SOFTIRQ_PRIORITY $pid
++		chrt "$(_chrt_policy)" -p "$SOFTIRQ_PRIORITY" "$pid"
  		echo "OK"
  	else
  		echo "FAIL"
