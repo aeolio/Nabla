@@ -2,7 +2,7 @@
 #
 # wpa_supplicant	Starts wireless connection handler.
 #
-# shellcheck disable=SC2317 # functions are called via variable
+# shellcheck disable=SC2329 # functions are called via variable
 
 DAEMON=wpa_supplicant
 PIDFILE="/var/run/$DAEMON.pid"

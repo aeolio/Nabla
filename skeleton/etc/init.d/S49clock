@@ -19,7 +19,7 @@ case "$1" in
 		printf "Set system time: "
 		# read current time from HTTP header -- musl does not support %Z (timezone)
 		pattern="^ *Date: *"; date -s \
-			"$(wget -qSO /dev/null http://$router 2>&1 | \
+			"$(wget -qSO /dev/null "http://$router" 2>&1 | \
 			sed -n '1,/'"$pattern"'/{s/'"$pattern"'//p}')" \
 			-D "%a, %d %b %Y %T"
 		# set the hardware clock, if present
