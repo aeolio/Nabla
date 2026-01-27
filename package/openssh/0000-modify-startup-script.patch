@@ -8,9 +8,14 @@ Upstream: configuration change
 
 Signed-off-by: Andreas Ziegler <br025@umbiko.net>
 
---- a/etc/init.d/S50sshd
-+++ b/etc/init.d/S50sshd
-@@ -6,14 +6,56 @@
+--- a/etc/init.d/S50sshd	2024-10-31 07:36:13.699379800 +0100
++++ b/etc/init.d/S50sshd	2026-01-24 12:30:24.571682042 +0100
+@@ -2,18 +2,63 @@
+ #
+ # sshd        Starts sshd.
+ #
++# shellcheck disable=SC2329 # functions are called via variable
+ 
  DAEMON="sshd"
  PIDFILE="/var/run/$DAEMON.pid"
  
@@ -26,7 +31,7 @@ Signed-off-by: Andreas Ziegler <br025@umbiko.net>
 +
  # Make sure the ssh-keygen program exists
  [ -f /usr/bin/ssh-keygen ] || exit 0
-+
+ 
 +# Make sure the SSH server directory exists
 +mkdir -p $SSH_SERVER_DIR
 +
@@ -36,28 +41,30 @@ Signed-off-by: Andreas Ziegler <br025@umbiko.net>
 +	# first set all files to acessible by user only
 +	ssh_pattern="$ssh_dir/*"
 +	# if pattern can be expanded, files exist
-+	[ ! "$ssh_pattern" = "$(echo $ssh_pattern)" ] && chmod 600 $ssh_pattern
++	# shellcheck disable=SC2086 # globbing is intended
++	[ "$ssh_pattern" != "$(printf %s $ssh_pattern)" ] && chmod 600 $ssh_pattern
 +	# now add read permisson for public files
 +	for ssh_file in $PUBLIC_FILES; do
 +		ssh_pattern="$ssh_dir/$ssh_file"
-+		[ ! "$ssh_pattern" = "$(echo $ssh_pattern)" ] && chmod a+r $ssh_pattern
++		# shellcheck disable=SC2086 # globbing is intended
++		[ "$ssh_pattern" != "$(printf %s $ssh_pattern)" ] && chmod a+r $ssh_pattern
 +	done
 +}
 +
 +# generate any missing keys
 +generate_missing_keys() {
-+	echo -n "Generating missing SSH keys "
++	printf %s "Generating missing SSH keys "
 +	for key_file in $SSH_KEY_FILES; do
-+		if [ ! -f $SSH_SERVER_DIR/$key_file ] ; then
++		if [ ! -f "$SSH_SERVER_DIR/$key_file" ] ; then
 +			key_type=${key_file##ssh_host_}
 +			key_type=${key_type%%_key}
-+			echo -n "$key_type "
-+			/usr/bin/ssh-keygen -t $key_type -f $SSH_SERVER_DIR/$key_file -C '' -N '' > /dev/null 2>&1
++			printf %s "$key_type "
++			/usr/bin/ssh-keygen -t "$key_type" -f "$SSH_SERVER_DIR/$key_file" -C '' -N '' > /dev/null 2>&1
 +		fi
 +	done
 +	echo "[OK]"
 +}
- 
++
  umask 077
  
  start() {
@@ -69,7 +76,7 @@ Signed-off-by: Andreas Ziegler <br025@umbiko.net>
  
  	printf "Starting %s: " "$DAEMON"
  	start-stop-daemon --start --pidfile "$PIDFILE" \
-@@ -63,18 +105,9 @@
+@@ -63,18 +108,9 @@
  }
  
  case "$1" in
