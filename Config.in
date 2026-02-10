@@ -6,6 +6,14 @@ source "$BR2_EXTERNAL_NABLA_PATH/Config.in.linux"
 
 
 #
+# hardware and system dependencies
+#
+
+# io_uring causes high io activity with Linux versions < 6.15
+config BR2_HAS_IO_URING
+	default y if BR2_TOOLCHAIN_HEADERS_AT_LEAST_6_15
+
+#
 # presets for standard configurations
 #
 
@@ -110,6 +118,7 @@ config NABLA_UNCONFIGURED
 config NABLA_CLIENT
 	bool "client"
 	select BR2_PACKAGE_MPD_ALSA		# local playback
+	select BR2_PACKAGE_MPD_IO_URING if BR2_HAS_IO_URING	# async io for local files
 	select BR2_PACKAGE_MPD_LIBMPDCLIENT
 	select BR2_PACKAGE_MPD_MAD		# mp3 playback
 	select BR2_PACKAGE_MPD_LIBNFS	# remote database access
@@ -120,8 +129,6 @@ config NABLA_CLIENT
 config NABLA_SERVER
 	bool "server"
 	select BR2_PACKAGE_MPD_MPG123	# mp3 meta data extraction
-	# io_uring causes high io activity with Linux versions < 6.15
-	# select BR2_PACKAGE_MPD_IO_URING	# async access to local files
 	help
 	  A server machine manages a local database
 	  and is not used to play music.
@@ -129,11 +136,10 @@ config NABLA_SERVER
 config NABLA_STANDALONE
 	bool "standalone"
 	select BR2_PACKAGE_MPD_ALSA		# local playback
+	select BR2_PACKAGE_MPD_IO_URING if BR2_HAS_IO_URING	# async io for local files
 	select BR2_PACKAGE_MPD_LIBMPDCLIENT
 	select BR2_PACKAGE_MPD_MPG123	# mp3 meta data extraction
 	select BR2_PACKAGE_MPD_MAD		# mp3 playback
-	# io_uring causes high io activity with Linux versions < 6.15
-	# select BR2_PACKAGE_MPD_IO_URING	# async access to local files
 	help
 	  A standalone machine has both a local database
 	  and local playback capability
