@@ -3,25 +3,24 @@ Upstream: not sent
 Signed-off-by: Andreas Ziegler <br015@umbiko.net>
 --- a/src/args.c
 +++ b/src/args.c
-@@ -70,6 +70,8 @@
- #include "ntp/ntp.h"
- // check_capability()
- #include "capabilities.h"
+@@ -76,6 +76,8 @@
+ #include "config/inotify.h"
+ // get_all_supported_ciphersuites()
+ #include "webserver/webserver.h"
 +// gravity_main()
 +#include "gravity.h"
  
  // defined in dnsmasq.c
  extern void print_dnsmasq_version(const char *yellow, const char *green, const char *bold, const char *normal);
-@@ -214,6 +216,11 @@
- 	// we operate in drop-in mode and consume all arguments for the embedded luac engine
+@@ -244,6 +246,11 @@
  	if(strEndsWith(argv[0], "luac"))
  		exit(run_luac(argc, argv));
-+
+ 
 +	// If the binary name is "gravity" (e.g., symlink /usr/bin/gravity -> /usr/bin/pihole-FTL),
 +	// we operate in drop-in mode and consume all arguments for the embedded gravity command
 +	if(strEndsWith(argv[0], "gravity"))
 +		exit(gravity_main(argc, argv));
- 
++
  	// Special (undocumented) mode to test kernel signal handling
  	if(argc == 2 && strcmp(argv[1], "sigtest") == 0)
-
+ 		exit(sigtest());
