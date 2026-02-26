@@ -11,6 +11,7 @@ source "$BR2_EXTERNAL_NABLA_PATH/Config.in.linux"
 
 # io_uring causes high io activity with Linux versions < 6.15
 config BR2_HAS_IO_URING
+	bool
 	default y if BR2_TOOLCHAIN_HEADERS_AT_LEAST_6_15
 
 #
