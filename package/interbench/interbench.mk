@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-INTERBENCH_VERSION = 0.37
+INTERBENCH_VERSION = 29c8077
 INTERBENCH_SITE = $(call github,aeolio,interbench,$(INTERBENCH_VERSION))
 INTERBENCH_LICENSE = GPLv3
 INTERBENCH_LICENSE_FILES = COPYING
