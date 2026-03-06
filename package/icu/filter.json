@@ -1,0 +1,87 @@
+{
+  "localeFilter": {
+    "filterType": "locale",
+    "includelist": [
+      "en_US"
+    ]
+  },
+
+  "collationUCAData": "implicithan",
+  
+  "featureFilters": {
+
+    "brkitr_rules": {
+      "filterType": "exclude"
+    },
+    "brkitr_dictionaries": {
+      "filterType": "exclude"
+    },
+    "brkitr_tree": {
+      "filterType": "exclude"
+    },
+	"conversion_mappings": {
+      "includelist": [
+        "euc-jp-2007",
+
+        "iso-8859_10-1998",
+
+        "ibm-437_P100-1995",
+        "ibm-850_P100-1995",
+        "ibm-1250_P100-1995",
+        "ibm-1251_P100-1995"
+      ]
+	},
+    "coll_tree": {
+      "filterType": "exclude"
+    },
+    "confusables": {
+      "filterType": "exclude"
+    },
+    "curr_supplemental": {
+      "filterType": "exclude"
+    },
+    "curr_tree": {
+      "filterType": "exclude"
+    },
+    "lang_tree": {
+      "filterType": "exclude"
+    },
+    "region_tree": {
+      "filterType": "exclude"
+    },
+    "rbnf_tree": {
+      "filterType": "exclude"
+    },
+    "stringprep": {
+      "filterType": "exclude"
+    },
+    "zone_tree": {
+      "filterType": "exclude"
+    },
+    "uemoji": {
+      "filterType": "exclude"
+    },
+    "unames": {
+      "filterType": "exclude"
+    },
+    "unit_tree": {
+      "filterType": "exclude"
+    }
+  },
+
+  "resourceFilters": [
+    {
+      "categories": ["misc"],
+      "files": {
+        "includelist": ["supplementalData"]
+      },
+      "rules": [
+          "-/calendarData",
+          "-/genderList",
+          "-/pluralRanges",
+          "-/supplementalData"
+      ]
+    }
+  ]
+
+}
