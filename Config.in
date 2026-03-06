@@ -24,12 +24,10 @@ config BR2_PACKAGE_MPD_SOCKETS
 	default y if BR2_PACKAGE_MPD
 	select BR2_PACKAGE_MPD_TCP
 
-# unicode library should be included in the build
-# this does not have a mpd setting, unfortunately
-#config BR2_PACKAGE_MPD_UNICODE
-#	bool
-#	default y if BR2_PACKAGE_MPD
-#	select BR2_PACKAGE_ICU
+# Unicode library should be included in the build
+# This does not have a mpd setting, unfortunately
+# Also the filter file must be specified manually
+# So no default configuration here
 
 # for mpd server, enable NFS server functionality
 config BR2_PACKAGE_MPD_NFS_UTILS
@@ -95,7 +93,6 @@ config BR2_PACKAGE_LIBCURL_ZLIB
 	bool
 	default y if BR2_PACKAGE_LIBCURL
 	select BR2_PACKAGE_ZLIB
-
 
 #
 # external options menu
