@@ -1,7 +1,5 @@
 # backup directory
 _backup
-# shell scripts
-*.sh
 # development log files
 board/*/*.txt
 # experiments with xenomai
