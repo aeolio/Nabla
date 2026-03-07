@@ -5,9 +5,9 @@
 ################################################################################
 
 PIHOLE_FTL_VERSION = 6.5
-PIHOLE_FTL_SITE = $(call github,aeolio,pihole-ftl,f888309)
-#PIHOLE_FTL_SITE = /home/iago/staging/pi-hole/pihole-ftl
-#PIHOLE_FTL_SITE_METHOD = local
+PIHOLE_FTL_SITE = $(call github,pi-hole,FTL,development)
+# PIHOLE_FTL_SITE = /home/iago/staging/pi-hole/pihole-ftl
+# PIHOLE_FTL_SITE_METHOD = local
 PIHOLE_FTL_LICENSE = EUPL-1.2
 PIHOLE_FTL_LICENSE_FILES = LICENSE
 
@@ -18,10 +18,16 @@ PIHOLE_FTL_DEPENDENCIES += nettle \
 
 ifeq ($(BR2_PACKAGE_PIHOLE_FTL_READLINE),y)
 PIHOLE_FTL_DEPENDENCIES += readline
+PIHOLE_FTL_CONF_OPTS += -DUSE_READLINE=ON
+else
+PIHOLE_FTL_CONF_OPTS += -DUSE_READLINE=OFF
 endif
 
 ifeq ($(BR2_PACKAGE_PIHOLE_FTL_TLS),y)
 PIHOLE_FTL_DEPENDENCIES += mbedtls
+PIHOLE_FTL_CONF_OPTS += -DUSE_MBED_TLS=ON
+else
+PIHOLE_FTL_CONF_OPTS += -DUSE_MBED_TLS=OFF
 endif
 
 # build locations
@@ -37,15 +43,16 @@ PIHOLE_FTL_DB_COPY_SQL = $(PIHOLE_FTL_TEMPLATE_DIR)/gravity_copy.sql
 # build with gravity support
 PIHOLE_FTL_CONF_OPTS += -DGRAVITY=ON
 
-# sql scripts from github.com/pi-hole/pi-hole
-PIHOLE_FTL_SCRIPTS = https://raw.githubusercontent.com/pi-hole/pi-hole/refs/heads/master
-define PIHOLE_FTL_DOWNLOAD_SQL_SCRIPTS
-	mkdir -p "$(@D)/$(PIHOLE_FTL_TEMPLATE_DIR)"
-	wget "$(PIHOLE_FTL_SCRIPTS)/$(PIHOLE_FTL_DB_INIT_SQL)" -O "$(@D)/$(PIHOLE_FTL_DB_INIT_SQL)"
-	wget "$(PIHOLE_FTL_SCRIPTS)/$(PIHOLE_FTL_DB_COPY_SQL)" -O "$(@D)/$(PIHOLE_FTL_DB_COPY_SQL)"
-	$(SED) '/.timeout/ s/.timeout \([0-9]*\)/PRAGMA busy_timeout =\1;/' $(@D)/$(PIHOLE_FTL_DB_COPY_SQL)
+# development workaround. apply remaining patches
+ifeq ($(PIHOLE_FTL_SITE_METHOD),local)
+define PIHOLE_FTL_APPLY_PATCHES
+	@$(call MESSAGE,"Patching")
+	$(foreach dir,$(call pkg-patches-dirs,$(PKG)),\
+		$(Q)$(APPLY_PATCHES) $(@D) $(dir) \*.patch$(sep)\
+	)
 endef
-PIHOLE_FTL_POST_EXTRACT_HOOKS += PIHOLE_FTL_DOWNLOAD_SQL_SCRIPTS
+PIHOLE_FTL_POST_RSYNC_HOOKS += PIHOLE_FTL_APPLY_PATCHES
+endif
 
 # pi-hole unconditionally defines stack-protector-strong, which
 # leads to linker errors in toolchains without this feature
@@ -56,12 +63,28 @@ endef
 PIHOLE_FTL_PRE_CONFIGURE_HOOKS += PIHOLE_FTL_DISABLE_STACK_PROTECTOR
 endif
 
-# development workaround
+# development workaround: add gravity feature
 define PIHOLE_FTL_GRAVITY
 	ln -fs $(PIHOLE_FTL_PKGDIR)/extrafiles/gravity.c $(@D)/src/gravity.c
 	ln -fs $(PIHOLE_FTL_PKGDIR)/extrafiles/gravity.h $(@D)/src/gravity.h
 endef
 PIHOLE_FTL_PRE_CONFIGURE_HOOKS += PIHOLE_FTL_GRAVITY
+
+# piholeftl tries to link against libermcap
+define PIHOLE_FTL_LIBTERMCAP
+	ln -fs ncurses.pc $(STAGING_DIR)/usr/lib/pkgconfig/termcap.pc
+endef
+PIHOLE_FTL_PRE_BUILD_HOOKS += PIHOLE_FTL_LIBTERMCAP
+
+# sql scripts from github.com/pi-hole/pi-hole
+PIHOLE_FTL_SCRIPTS = https://raw.githubusercontent.com/pi-hole/pi-hole/refs/heads/master
+define PIHOLE_FTL_DOWNLOAD_SQL_SCRIPTS
+	mkdir -p "$(@D)/$(PIHOLE_FTL_TEMPLATE_DIR)"
+	wget "$(PIHOLE_FTL_SCRIPTS)/$(PIHOLE_FTL_DB_INIT_SQL)" -O "$(@D)/$(PIHOLE_FTL_DB_INIT_SQL)"
+	wget "$(PIHOLE_FTL_SCRIPTS)/$(PIHOLE_FTL_DB_COPY_SQL)" -O "$(@D)/$(PIHOLE_FTL_DB_COPY_SQL)"
+	$(SED) '/.timeout/ s/.timeout \([0-9]*\)/PRAGMA busy_timeout =\1;/' $(@D)/$(PIHOLE_FTL_DB_COPY_SQL)
+endef
+PIHOLE_FTL_PRE_INSTALL_TARGET_HOOKS += PIHOLE_FTL_DOWNLOAD_SQL_SCRIPTS
 
 # install configuration file, default log directory, templates
 define PIHOLE_FTL_INSTALL_EXTRA_FILES
