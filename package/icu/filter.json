@@ -37,9 +37,6 @@
     "confusables": {
       "filterType": "exclude"
     },
-    "curr_supplemental": {
-      "filterType": "exclude"
-    },
     "curr_tree": {
       "filterType": "exclude"
     },
@@ -56,6 +53,9 @@
       "filterType": "exclude"
     },
     "zone_tree": {
+      "filterType": "exclude"
+    },
+    "translit": {
       "filterType": "exclude"
     },
     "uemoji": {
@@ -77,9 +77,22 @@
       },
       "rules": [
           "-/calendarData",
+          "-/currencyNumericCodes",
+          "-/dayPeriods",
           "-/genderList",
+          "-/grammaticalFeatures",
+          "-/keyTypeData",
+          "-/langInfo",
+          "-/metadata",
+          "-/metaZones",
+          "-/numberingSystems",
           "-/pluralRanges",
-          "-/supplementalData"
+          "-/plurals",
+          "-/supplementalData",
+          "-/timezoneTypes",
+          "-/units",
+          "-/windowsZones",
+          "-/zoneinfo64"
       ]
     }
   ]
