@@ -1,8 +1,8 @@
 config BR2_PACKAGE_PIHOLE_FTL
 	bool "pihole-ftl"
 	depends on BR2_TOOLCHAIN_HAS_THREADS
+	depends on BR2_TOOLCHAIN_HEADERS_AT_LEAST_5_10 # PR #2797
 	select BR2_PACKAGE_NETTLE	# DNSSEC support
-	select BR2_PACKAGE_LIBCURL	# gravity list download
 	select BR2_PACKAGE_LIBIDN2	# internationalized domain names
 	select BR2_PACKAGE_LIBUNISTRING
 	help
@@ -16,22 +16,29 @@ config BR2_PACKAGE_PIHOLE_FTL
 
 if BR2_PACKAGE_PIHOLE_FTL
 
+config BR2_PACKAGE_PIHOLE_FTL_GRAVITY
+	bool "add gravity"
+	select BR2_PACKAGE_LIBCURL	# gravity list download
+	select BR2_PACKAGE_LIBRESSL	# libcrypto
+	help
+	  "Build pihole-ftl with support for downloading blacklist files."
+
 config BR2_PACKAGE_PIHOLE_FTL_READLINE
-	bool "readline support"
+	bool "use readline"
 	select BR2_PACKAGE_READLINE	# also supplies libhistory
-	# ncurses is selected by readline, supplies terminfo, which replaces libtermcap
+	# ncurses is a dependency of readline, it supplies terminfo, which replaces libtermcap
 	help
 	  "Build pihole-ftl with readline support."
 
 config BR2_PACKAGE_PIHOLE_FTL_TLS
-	bool "TLS support"
-	# missing LIBMBEDCRYPTO
-	# missing LIBMBEDX509
+	bool "use TLS & SSL"
 	select BR2_PACKAGE_MBEDTLS
 	help
-	  "Enable TLS support in web interface"
+	  "Enable HTTPS support for the web interface, including
+	  self-generated certificates."
 
 endif
 
 comment "pihole-ftl needs a toolchain w/ threads"
 	depends on !BR2_TOOLCHAIN_HAS_THREADS
+	depends on !BR2_TOOLCHAIN_HEADERS_AT_LEAST_5_10

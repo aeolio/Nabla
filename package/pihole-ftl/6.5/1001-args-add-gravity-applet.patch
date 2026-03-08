@@ -12,15 +12,17 @@ Signed-off-by: Andreas Ziegler <br015@umbiko.net>
  
  // defined in dnsmasq.c
  extern void print_dnsmasq_version(const char *yellow, const char *green, const char *bold, const char *normal);
-@@ -244,6 +246,11 @@
+@@ -243,6 +245,13 @@
+ 	// we operate in drop-in mode and consume all arguments for the embedded luac engine
  	if(strEndsWith(argv[0], "luac"))
  		exit(run_luac(argc, argv));
- 
++
++#if defined(HAVE_GRAVITY)
 +	// If the binary name is "gravity" (e.g., symlink /usr/bin/gravity -> /usr/bin/pihole-FTL),
 +	// we operate in drop-in mode and consume all arguments for the embedded gravity command
 +	if(strEndsWith(argv[0], "gravity"))
 +		exit(gravity_main(argc, argv));
-+
++#endif // HAVE_GRAVITY
+ 
  	// Special (undocumented) mode to test kernel signal handling
  	if(argc == 2 && strcmp(argv[1], "sigtest") == 0)
- 		exit(sigtest());

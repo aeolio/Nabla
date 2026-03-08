@@ -12,9 +12,16 @@ PIHOLE_FTL_LICENSE = EUPL-1.2
 PIHOLE_FTL_LICENSE_FILES = LICENSE
 
 PIHOLE_FTL_DEPENDENCIES += nettle \
-	libcurl \
 	libidn2 \
 	libunistring
+
+# build with gravity support
+ifeq ($(BR2_PACKAGE_PIHOLE_FTL_GRAVITY),y)
+PIHOLE_FTL_DEPENDENCIES += libcurl libressl
+PIHOLE_FTL_CONF_OPTS += -DGRAVITY=ON
+else
+PIHOLE_FTL_CONF_OPTS += -DGRAVITY=OFF
+endif
 
 ifeq ($(BR2_PACKAGE_PIHOLE_FTL_READLINE),y)
 PIHOLE_FTL_DEPENDENCIES += readline
@@ -40,9 +47,6 @@ PIHOLE_FTL_TEMPLATE_DIR = advanced/Templates
 PIHOLE_FTL_DB_INIT_SQL = $(PIHOLE_FTL_TEMPLATE_DIR)/gravity.db.sql
 PIHOLE_FTL_DB_COPY_SQL = $(PIHOLE_FTL_TEMPLATE_DIR)/gravity_copy.sql
 
-# build with gravity support
-PIHOLE_FTL_CONF_OPTS += -DGRAVITY=ON
-
 # development workaround. apply remaining patches
 ifeq ($(PIHOLE_FTL_SITE_METHOD),local)
 define PIHOLE_FTL_APPLY_PATCHES
@@ -54,6 +58,13 @@ endef
 PIHOLE_FTL_POST_RSYNC_HOOKS += PIHOLE_FTL_APPLY_PATCHES
 endif
 
+# development workaround: add gravity feature
+define PIHOLE_FTL_GRAVITY
+	ln -fs $(PIHOLE_FTL_PKGDIR)/extrafiles/gravity.c $(@D)/src/gravity.c
+	ln -fs $(PIHOLE_FTL_PKGDIR)/extrafiles/gravity.h $(@D)/src/gravity.h
+endef
+PIHOLE_FTL_PRE_CONFIGURE_HOOKS += PIHOLE_FTL_GRAVITY
+
 # pi-hole unconditionally defines stack-protector-strong, which
 # leads to linker errors in toolchains without this feature
 ifeq ($(BR2_TOOLCHAIN_HAS_SSP),)
@@ -63,20 +74,13 @@ endef
 PIHOLE_FTL_PRE_CONFIGURE_HOOKS += PIHOLE_FTL_DISABLE_STACK_PROTECTOR
 endif
 
-# development workaround: add gravity feature
-define PIHOLE_FTL_GRAVITY
-	ln -fs $(PIHOLE_FTL_PKGDIR)/extrafiles/gravity.c $(@D)/src/gravity.c
-	ln -fs $(PIHOLE_FTL_PKGDIR)/extrafiles/gravity.h $(@D)/src/gravity.h
-endef
-PIHOLE_FTL_PRE_CONFIGURE_HOOKS += PIHOLE_FTL_GRAVITY
-
 # piholeftl tries to link against libermcap
 define PIHOLE_FTL_LIBTERMCAP
 	ln -fs ncurses.pc $(STAGING_DIR)/usr/lib/pkgconfig/termcap.pc
 endef
 PIHOLE_FTL_PRE_BUILD_HOOKS += PIHOLE_FTL_LIBTERMCAP
 
-# sql scripts from github.com/pi-hole/pi-hole
+# fetch gravity sql scripts from github.com/pi-hole/pi-hole
 PIHOLE_FTL_SCRIPTS = https://raw.githubusercontent.com/pi-hole/pi-hole/refs/heads/master
 define PIHOLE_FTL_DOWNLOAD_SQL_SCRIPTS
 	mkdir -p "$(@D)/$(PIHOLE_FTL_TEMPLATE_DIR)"
