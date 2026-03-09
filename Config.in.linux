@@ -11,7 +11,7 @@ if BR2_TOOLCHAIN_HEADERS_LATEST
 
 config NABLA_LINUX_VERSION
 	string
-	default "7.0-rc2"
+	default "7.0-rc3"
 
 config NABLA_LINUX_PATCH
 	string
