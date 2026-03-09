@@ -1,0 +1,5 @@
+# From https://github.com/Mbed-TLS/mbedtls/releases/tag/mbedtls-3.6.5:
+sha256  4a11f1777bb95bf4ad96721cac945a26e04bf19f57d905f241fe77ebeddf46d8  mbedtls-3.6.5.tar.bz2
+# Locally calculated
+sha256  9b405ef4c89342f5eae1dd828882f931747f71001cfba7d114801039b52ad09b  LICENSE
+sha256  2f3a47f7b3a541ddef450e4867eeecb7ce2ef7776093f3a11d6d43ead6bf2827  mbedtls-4.0.0.tar.bz2
