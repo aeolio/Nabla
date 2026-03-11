@@ -19,7 +19,9 @@
     "brkitr_tree": {
       "filterType": "exclude"
     },
-	"conversion_mappings": {
+
+    "_comment": "code pages mentioned in the kernel config",
+    "conversion_mappings": {
       "includelist": [
         "euc-jp-2007",
 
@@ -31,9 +33,9 @@
         "ibm-1251_P100-1995"
       ]
 	},
-    "coll_tree": {
-      "filterType": "exclude"
-    },
+
+    "_comment": "collations are used by MPD",
+
     "confusables": {
       "filterType": "exclude"
     },
@@ -55,9 +57,9 @@
     "zone_tree": {
       "filterType": "exclude"
     },
-    "translit": {
-      "filterType": "exclude"
-    },
+
+    "_comment": "transliterations are used by MPD",
+
     "uemoji": {
       "filterType": "exclude"
     },
