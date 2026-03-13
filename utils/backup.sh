@@ -1,6 +1,7 @@
 #!/bin/sh
 
-archive="_backup/$(date +%Y)/br2-external_config_$(date +%Y%m%d-%H%M).tar.bz2"
+archive_dir="_backup/$(date +%Y)"
+archive_file="$archive_dir/br2-external_config_$(date +%Y%m%d-%H%M).tar.bz2"
 
 source=""
 source="$source board/"
@@ -20,5 +21,6 @@ source="$source README"
 
 source="$source _backup/s87localopt/"
 
-tar cjf $archive $source
-echo "Created $(basename $archive)"
+mkdir -p "$archive_dir"
+tar cjf "$archive_file" $source
+echo "Created $(basename $archive_file) in $archive_dir"
