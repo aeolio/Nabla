@@ -1,8 +1,8 @@
 --- a/src/Main.cxx
 +++ b/src/Main.cxx
-@@ -45,6 +45,10 @@
- #include "config/PartitionConfig.hxx"
- #include "util/ScopeExit.hxx"
+@@ -49,6 +49,10 @@
+ #include "io/linux/ProcStatus.hxx"
+ #endif
  
 +#ifdef ENABLE_RTOPT
 +#include "thread/RealtimeOption.hxx"
@@ -11,7 +11,7 @@
  #ifdef ENABLE_DAEMON
  #include "unix/Daemon.hxx"
  #endif
-@@ -330,6 +334,11 @@
+@@ -334,6 +338,11 @@
  
  	log_init(raw_config, options.verbose, options.log_stderr);
  
@@ -23,14 +23,14 @@
  	Instance instance;
  	global_instance = &instance;
  
-@@ -375,6 +384,10 @@
+@@ -377,6 +386,10 @@
+ 	spl_global_init(raw_config);
+ #ifdef ENABLE_ARCHIVE
  	const ScopeArchivePluginsInit archive_plugins_init{raw_config};
- #endif
- 
-+#ifdef ENABLE_RTOPT
-+	RealtimeOption::LockMemory();
 +#endif
 +
- 	pcm_convert_global_init(raw_config);
++#ifdef ENABLE_RTOPT
++	RealtimeOption::LockMemory();
+ #endif
  
- 	const ScopeDecoderPluginsInit decoder_plugins_init(raw_config);
+ 	pcm_convert_global_init(raw_config);
