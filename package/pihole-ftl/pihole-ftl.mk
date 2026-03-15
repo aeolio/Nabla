@@ -11,9 +11,10 @@ PIHOLE_FTL_SITE = $(call github,pi-hole,FTL,development)
 PIHOLE_FTL_LICENSE = EUPL-1.2
 PIHOLE_FTL_LICENSE_FILES = LICENSE
 
-PIHOLE_FTL_DEPENDENCIES += nettle \
+PIHOLE_FTL_DEPENDENCIES += \
 	libidn2 \
-	libunistring
+	libunistring \
+	nettle
 
 # build with gravity support
 ifeq ($(BR2_PACKAGE_PIHOLE_FTL_GRAVITY),y)
@@ -74,7 +75,7 @@ endef
 PIHOLE_FTL_PRE_CONFIGURE_HOOKS += PIHOLE_FTL_DISABLE_STACK_PROTECTOR
 endif
 
-# piholeftl tries to link against libermcap
+# pihole-ftl tries to link against libermcap
 define PIHOLE_FTL_LIBTERMCAP
 	ln -fs ncurses.pc $(STAGING_DIR)/usr/lib/pkgconfig/termcap.pc
 endef
@@ -88,7 +89,7 @@ define PIHOLE_FTL_DOWNLOAD_SQL_SCRIPTS
 	wget "$(PIHOLE_FTL_SCRIPTS)/$(PIHOLE_FTL_DB_COPY_SQL)" -O "$(@D)/$(PIHOLE_FTL_DB_COPY_SQL)"
 	$(SED) '/.timeout/ s/.timeout \([0-9]*\)/PRAGMA busy_timeout =\1;/' $(@D)/$(PIHOLE_FTL_DB_COPY_SQL)
 endef
-PIHOLE_FTL_PRE_INSTALL_TARGET_HOOKS += PIHOLE_FTL_DOWNLOAD_SQL_SCRIPTS
+PIHOLE_FTL_POST_BUILD_HOOKS += PIHOLE_FTL_DOWNLOAD_SQL_SCRIPTS
 
 # install configuration file, default log directory, templates
 define PIHOLE_FTL_INSTALL_EXTRA_FILES
@@ -101,9 +102,16 @@ define PIHOLE_FTL_INSTALL_EXTRA_FILES
 		$(TARGET_DIR)/var/lib/pihole/$(PIHOLE_FTL_DB_INIT_SQL)
 	$(INSTALL) -m 0644 -D $(@D)/$(PIHOLE_FTL_DB_COPY_SQL) \
 		$(TARGET_DIR)/var/lib/pihole/$(PIHOLE_FTL_DB_COPY_SQL)
-	ln -fs /usr/bin/pihole-FTL $(TARGET_DIR)/usr/bin/gravity
 endef
 PIHOLE_FTL_POST_INSTALL_TARGET_HOOKS += PIHOLE_FTL_INSTALL_EXTRA_FILES
+
+# for the patched version, create a gravity applet
+ifeq ($(BR2_PACKAGE_PIHOLE_FTL_GRAVITY_PATCH),y)
+define PIHOLE_FTL_GRAVITY_APPLET
+	ln -fs /usr/bin/pihole-FTL $(TARGET_DIR)/usr/bin/gravity
+endef
+PIHOLE_FTL_POST_INSTALL_TARGET_HOOKS += PIHOLE_FTL_GRAVITY_APPLET
+endif
 
 define PIHOLE_FTL_INSTALL_INIT_SYSV
 	$(INSTALL) -m 0755 -D $(PIHOLE_FTL_PKGDIR)/S50pihole-FTL \
