@@ -131,6 +131,8 @@ struct config_data configuration;
 #define	_PRINT_DEBUG_OUTPUT 1
 #define	_DEBUG_IP_PARSER	0
 
+#define MOVE_CURSOR_LEFT "\033[D"
+
 // forward declaration necessary because of function grouping
 static void _add_listentry(struct config_data *, const struct blocklist *);
 
@@ -164,7 +166,7 @@ static char *lli2str( char *buffer, long long int value ) {
 static int _set_file_permissions( const char *filename ) {
 	int result;
 	struct passwd pw, *ppw;
-	if (char *pwd_text = calloc(PWD_TEXT_SIZE, 1)) {
+	if (char *pwd_text = calloc(PWD_TEXT_SIZE, sizeof(char))) {
 		if ((result = getpwnam_r(PIHOLE_USER, &pw, 
 			pwd_text, PWD_TEXT_SIZE, &ppw)) != EXIT_SUCCESS)
 			goto _set_file_permissions_failure;
@@ -688,7 +690,7 @@ _get_domain_exit:
 static inline bool _ispattern(const char c, const char* pattern) {
 	if (! isspace(c)) {
 		if (pattern) {
-			for( size_t u = 0 ; u < strlen(pattern)-1 ; u++ ) {
+			for( unsigned int u = 0 ; u < strlen(pattern)-1 ; u++ ) {
 				if (pattern[u] == c)
 					return true;		
 				}
@@ -741,7 +743,8 @@ static char *_strip(char *string, const char *pattern) {
 static unsigned int _split(char *string, 
 	const char delimiter, 
 	const bool ignore_consecutive_delimiters,
-	char **result) {
+	char **result,
+	const unsigned int result_size) {
 
 	// non-empty string
 	if (string && string[0]) {
@@ -749,7 +752,7 @@ static unsigned int _split(char *string,
 		char *next;
 		unsigned int index = 0;
 
-		while ((next = strchr(curr, delimiter)) != NULL) {
+		while ((next = strchr(curr, delimiter)) != NULL && index < result_size) {
 			*next++ = 0;
 			// ignore multiple consecutive delimiters
 			if (ignore_consecutive_delimiters) {
@@ -796,12 +799,15 @@ static bool _is_ip_address(const char *address, const int mode) {
 	if (! (isxdigit(address[0]) || address[0] == ':'))
 		return false;
 
+	// nowadays host names may have an arbitrary number of dots:
+	// us-east-1.prod.pr.analytics.console.aws.a2z.com
+
 	char *fields[5];
 	char *ip = strdup(address);
 
 	// assume IPv4 address
 	if(strchr(ip, '.')) {
-		if (unsigned n = _split(ip, '.', false, fields)) {
+		if (unsigned n = _split(ip, '.', false, fields, sizeof(fields))) {
 			// exactly four fields must be specified, no range adress allowed
 			if (n != 4)
 				goto _ip_address_false;
@@ -814,7 +820,7 @@ static bool _is_ip_address(const char *address, const int mode) {
 		#if _DEBUG_IP_PARSER
 			for( unsigned int k = 0 ; k < n ; k++ )
 				printf("%s.", fields[k]);
-			printf(" %04x\n", binary_address);
+			printf("%s %04x\n", MOVE_CURSOR_LEFT, binary_address);
 		#endif	// _DEBUG_IP_PARSER
 			if (mode != strict || binary_address != 0)
 				goto _ip_address_true;
@@ -827,7 +833,7 @@ static bool _is_ip_address(const char *address, const int mode) {
 		if(char *p = strchr(ip, '%'))
 			*p = 0;
 		// zero fields may be omitted
-		if (unsigned n = _split(ip, ':', false, fields)) {
+		if (unsigned n = _split(ip, ':', false, fields, sizeof(fields))) {
 			unsigned long long binary_address = 0;
 			for( unsigned int k = 0 ; k < n ; k++ ) {
 				unsigned int u = (unsigned int) strtol(fields[k], NULL, 16);
@@ -869,12 +875,12 @@ _ip_address_true:
  *	This implements only a host file parser currently
  */
 #define _is_comment(c)	((c) == '#' || (c) == '!')
-static int _parse_line(char *line) {
+static unsigned int _parse_line(char *line) {
 
 	// remove leading white space
 	// check for empty line
 	// check for leading comment
-	line = _lstrip(line, NULL);
+	_lstrip(line, NULL);
 	if (line[0] == 0)
 		return 0;
 	else if (_is_comment(line[0]))
@@ -882,20 +888,23 @@ static int _parse_line(char *line) {
 
 	// remove trailing white space
 	_rstrip(line, NULL);
+	if (line[0] == 0)
+		return 0;
 
 	// split line on blank and use the final token
 	char *components[3];
-	if (size_t n = _split(line, ' ', true, components)) {
-		// valid result has two fields
-		// filter valid ip address (e.g. localhost)
-		// filter ip address in domain names
+	if (unsigned int n = _split(line, ' ', true, components, sizeof(components))) {
+		// entry should have two fields
+		// reject valid ip addresses (e.g. 127.0.0.1 localhost)
+		// reject ip addresses in domain name field
 		if (n != 2 ||
 			_is_ip_address(components[0], strict) ||
 			_is_ip_address(components[1], loose))
 			goto _parse_line_exit;
 		// return last token
-		memmove(line, components[n-1], strlen(components[n-1])+1);
-		return strlen(line);
+		size_t sz = strlen(components[n-1]);
+		memmove(line, components[n-1], sz+1);
+		return sz;
 		}
 
 _parse_line_exit:
@@ -910,19 +919,14 @@ _parse_line_exit:
 static int _parse_blocklist( const char *source_file, const char *target_file ) {
 
 	// leave the original target file intact until the transfer is concluded
-	char temp_file[FN_SIZE];
-	strcpy (temp_file, target_file);
-	for( int i = strlen(temp_file) ; i > 0 ; i-- ) {
-		if (temp_file[i] == '.') {
-			temp_file[i] = '\0';
-			break;
-			}
-		}
+	char *temp_file = strdup(target_file);
+	if (temp_file == NULL)
+		return EXIT_FAILURE;
+	if (char *extension = strrchr(temp_file, '.'))
+		*extension = '\0';
 	strcat(temp_file, ".tmp");
 
-	char *buffer = calloc(1, STD_BLK_SIZE);
-	if (buffer == NULL)
-		return EXIT_FAILURE;
+	char *buffer = calloc(STD_BLK_SIZE+1, sizeof(char));
 
 	int error = 0;
 	int line_counter = 0;
@@ -934,7 +938,7 @@ static int _parse_blocklist( const char *source_file, const char *target_file ) 
 				if (size_t sz = _parse_line(buffer)) {
 					// add line feed
 					buffer[sz++] = '\n';
-					if (fwrite(buffer, 1, sz, t) != sz) {
+					if (fwrite(buffer, sizeof(char), sz, t) != sz) {
 						error = EXIT_FAILURE;
 						break;
 						}
@@ -949,9 +953,11 @@ static int _parse_blocklist( const char *source_file, const char *target_file ) 
 	free (buffer);
 
 	if (! error)
-		os_rename(temp_file, target_file);
+		error = os_rename(temp_file, target_file);
 
-	return (error ? error : line_counter);
+	free(temp_file)
+
+	return (error ? EXIT_FAILURE : line_counter);
 	}
 
 /*
@@ -1176,7 +1182,7 @@ static bool _download_single_list(struct blocklist *plist,
 
 			long response_code = 0;
 			if (CURLcode cr = curl_easy_getinfo(session, 
-				CURLINFO_RESPONSE_CODE, &response_code)!= CURLE_OK) {
+				CURLINFO_RESPONSE_CODE, &response_code) != CURLE_OK) {
 				printf("Curl getinfo error: %u\n", cr);
 				result = false;
 				goto _download_single_list_exit;
@@ -1350,7 +1356,7 @@ static bool _clear_list_cache(const struct config_data *pc, const bool force) {
 		while( (e = readdir(d)) != NULL ) {
 			strcpy(path, e->d_name);
 			char *components[7] = {};
-			unsigned n = _split(path, '.', false, components);
+			unsigned n = _split(path, '.', false, components, sizeof(components));
 			// strip status file name endings
 			if (strcmp(components[n-1], LIST_ETAG) == 0 ||
 				strcmp(components[n-1], LIST_CHKSUM) == 0)
