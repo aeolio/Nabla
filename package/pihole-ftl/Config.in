@@ -19,7 +19,7 @@ if BR2_PACKAGE_PIHOLE_FTL
 config BR2_PACKAGE_PIHOLE_FTL_GRAVITY
 	bool "add gravity"
 	select BR2_PACKAGE_LIBCURL	# gravity list download
-	select BR2_PACKAGE_LIBRESSL	# libcrypto
+	select BR2_PACKAGE_OPENSSL	# libcrypto
 	help
 	  "Build pihole-ftl with support for downloading blacklist files."
 
