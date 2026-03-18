@@ -1,61 +1,91 @@
 #!/bin/python
 
+''' 
+	Remove files that were installed by one or more packages
+	from the Buildroot project tree.
+'''
+
 import os
 import sys
 
-file_lists = [
-	'packages-file-list.txt',
-	'packages-file-list-host.txt',
-	'packages-file-list-staging.txt',
-	]
+from glob import glob
 
-BASE_NAME = os.path.splitext(file_lists[0])[0]
+from colorama import Fore
+
+BUILD_DIR = 'build'
+MANIFEST_NAME = ".files-list"
+
+TARGETS = {
+	'host',
+	'staging',
+	'target',
+	}
 
 
-def get_target(filename):
-	name, ext = os.path.splitext(filename)
-	dir = name.replace(BASE_NAME, '')
-	dir = 'target' if not dir else dir.lstrip('-')
-	return dir
+def package_directory(package):
+	''' Find package directory from package name '''
+	pattern = '-'.join([ os.path.join(BUILD_DIR, package), '*' ])
+	dirs = glob(pattern)
+	if not dirs:
+		print(f"{Fore.LIGHTRED_EX} not found: {package}")
+		return ''
+	return os.path.basename(sorted(dirs)[0])
 
-def parse(line, packages, target, file_list):
+def get_filename(target):
+	''' Construct manifest file name '''
+	return f"{MANIFEST_NAME}.txt" if target == "target" else f"{MANIFEST_NAME}-{target}.txt"
+
+def parse(line, package, target, file_list):
+	''' Extract file name from one line of a manifest file '''
 	s = line.split(',')
 	name = s[0]
 	path = s[1].strip()
-	if name in packages:
-		file_path = os.path.join('./', target, path[2:])
+	if name == package:
+		file_path = os.path.join('.', target, path[2:])
 		file_list.append(file_path)
 	return file_list
 
 
-def remove_package(argv):
+def remove_package(package_name, package_dir):
+	''' Remove files installed by one package '''
+
+	installed_files = []
+
+	for t in TARGETS:
+
+		filename = os.path.join('build', package_dir, get_filename(t))
+
+		if os.path.exists(filename):
+			with open(filename, encoding='utf8') as src_file:
+				for line in src_file:
+					installed_files = parse(line, package_name, t, installed_files)
+
+		# remove every installed file
+		for f in installed_files:
+			# might already have been removed by a cleanup task
+			if os.path.lexists(f):
+				os.remove(f)
+				print(f"{Fore.LIGHTBLACK_EX}deleted {f}{Fore.RESET}")
+
+
+def remove_packages(argv):
+	''' The main function of the module '''
 
 	# argument(s) are package names
 	packages = argv[1:]
 
 	if not packages:
-		print('Usage: argv[0] package-list')
-		print('\tpackage-list is a blank separated list of buildroot packages')
+		print(f"{Fore.GREEN} Usage:\targv[0] package-list")
+		print(f"\tpackage-list is a blank separated list of buildroot packages{Fore.RESET}")
+		sys.exit(1)
 
-	installed_files = []
+	if not os.path.isdir(BUILD_DIR):
+		print(f" {Fore.RED}error: run this from the project directory{Fore.RESET}")
+		sys.exit(2)
 
-	for f in file_lists:
-
-		# this should be run from the project directory
-		filename = os.path.join('build', f)
-		target = get_target(f)
-
-		with open(filename) as src_file:
-			for line in src_file:
-				installed_files = parse(line, packages, target, installed_files)
-
-	# remove every installed file
-	for f in installed_files:
-		# might already have been removed by a cleanup task
-		if os.path.lexists(f):
-			os.remove(f)
-			print('deleted %s' % f)
+	for package in packages:
+		remove_package(package, package_directory(package))
 
 
 if __name__ == '__main__':
-	sys.exit(remove_package(sys.argv))
+	sys.exit(remove_packages(sys.argv))
