@@ -137,6 +137,69 @@ struct config_data configuration;
 static void _add_listentry(struct config_data *, const struct blocklist *);
 
 
+// === fancy output ===========================================================
+
+#include "col_table.h"
+
+static bool needs_linefeed = false;
+
+// print info string, newline is controlled by caller
+static void __attribute__ ((format (printf, 1, 2))) print_info(const char *format, ...) {
+	va_list args;
+	if (int i = strlen(format)) {
+		needs_linefeed = format[i-1] != '\n';
+		}
+	printf("  %s ", INFO);
+	va_start(args, format);
+	vprintf(format, args); 
+	va_end(args);
+	fflush(stdout);
+	}
+
+// print message plus newline, overwriting last output
+static void __attribute__ ((format (printf, 2, 3))) print_result(const bool success, const char *format, ...) {
+	va_list args;
+	if (success)
+		printf("  %s  %s %s", OVER, TICK, GN);
+	else
+		printf("  %s  %s %s", OVER, CROSS, RD);
+	va_start(args, format);
+	vprintf(format, args); 
+	va_end(args);
+	printf("%s\n", NC);
+	needs_linefeed = false;
+	fflush(stdout);
+	}
+
+// print message plus linefeed in color
+static void __attribute__ ((format (printf, 2, 3))) print_colored(const char *color, const char *format, ...) {
+	va_list args;
+	if (color)
+		printf("  %s", color);
+	va_start(args, format);
+	vprintf(format, args); 
+	va_end(args);
+	printf("%s\n", NC);
+	fflush(stdout);
+	}
+
+// print message starting at third column; line feed has to be managed by caller
+static void __attribute__ ((format (printf, 1, 2))) iprintf(const char *format, ...) {
+	va_list args;
+	if (needs_linefeed) {
+		printf("\n  ");
+		needs_linefeed = false;
+		}
+	else
+		printf("  ");
+	va_start(args, format);
+	vprintf(format, args); 
+	va_end(args);
+	fflush(stdout);
+	}
+
+
+
 // === string manipulation functions ==========================================
 
 // copy string between two pointer locations
@@ -215,7 +278,7 @@ static bool os_remove(const char *filename)
 {
 	if( access(filename, F_OK) == 0 ) {
 		if( remove(filename) != 0 ) {
-			printf("Could not remove %s: %s\n", filename, strerror(errno));
+			iprintf("Could not remove %s: %s\n", filename, strerror(errno));
 			return false;
 		}
 	}
@@ -357,7 +420,7 @@ static size_t os_write_text_to_file(char *filename, char *buffer) {
 		return sz_file;
 		}
 	else
-		printf("Could not open %s: %s\n", filename, strerror(errno));
+		iprintf("Could not open %s: %s\n", filename, strerror(errno));
 	return 0;
 	}
 
@@ -579,7 +642,7 @@ static int db_sql_exec_batch(const char *db_file, const char *sql_statement) {
 			NULL, 
 			&err_message)) != SQLITE_OK) {
 			if (err_message) {
-				printf("SQL error: %s\n", err_message);
+				iprintf("SQL error: %s\n", err_message);
 				sqlite3_free(err_message);
 				}
 			}
@@ -622,14 +685,14 @@ static int db_recover_database(const char *db_file, const char *db_recovery_file
 			while (fgets(buffer, PATH_MAX, src) != NULL)
 				fputs(buffer, dst);
 			if (int status = pclose(dst) != EXIT_SUCCESS)
-				printf("\n%s terminated with error %d\n", dst_command, status);
+				iprintf("%s terminated with error %d\n", dst_command, status);
 			else
 				result = result ? EXIT_SUCCESS : EXIT_FAILURE;
 			}
 		else
 			result = EXIT_FAILURE;
 		if (int status = pclose(src) != EXIT_SUCCESS)
-			printf("\n%s terminated with error %d\n", src_command, status);
+			iprintf("%s terminated with error %d\n", src_command, status);
 		else
 			result = result ? EXIT_SUCCESS : EXIT_FAILURE;
 		}
@@ -818,9 +881,10 @@ static bool _is_ip_address(const char *address, const int mode) {
 				binary_address += (u << (8 * (4-1-k)));
 				}
 		#if _DEBUG_IP_PARSER
+			iprintf("%s", GY)
 			for( unsigned int k = 0 ; k < n ; k++ )
 				printf("%s.", fields[k]);
-			printf("%s %04x\n", MOVE_CURSOR_LEFT, binary_address);
+			printf("%s %04x%s\n", MOVE_CURSOR_LEFT, binary_address, NC);
 		#endif	// _DEBUG_IP_PARSER
 			if (mode != strict || binary_address != 0)
 				goto _ip_address_true;
@@ -841,7 +905,8 @@ static bool _is_ip_address(const char *address, const int mode) {
 				// interface identifier part should not appear in routing tables
 				binary_address += ((long long unsigned int) u << (16 * (4-1-k)));
 				}
-		#if	_DEBUG_IP_PARSING
+		#if	_DEBUG_IP_PARSER
+			iprintf("%s", GY)
 			for( unsigned int k = 0 ; k < n ; k++ )
 				printf("%s:", fields[k]);
 			printf(" %u %llx\n", n, binary_address);
@@ -1168,7 +1233,7 @@ static bool _download_single_list(struct blocklist *plist,
 				}
 
 			if (CURLcode cr = curl_easy_perform(session) != CURLE_OK) {
-				printf("Curl execution error: %u\n", cr);
+				print_result(false, "Curl execution error: %u\n", cr);
 				result = false;
 				fclose(f);
 				goto _download_single_list_exit;
@@ -1183,7 +1248,7 @@ static bool _download_single_list(struct blocklist *plist,
 			long response_code = 0;
 			if (CURLcode cr = curl_easy_getinfo(session, 
 				CURLINFO_RESPONSE_CODE, &response_code) != CURLE_OK) {
-				printf("Curl getinfo error: %u\n", cr);
+				print_result(false, "Curl getinfo error: %u\n", cr);
 				result = false;
 				goto _download_single_list_exit;
 				}
@@ -1191,7 +1256,7 @@ static bool _download_single_list(struct blocklist *plist,
 			struct curl_header *ptag = NULL;
 			if (CURLHcode ch = curl_easy_header(session, 
 				"etag", 0, CURLH_HEADER, -1, &ptag) != CURLHE_OK) {
-				printf("Curl header error: %u\n", ch);
+				print_result(false, "Curl header error: %u\n", ch);
 				result = false;
 				goto _download_single_list_exit;
 				}
@@ -1200,7 +1265,7 @@ static bool _download_single_list(struct blocklist *plist,
 				case 200:	// OK
 					// parse blocklist file into domain list file
 					if ((plist->count = _parse_blocklist(fn_temp, fn_list)) == EXIT_FAILURE) {
-						printf("Moving %s to %s failed: %s\n", fn_temp, fn_list, strerror(errno));
+						print_result(false, "Moving %s to %s failed: %s\n", fn_temp, fn_list, strerror(errno));
 						result = false;
 						goto _download_single_list_exit;
 						}
@@ -1217,7 +1282,7 @@ static bool _download_single_list(struct blocklist *plist,
 					// create SHA1 value
 					unsigned char sha1_digest[SHA_DIGEST_LENGTH];
 					if (! _sha1_sum(fn_list, sha1_digest)) {
-						printf("SHA digest failed for %s\n", fn_list);
+						print_result(false, "SHA digest failed for %s\n", fn_list);
 						result = false;
 						goto _download_single_list_exit;
 						}
@@ -1226,17 +1291,17 @@ static bool _download_single_list(struct blocklist *plist,
 						_digest_to_hex(sha_sum, sha1_digest, sizeof(sha1_digest), fn_list));
 					_set_file_permissions(fn_chks);
 					plist->file_status = CHANGED_UPSTREAM;
-					printf("Downloaded new version: %s\n", fn_list);
+					print_info("Downloaded new version: %s\n", fn_list);
 					break;
 				case 304:	// not modified
 					plist->file_status = UNCHANGED;
-					printf("Unchanged: %s\n", fn_list);
+					print_info("Unchanged: %s\n", fn_list);
 					break;
 				default:
-					printf("HTTP error: %ld\n", response_code);
+					iprintf("HTTP response code: %ld\n", response_code);
 					// cached list exists
 					if (os_is_file(fn_list)) {
-						printf("Use existing version: %s\n", fn_list);
+						iprintf("Use existing version: %s\n", fn_list);
 						plist->file_status = FAILED_CACHED;
 						}
 					else
@@ -1274,7 +1339,7 @@ static bool _download_blocklists(struct config_data *pc) {
 	// make sure the download directory exists
 	if (! os_is_directory(pc->list_cache_directory) &&
 		mkdir(pc->list_cache_directory, DIR_ACCESS) != EXIT_SUCCESS) {
-		printf("can't create directory %s\n", pc->list_cache_directory);
+		iprintf("can't create directory %s\n", pc->list_cache_directory);
 		return false;
 		}
 
@@ -1298,9 +1363,9 @@ static bool _download_blocklists(struct config_data *pc) {
 			plist->domain,
 			"tmp"
 			);
-		printf("Download blocklist from %s\n", plist->domain);
+		print_info("Download blocklist from %s\n", plist->domain);
 		if (! _download_single_list(plist, base_file_name, temp_file_name)) {
-			printf("could not download: %s\n", plist->address);
+			print_result(false, "could not download: %s\n", plist->address);
 			return false;
 			}
 
@@ -1320,21 +1385,22 @@ static bool _import_blocklists(struct config_data *pc) {
 		if (plist->db_entry_exists == false) {
 			// import function prints progress
 			if (! db_insert_blocklist_record(pc->gravity_db_tmpfile, plist)) {
-				printf("Data entry failed: %s\n", plist->address);
+				iprintf("Data entry failed: %s\n", plist->address);
 				return false;
 				}
 			}
 		// blocklist content is never copied to a new database, so import all valid lists 
 		if (plist->file_status == UNCHANGED ||
 			plist->file_status == CHANGED_UPSTREAM) {
-			printf("Start import: %s\n", plist->address);
+			print_info("Start import: %s", plist->address);
 			if (ftl_import_domains(plist->filename, 
 				pc->gravity_db_tmpfile, 
 				plist->id, 
 				plist->type) != EXIT_SUCCESS) {
-				printf("Import failed: %s\n", plist->address);
+				print_result(false, "Import failed: %s", plist->address);
 				return false;
 				}
+			print_result(true, "Imported %s", plist->address);
 			}
 		plist = plist->next;
 		}
@@ -1370,7 +1436,7 @@ static bool _clear_list_cache(const struct config_data *pc, const bool force) {
 					_get_listentry(pc, id, domain) == NULL) {
 					sprintf(path, "%s/%s", pc->list_cache_directory, e->d_name);
 					if (remove(path) != 0) {
-						printf("can'tremove %s: %s\n", path, strerror(errno));
+						iprintf("Can't remove %s: %s\n", path, strerror(errno));
 						return false;
 						}
 					}
@@ -1398,14 +1464,14 @@ static bool _copy_database(const struct config_data *pc) {
 		const char *sql_file = PIHOLE_SCRIPTDIR "/" GRAVITY_DBCOPY_SCRIPT;
 		char *sql_statement = os_cat(sql_file);
 		if (! sql_statement) {
-			printf("Could not read sql file %s\n", sql_file); 
+			iprintf("Could not read sql file %s\n", sql_file); 
 			error = EXIT_FAILURE;
 			goto _copy_database_exit;
 			}
 		char *token1 = strstr(sql_statement, TOKEN1);
 		char *token2 = strstr(sql_statement, TOKEN2);
 		if (! token1 || ! token2) {
-			printf("Missing %s ... %s statement in sql file %s\n", 
+			iprintf("Missing %s ... %s statement in sql file %s\n", 
 				TOKEN1, TOKEN2, sql_file); 
 			free(sql_statement);
 			error = EXIT_FAILURE;
@@ -1416,7 +1482,7 @@ static bool _copy_database(const struct config_data *pc) {
 		_strpcpy(db_name, token1, token2);
 		_strip(db_name, "\'\"");
 		if (strcmp(db_name, db_file) != 0) {
-			printf("Using gravity database %s\n", db_file); 
+			iprintf("Using gravity database %s\n", db_file); 
 			size_t old_size = strlen(db_name);
 			size_t new_size = strlen(db_file);
 			size_t total_size = strlen(sql_statement) - old_size + new_size;
@@ -1430,7 +1496,7 @@ static bool _copy_database(const struct config_data *pc) {
 			sql_statement[total_size] = 0;	// add the final '\0'
 			}
 		if ((error = db_sql_exec_batch(db_tmpfile, sql_statement)) != EXIT_SUCCESS ) {
-			printf("SQL statement %s failed with error %d\n", sql_file, error); 
+			iprintf("SQL statement %s failed with error %d\n", sql_file, error); 
 			free(sql_statement);
 			goto _copy_database_exit;
 			}
@@ -1452,7 +1518,7 @@ static bool _rotate_backups(const struct config_data *pc) {
 
 	sprintf(fn_name[0], "%s.%d", base_name, 1);
 	if (os_is_file(fn_name[0])) {
-		// simply remove the oldest file
+		// simply remove the file with the highest index
 		sprintf(fn_name[1], "%s.%d", base_name, MAX_BACKUPS);
 		if (os_is_file(fn_name[1]) &&
 			os_remove(fn_name[1]) != EXIT_SUCCESS)
@@ -1478,7 +1544,7 @@ static bool _swap_databases(const struct config_data *pc) {
 		os_remove(pc->gravity_db_oldfile);
 		if (os_vfs_avail(pc->gravity_directory)/2 > os_fsize(pc->gravity_db_file) &&
 			os_copy(pc->gravity_db_file, pc->gravity_db_oldfile) != EXIT_SUCCESS)
-			printf("cannot copy %s to %s: %s\n", 
+			iprintf("cannot copy %s to %s: %s\n", 
 				pc->gravity_db_file, 
 				pc->gravity_db_oldfile, 
 				strerror(errno));
@@ -1488,7 +1554,7 @@ static bool _swap_databases(const struct config_data *pc) {
 		 */
 
 		if (! _rotate_backups(pc)) {
-			printf("Backup rotation failed\n");
+			iprintf("Backup rotation failed: %d\n", errno);
 			return false;
 			}
 
@@ -1500,14 +1566,14 @@ static bool _swap_databases(const struct config_data *pc) {
 		int error;
 		const char *db_file = pc->gravity_db_file;
 		if ((error = db_sql_exec_batch(db_file, sql_statement)) != EXIT_SUCCESS) {
-			printf("Compaction of database %s failed: error %d\n", db_file, error);
+			iprintf("Compaction of database %s failed: error %d\n", db_file, error);
 			return false;
 			}
 		
 		const char *backup_dir = pc->gravity_db_backup_dir;
 		if (! os_is_directory(backup_dir) &&
 			mkdir(backup_dir, DIR_ACCESS) != EXIT_SUCCESS) {
-			printf("can't create directory %s: %s\n", 
+			iprintf("can't create directory %s: %s\n", 
 				backup_dir,
 				strerror(errno));
 			return false;
@@ -1516,7 +1582,7 @@ static bool _swap_databases(const struct config_data *pc) {
 		char fn_name[FN_SIZE];
 		sprintf (fn_name, "%s.%d", pc->gravity_db_backup_file, 1);
 		if (os_rename(pc->gravity_db_file, fn_name) != EXIT_SUCCESS) {
-			printf("cannot rename %s to %s: %s\n", 
+			iprintf("cannot rename %s to %s: %s\n", 
 				pc->gravity_db_file, 
 				fn_name,
 				strerror(errno));
@@ -1525,7 +1591,7 @@ static bool _swap_databases(const struct config_data *pc) {
 		}
 
 	if (os_rename(pc->gravity_db_tmpfile, pc->gravity_db_file) != EXIT_SUCCESS) {
-		printf("cannot rename %s to %s: %s\n", 
+		iprintf("cannot rename %s to %s: %s\n", 
 			pc->gravity_db_tmpfile, 
 			pc->gravity_db_file, 
 			strerror(errno));
@@ -1579,7 +1645,7 @@ static void help_message(char *prg)
 #if _PRINT_DEBUG_OUTPUT
 static void __dump_cfg__(struct config_data *pc)
 {
-	#define PRINT_PARAMETER(a)	(printf("%s = %s\n", #a, a))
+	#define PRINT_PARAMETER(a)	(iprintf("%s%s = %s%s\n", GY, #a, a, NC))
 	PRINT_PARAMETER(pc->gravity_db_file);
 	PRINT_PARAMETER(pc->gravity_tempdir);
 	PRINT_PARAMETER(pc->gravity_directory);
@@ -1589,10 +1655,10 @@ static void __dump_cfg__(struct config_data *pc)
 	PRINT_PARAMETER(pc->gravity_db_backup_file);
 	PRINT_PARAMETER(pc->list_cache_directory);
 
-	printf("list sources:\n");
+	iprintf("%s  list sources:%s\n", GY, NC);
 	struct blocklist *head = pc->vw_adlist;
 	while( head ) {
-		printf("%4d %s %d\n", head->id, head->address, head->type);
+		iprintf("%s%4d %s %d%s\n", GY, head->id, head->address, head->type, NC);
 		head = head->next;
 	}
 }
@@ -1632,25 +1698,23 @@ static bool gravity_recover(const bool _force_recover) {
 
 	// check integrity
 	char *msg = (char *) "Checking integrity of existing gravity database";
-	printf("%s - %s", msg, "this can take a while");
-	fflush(stdout);	// message is not visible immediately
+	print_info("%s - %s", msg, "this can take a while");
 	if (int error = db_sql_exec_batch(db_file, pragma_integrity_check) == EXIT_SUCCESS) {
-		printf("\r%s - %s      \n", msg, "no errors found");
+		print_result(true, "%s - %s", msg, "no errors found");
 
 		msg = (char *) "Checking foreign keys of existing gravity database";
-		printf("%s - %s", msg, "this can take a while");
-		fflush(stdout);	// message is not visible immediately
+		print_info("%s - %s", msg, "this can take a while");
 		if ((error = db_sql_exec_batch(db_file, pragma_foreign_key_check)) == EXIT_SUCCESS) {
-			printf("\r%s - %s      \n", msg, "no errors found");
+			print_result(true, "%s - %s", msg, "no errors found");
 			if (!_force_recover)
 				return true;
 		}
 		else {
-			printf("\r%s - %s         \n", msg, "errors found");
+			print_result(false, "%s - %s", msg, "errors found");
 		}
 	}
 	else {
-		printf("\r%s - %s         \n", msg, "errors found");
+		print_result(false, "%s - %s", msg, "errors found");
 	}
 
 	char db_recovery_file[FN_SIZE];
@@ -1661,20 +1725,19 @@ static bool gravity_recover(const bool _force_recover) {
 
 	// recover database
 	msg = (char *) "Trying to recover existing gravity database";
-	printf("%s - %s", msg, "this can take a while");
-	fflush(stdout);	// message is not visible immediately
+	print_info("%s - %s", msg, "this can take a while");
 	// remove residual recovery file
 	os_remove(db_recovery_file);
 	if (db_recover_database(db_file, db_recovery_file) == EXIT_SUCCESS) {
-		printf("\r%s - %s                     \n", msg, "success");
-	printf(" %s has been recovered\n", db_file);
+		print_result(true, "%s - %s", msg, "success");
+	iprintf("%s has been recovered\n", db_file);
 	os_rename(db_file,  db_oldfile);
 	os_rename(db_recovery_file, db_file);
-	printf(" The old %s has been moved to %s\n", db_file, db_oldfile);
+	iprintf("The old %s has been moved to %s\n", db_file, db_oldfile);
 	}
 	else {
-		printf("\r%s - %s      \n", msg, "errors found\n");
-		printf("Recovery failed. Try 'pihole -r recreate' instead.}n");
+		print_result(false, "%s - %s", msg, "errors found");
+		iprintf("Recovery failed. Try 'pihole -r recreate' instead.\n");
 	}
 
 	return true;
@@ -1688,23 +1751,25 @@ static bool gravity_update(void) {
 	bool result = false;
 	int error = EXIT_SUCCESS;
 
-	printf("Rebuild the gravity database\n");
+	print_info("Rebuild the gravity database\n");
 
-	printf("Create new gravity database\n"); 
+	print_info("Create new gravity database"); 
 	const char *db_tmpfile = configuration.gravity_db_tmpfile;
 	const char *sql_file = PIHOLE_SCRIPTDIR "/" GRAVITY_DBSCHEMA_SCRIPT;
 	if ((error = db_sql_exec_file(db_tmpfile, sql_file)) != 0 ) {
-		printf("Database creation failed: error %d\n", error); 
+		print_result(false, "Database creation failed: error %d", error); 
 		return false;
 		}
+	print_result(true, "Gravity database created"); 
+
 	_set_file_permissions(db_tmpfile);
 
 	/*
-	 * this should go to database switch
+	 * TODO: this should go to database switch
 	 */
-	printf("Copy data from the existing database\n"); 
+	print_info("Copy data from the existing database\n"); 
 	if(! _copy_database(&configuration)) {
-		printf("Data copy failed\n"); 
+		print_result(false, "Data copy failed"); 
 		result = false;
 		goto gravity_update_exit;
 		}
@@ -1713,16 +1778,16 @@ static bool gravity_update(void) {
 	 * (not implemented) wait for DNS resolution to be available
 	 */
 
-	printf("Download blocklists\n"); 
+	print_info("Download blocklists\n"); 
 	if (! _download_blocklists(&configuration)) {
-		printf("Blocklist download failed\n"); 
+		print_result(false, "Blocklist download failed"); 
 		result = false;
 		goto gravity_update_exit;
 		}
 
-	printf("Import blocklists into database\n"); 
+	print_info("Import blocklists into database\n"); 
 	if (! _import_blocklists(&configuration)) {
-		printf("Blocklist import failed\n"); 
+		print_result(false, "Blocklist import failed"); 
 		result = false;
 		goto gravity_update_exit;
 		}
@@ -1732,19 +1797,19 @@ static bool gravity_update(void) {
 	char time_now[20] = {};
 	if (! db_update_info_property(db_tmpfile, 
 		PROPERTY_UPDATED, lli2str(time_now, time(NULL)))) {
-		printf("Update timestamp property failed\n"); 
+		print_result(false, "Update timestamp property failed"); 
 		result = false;
 		goto gravity_update_exit;
 		}
 
 	_set_file_permissions(db_tmpfile);
 
-	printf("Create index on gravity table\n");
+	print_info("Create index on gravity table\n");
 	const char *sql_statement = " \
 		CREATE INDEX idx_gravity \
 			ON gravity (domain, adlist_id);";
 	if ((error = db_sql_exec_batch(db_tmpfile, sql_statement)) != EXIT_SUCCESS ) {
-		printf("Index creation failed: error %d\n", error);
+		print_result(false, "Index creation failed: error %d", error);
 		result = false;
 		goto gravity_update_exit;
 		}
@@ -1752,19 +1817,19 @@ static bool gravity_update(void) {
 	int gravity_count[] = { -1, -1 };
 	if (db_get_domain_count(db_tmpfile, gravity_count, 2)) {
 		printf("\n");
-		printf("%18s  %-10s %s\n", "", 
+		printf("%13s  %-10s %s\n", "", 
 			"domains", "unique domains");
-		printf("%18s  %-10d %d\n", 
+		printf("%13s  %-10d %d\n", 
 			"gravity", gravity_count[0], gravity_count[1]);
-		printf("\n");
 		}
 	int domainlist_count[] = { 0, 0, 0, 0 };
 	if (db_get_domainlist_count(db_tmpfile, domainlist_count, 4)) {
-		printf("%18s  %-10s %s\n", "", "allowed", "denied");
-		printf("%18s  %-10d %d\n", 
-			"domainlist domains", domainlist_count[0], domainlist_count[1]);
-		printf("%18s  %-10d %d\n", 
-			"filters", domainlist_count[0], domainlist_count[1]);
+		printf("\n");
+		printf("%13s  %-10s %s\n", "", "allowed", "denied");
+		printf("%13s  %-10d %d\n", 
+			"exact", domainlist_count[0], domainlist_count[1]);
+		printf("%13s  %-10d %d\n", 
+			"regex", domainlist_count[2], domainlist_count[3]);
 		printf("\n");
 		}
 
@@ -1773,25 +1838,25 @@ static bool gravity_update(void) {
 	char _gravity_count[10] = {};
 	if (! db_update_info_property(db_tmpfile, 
 		PROPERTY_COUNT, i2str(_gravity_count, gravity_count[1]))) {
-		printf("Update gravity_count property failed\n");
 		result = false;
+		print_result(result, "Update gravity_count property failed");
 		goto gravity_update_exit;
 		}
 
-	printf("Optimize gravity database\n");
+	print_info("Optimize gravity database\n");
 	sql_statement = " \
 		PRAGMA analysis_limit=0; \
 		ANALYZE";
 	if ((error = db_sql_exec_batch(db_tmpfile, sql_statement)) != EXIT_SUCCESS ) {
-		printf("Database optimization failed: error %d\n", error);
 		result = false;
+		print_result(result, "Database optimization failed: error %d", error);
 		goto gravity_update_exit;
 		}
 
-	printf("Backup and swap databases\n");
+	print_info("Backup and swap databases\n");
 	if (! _swap_databases(&configuration)) {
-		printf("Database replacement failed\n");
 		result = false;
+		print_result(result, "Database replacement failed");
 		goto gravity_update_exit;
 		}
 
@@ -1866,33 +1931,36 @@ static int _parse_args(int argc, char *argv[])
  */
 int gravity_main(const int argc, char *argv[])
 {
-	// enable output to stdout
-	log_ctrl(false, true);
+	// enable colored output
+	set_termcolor();
 
 	if( int failed_argument = _parse_args(argc, argv) != 0 ) {
-		printf("Argument error: %s\n", argv[failed_argument]);
+		print_colored(RD, "Argument error: %s", argv[failed_argument]);
 		exit(EXIT_FAILURE);
 	}
 
 	print_flags();
 
 	if( ! ftl_get_configuration(&configuration) ) {
-		printf("Retrieving configuration values failed\n"); 
+		print_colored(RD, "Retrieving configuration values failed"); 
 		exit(EXIT_FAILURE);
 	}
 
 	if( ! db_get_blocklists(&configuration) ) {
-		printf("Retrieving blocklist configuration failed\n"); 
+		print_colored(RD, "Retrieving blocklist configuration failed\n"); 
 		exit(EXIT_FAILURE);
 	}
 
 	print_configuration(&configuration);
 
 	// this forces download of configured adlists
+	// _clear_list_cache is called on exit also, so printing has to occur here
 	if (force_deletion) {
-		printf("Clear existing list cache %s\n", configuration.list_cache_directory); 
-		if( ! _clear_list_cache(&configuration, force_deletion) )
+		print_info("Clear existing list cache %s", configuration.list_cache_directory); 
+		if (! _clear_list_cache(&configuration, force_deletion))
 			exit(EXIT_FAILURE);
+		print_result(true, "Clear existing list cache %s",
+			configuration.list_cache_directory); 
 		}
 
 	// ungünstiger Zeitpunkt, sollte vielleicht im Rahmen des cleanups passieren ... 
@@ -1905,10 +1973,10 @@ int gravity_main(const int argc, char *argv[])
 			exit(EXIT_FAILURE);
 	}
 	else if( command == REPAIR_RECREATE ) {
-		printf("Gravity database repair/recreate not implemented\n");
+		print_info("Gravity database repair/recreate not implemented\n");
 	}
 	else if( command == UPGRADE_SCHEMA ) {
-		printf("Gravity database schema upgrade not implemented\n");
+		print_info("Gravity database schema upgrade not implemented\n");
 		// no list update after database schema upgrade
 		exit(EXIT_SUCCESS);
 	}
