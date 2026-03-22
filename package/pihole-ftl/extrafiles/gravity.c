@@ -274,15 +274,14 @@ static bool os_is_directory(const char *pathname) {
 /*
  * remove file, corresponds to rm -f
  */
-static bool os_remove(const char *filename)
+static int os_remove(const char *filename)
 {
-	if( access(filename, F_OK) == 0 ) {
-		if( remove(filename) != 0 ) {
+	if (access(filename, F_OK) == EXIT_SUCCESS &&
+		remove(filename) != EXIT_SUCCESS) {
 			iprintf("Could not remove %s: %s\n", filename, strerror(errno));
-			return false;
+			return EXIT_FAILURE;
 		}
-	}
-	return true;
+	return EXIT_SUCCESS;
 }
 
 /*
@@ -1520,8 +1519,7 @@ static bool _rotate_backups(const struct config_data *pc) {
 	if (os_is_file(fn_name[0])) {
 		// simply remove the file with the highest index
 		sprintf(fn_name[1], "%s.%d", base_name, MAX_BACKUPS);
-		if (os_is_file(fn_name[1]) &&
-			os_remove(fn_name[1]) != EXIT_SUCCESS)
+		if (os_remove(fn_name[1]) != EXIT_SUCCESS)
 			return false;
 
 		for ( int i = MAX_BACKUPS-1 ; i > 0 ; i-- ) {
@@ -1554,7 +1552,7 @@ static bool _swap_databases(const struct config_data *pc) {
 		 */
 
 		if (! _rotate_backups(pc)) {
-			iprintf("Backup rotation failed: %d\n", errno);
+			iprintf("Backup rotation failed\n");
 			return false;
 			}
 
@@ -1603,9 +1601,7 @@ static bool _swap_databases(const struct config_data *pc) {
 
 static void _gravity_cleanup(const struct config_data *pc) {
 
-	const char *db_file = pc->gravity_db_tmpfile;
-	if (os_is_file(db_file))	
-		os_remove(db_file);	
+	os_remove(pc->gravity_db_tmpfile);
 
 	_clear_list_cache(pc, false);
 
@@ -1965,7 +1961,7 @@ int gravity_main(const int argc, char *argv[])
 
 	// ungünstiger Zeitpunkt, sollte vielleicht im Rahmen des cleanups passieren ... 
 	// old backup is removed prior to any database activity
-	if (! os_remove(configuration.gravity_db_oldfile))
+	if (os_remove(configuration.gravity_db_oldfile) == EXIT_FAILURE)
 		exit(EXIT_FAILURE);
 
 	if( command == REPAIR_RECOVER ) {
