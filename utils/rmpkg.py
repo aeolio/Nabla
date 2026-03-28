@@ -13,7 +13,8 @@ from glob import glob
 from colorama import Fore
 
 BUILD_DIR = 'build'
-MANIFEST_NAME = ".files-list"
+LOCAL_MANIFEST = ".files-list"
+GLOBAL_MANIFEST = "packages-file-list"
 
 TARGETS = {
 	'host',
@@ -26,14 +27,17 @@ def package_directory(package):
 	''' Find package directory from package name '''
 	pattern = '-'.join([ os.path.join(BUILD_DIR, package), '*' ])
 	dirs = glob(pattern)
-	if not dirs:
-		print(f"{Fore.LIGHTRED_EX} not found: {package}")
-		return ''
-	return os.path.basename(sorted(dirs)[0])
+	if dirs:
+		return os.path.basename(sorted(dirs)[0])
+	return ''
 
-def get_filename(target):
-	''' Construct manifest file name '''
-	return f"{MANIFEST_NAME}.txt" if target == "target" else f"{MANIFEST_NAME}-{target}.txt"
+def get_package_manifest(target):
+	''' Construct package manifest file name '''
+	return f"{LOCAL_MANIFEST}.txt" if target == "target" else f"{LOCAL_MANIFEST}-{target}.txt"
+
+def get_global_manifest(target):
+	''' Construct global manifest file name '''
+	return f"{GLOBAL_MANIFEST}.txt" if target == "target" else f"{GLOBAL_MANIFEST}-{target}.txt"
 
 def parse(line, package, target, file_list):
 	''' Extract file name from one line of a manifest file '''
@@ -53,19 +57,26 @@ def remove_package(package_name, package_dir):
 
 	for t in TARGETS:
 
-		filename = os.path.join('build', package_dir, get_filename(t))
+		package_manifest = os.path.join(BUILD_DIR, package_dir, get_package_manifest(t))
+		global_manifest = os.path.join(BUILD_DIR, get_global_manifest(t))
 
-		if os.path.exists(filename):
-			with open(filename, encoding='utf8') as src_file:
+		# try build directory first
+		if os.path.exists(package_manifest):
+			with open(package_manifest, encoding='utf8') as src_file:
+				for line in src_file:
+					installed_files = parse(line, package_name, t, installed_files)
+		# if the build directory is already deleted, try the global manifests
+		elif os.path.exists(global_manifest):
+			with open(global_manifest, encoding='utf8') as src_file:
 				for line in src_file:
 					installed_files = parse(line, package_name, t, installed_files)
 
-		# remove every installed file
-		for f in installed_files:
-			# might already have been removed by a cleanup task
-			if os.path.lexists(f):
-				os.remove(f)
-				print(f"{Fore.LIGHTBLACK_EX}deleted {f}{Fore.RESET}")
+	# remove every installed file
+	for f in installed_files:
+		# might already have been removed by a cleanup task
+		if os.path.lexists(f):
+			os.remove(f)
+			print(f"{Fore.LIGHTBLACK_EX}deleted {f}{Fore.RESET}")
 
 
 def remove_packages(argv):
