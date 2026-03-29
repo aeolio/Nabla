@@ -1,10 +1,14 @@
 #/bin/sh
 
 instances="test/buildroot staging/buildroot buildroot"
-merge_instance="buildroot"
-merge_branch="nabla"
+instance_to_merge="buildroot"
+branch_to_merge="nabla"
 
 BACKUP_CREATED=0
+
+FG_RED="\33[31m"
+FG_GREEN="\33[32m"
+RESET="\33[0m"
 
 backup_wip() {
 	if ! git diff-index --quiet HEAD -- ; then
@@ -21,36 +25,36 @@ restore_wip() {
 }
 
 pull_instance() {
-	printf "pull %s\n" $1
-	cd ~/$1
 	current_branch=$(git branch --show)
 	if [ $current_branch != 'master' ]; then
-		backup_wip
 		git checkout master || exit 1
 		git pull || exit 2
-		git checkout $merge_branch || exit 3
-		restore_wip
+		git checkout $current_branch || exit 3
 	else
 		git pull || exit 2
 	fi
 }
 
 merge_instance() {
-	cd ~/$1
 	current_branch=$(git branch --show)
-	if [ $current_branch == $merge_branch ]; then
-		printf "merge %s\n" $1
+	if [ $current_branch != 'master' ]; then
+		printf "${FG_GREEN}Merge %s${RESET}\n" $1
 		log_text="auto merge $(date --iso-8601='seconds')"
-		git merge -m "$log_text" origin/master
+		git merge -m "$log_text" origin/master || exit 4
 	fi
 }
 
+current_dir=$(pwd)
+
 for d in $instances
 do
-	current_dir=$(pwd)
+	cd ~/$d
+	printf "${FG_RED}Pull %s${RESET}\n" $d
+	backup_wip
 	pull_instance $d
-	if [ $d == $merge_instance ]; then
+	if [ $d == $instance_to_merge ]; then
 		merge_instance $d
 	fi
+	restore_wip
 	cd $current_dir
 done
