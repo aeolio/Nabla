@@ -24,7 +24,7 @@ PACKAGES_USERS += $(MPD_USERS)$(sep)
 
 # modify init.d configuration
 define MPD_MODIFY_INIT_SCRIPT
-	MPD_INIT_SCRIPT = $(TARGET_DIR)/etc/init.d/S95mpd
+	MPD_INIT_SCRIPT=$(TARGET_DIR)/etc/init.d/S95mpd
 	if [ -f "$(MPD_INIT_SCRIPT)" ]; then \
 		patch $(MPD_INIT_SCRIPT) \
 			$(BR2_EXTERNAL)/package/mpd/0000-modify-startup-script.patch; \
