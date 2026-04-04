@@ -5,11 +5,14 @@
 ################################################################################
 
 # disable some standard features
-# wave-encoder might be needed for PCM streams
 MPD_CONF_OPTS += \
 	-Dlibfuzzer=false \
-	-Dwave_encoder=false \
 	-Drecorder=false
+
+# disable wave-encoder if streaming is not enabled
+ifneq ($(BR2_PACKAGE_MPD_HTTPD_OUTPUT),y)
+MPD_CONF_OPTS += -Dwave_encoder=false
+endif
 
 # Yan's realtime patch
 MPD_CONF_OPTS += -Drtopt=true
@@ -23,11 +26,11 @@ endef
 PACKAGES_USERS += $(MPD_USERS)$(sep)
 
 # modify init.d configuration
+MPD_INIT_SCRIPT = $(TARGET_DIR)/etc/init.d/S95mpd
 define MPD_MODIFY_INIT_SCRIPT
-	MPD_INIT_SCRIPT=$(TARGET_DIR)/etc/init.d/S95mpd
 	if [ -f "$(MPD_INIT_SCRIPT)" ]; then \
 		patch $(MPD_INIT_SCRIPT) \
-			$(BR2_EXTERNAL)/package/mpd/0000-modify-startup-script.patch; \
+			-i $(BR2_EXTERNAL)/package/mpd/0000-modify-startup-script.patch; \
 	fi
 endef
 MPD_POST_INSTALL_TARGET_HOOKS += MPD_MODIFY_INIT_SCRIPT
