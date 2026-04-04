@@ -53,6 +53,9 @@ def parse(line, package, target, file_list):
 def remove_package(package_name, package_dir):
 	''' Remove files installed by one package '''
 
+	if not package_dir:
+		print(f"{Fore.LIGHTYELLOW_EX}package build directory missing: {package_name}{Fore.RESET}")
+
 	installed_files = []
 
 	for t in TARGETS:
