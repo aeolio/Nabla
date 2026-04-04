@@ -11,7 +11,7 @@ if BR2_TOOLCHAIN_HEADERS_LATEST
 
 config NABLA_LINUX_VERSION
 	string
-	default "7.0-rc5"
+	default "7.0-rc6"
 
 config NABLA_LINUX_PATCH
 	string
@@ -25,7 +25,7 @@ if BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_18
 
 config NABLA_LINUX_VERSION
 	string
-	default "6.18.20"
+	default "6.18.21"
 
 config NABLA_LINUX_PATCH
 	string
@@ -39,7 +39,7 @@ if BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_12
 
 config NABLA_LINUX_VERSION
 	string
-	default "6.12.79"
+	default "6.12.80"
 
 config NABLA_LINUX_PATCH
 	string
