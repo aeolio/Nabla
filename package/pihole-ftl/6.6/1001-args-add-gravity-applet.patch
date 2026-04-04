@@ -9,10 +9,10 @@ Signed-off-by: Andreas Ziegler <br015@umbiko.net>
  #include "webserver/webserver.h"
 +// gravity_main()
 +#include "gravity.h"
- 
- // defined in dnsmasq.c
- extern void print_dnsmasq_version(const char *yellow, const char *green, const char *bold, const char *normal);
-@@ -243,6 +245,13 @@
+ // mmap(), PROT_NONE, MAP_PRIVATE, MAP_ANONYMOUS — used for intentional crash
+ // test
+ #include <sys/mman.h>
+@@ -246,6 +248,13 @@
  	// we operate in drop-in mode and consume all arguments for the embedded luac engine
  	if(strEndsWith(argv[0], "luac"))
  		exit(run_luac(argc, argv));

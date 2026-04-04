@@ -4,10 +4,8 @@
 #
 ################################################################################
 
-PIHOLE_FTL_VERSION = 6.5
-PIHOLE_FTL_SITE = $(call github,pi-hole,FTL,development)
-# PIHOLE_FTL_SITE = /home/iago/staging/pi-hole/pihole-ftl
-# PIHOLE_FTL_SITE_METHOD = local
+PIHOLE_FTL_VERSION = 6.6
+PIHOLE_FTL_SITE = $(call github,pi-hole,FTL,v$(PIHOLE_FTL_VERSION))
 PIHOLE_FTL_LICENSE = EUPL-1.2
 PIHOLE_FTL_LICENSE_FILES = LICENSE
 
@@ -48,19 +46,9 @@ PIHOLE_FTL_TEMPLATE_DIR = advanced/Templates
 PIHOLE_FTL_DB_INIT_SQL = $(PIHOLE_FTL_TEMPLATE_DIR)/gravity.db.sql
 PIHOLE_FTL_DB_COPY_SQL = $(PIHOLE_FTL_TEMPLATE_DIR)/gravity_copy.sql
 
-# development workaround. apply remaining patches
-ifeq ($(PIHOLE_FTL_SITE_METHOD),local)
-define PIHOLE_FTL_APPLY_PATCHES
-	@$(call MESSAGE,"Patching")
-	$(foreach dir,$(call pkg-patches-dirs,$(PKG)),\
-		$(Q)$(APPLY_PATCHES) $(@D) $(dir) \*.patch$(sep)\
-	)
-endef
-PIHOLE_FTL_POST_RSYNC_HOOKS += PIHOLE_FTL_APPLY_PATCHES
-endif
-
 # development workaround: add gravity feature
 define PIHOLE_FTL_GRAVITY
+	ln -fs $(PIHOLE_FTL_PKGDIR)/extrafiles/col_table.h $(@D)/src/col_table.h
 	ln -fs $(PIHOLE_FTL_PKGDIR)/extrafiles/gravity.c $(@D)/src/gravity.c
 	ln -fs $(PIHOLE_FTL_PKGDIR)/extrafiles/gravity.h $(@D)/src/gravity.h
 endef
