@@ -5,18 +5,20 @@
 	versions
 '''
 
+from glob import glob
 import json
 import os
 from re import search
 import shutil
-from time import mktime, strptime
 import sys
 import tempfile
+from time import mktime, strptime
 
 import requests
 from bs4 import BeautifulSoup as soup
 
 CONFIG_FILE = 'Config.in.linux'
+PATCHES_LINUX = 'patches/linux'
 TIMEOUT = 30
 
 
@@ -41,7 +43,7 @@ class KernelVersions:
 		db = json.loads(response.text)
 		for r in db['releases']:
 			v = r['version']
-			vb = self._base_version(v)
+			vb = self.base_version(v)
 			t = r['released']['timestamp']
 			self.kernel_versions[vb] = {
 				'version': v, 
@@ -52,7 +54,8 @@ class KernelVersions:
 		return version in self.kernel_versions
 
 	@staticmethod
-	def _base_version(v):
+	def base_version(v):
+		''' get the kernel version without patch level '''
 		_v = v.strip('"')
 		_v = _v.split('-')[0] # get rid of the release candidate
 		_v = _v.split('.')
@@ -265,13 +268,16 @@ class LineParser:
 	_header_version = None
 	_config_block = None
 
-	def __init__(self, matching, mtime):
+	def __init__(self, matching):
 		self.changes_made = 0
 		self.line_number = 0
 		self.matching = matching
-		self.mtime = mtime
 		self.versions = KernelPatches()
 		self.cip_version = CIPKernelVersion()
+		self.configured = []
+
+	def __str__(self):
+		return f"Linux versions: {self.configured}"
 
 	def terminal_error(self, message):
 		''' Terminate the program with an error message '''
@@ -332,6 +338,7 @@ class LineParser:
 					t[1] = v
 					line = '\t' + ' '.join(list(t)) + '\n'
 					self.changes_made += 1
+				self.configured.append(kv)
 
 			# The new rt patch version must be greater than the
 			# last version, otherwise it will not be replaced
@@ -403,13 +410,12 @@ def kupdate(argv):
 
 	dirname = os.path.dirname(os.path.realpath(argv[0]))
 	filename = os.path.join(dirname, CONFIG_FILE)
-	homedir = os.path.dirname(os.path.realpath('~'))
+	homedir = os.path.expanduser('~')
 	while not os.path.samefile(dirname, homedir) and not os.path.exists(filename):
 		dirname = os.path.dirname(dirname)
 		filename = os.path.join(dirname, CONFIG_FILE)
 
-	mtime = os.stat(filename).st_mtime
-	parser = LineParser(matching_versions, mtime)
+	parser = LineParser(matching_versions)
 
 	# Parse and modify the original file line-by-line into a temporary file
 	with tempfile.NamedTemporaryFile(mode='w', dir=dirname, delete=False) as tmp_file:
@@ -425,9 +431,25 @@ def kupdate(argv):
 		print(f"{'Release monitoring':>20} {v1:>11}")
 		print(f"{'Github':>20} {v2:>11}")
 
-	# Overwrite the original file with the modified temporary file in a
-	# manner preserving file attributes (e.g., permissions).
-	if parser.changes_made and not trial_run:
+	p = os.path.join(dirname, PATCHES_LINUX)
+	if not trial_run and os.path.exists(p):
+		for v in parser.configured:
+			vb = KernelVersions.base_version(v)
+			base_dir = os.path.join(p, vb)
+			link_dir = os.path.join(p, v)
+			if os.path.exists(base_dir):
+				l = glob('.'.join([base_dir, '*']))
+				if len(l) == 1 and os.path.islink(l[0]):
+					if l[0].split('/')[-1] != v:
+						os.rename(l[0], link_dir)
+				elif not l:
+					os.link(base_dir, link_dir)
+				else:
+					print(f"error: {v}: {l}")
+
+	# Overwrite the original file with the modified temporary file
+	# in a manner preserving file attributes (e.g., permissions).
+	if not trial_run and parser.changes_made:
 		shutil.copystat(filename, tmp_file.name)
 		shutil.move(tmp_file.name, filename)
 	else:
