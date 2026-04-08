@@ -1,0 +1,92 @@
+Do not stop input and output if running in daemon mode
+
+Upstream: n/a (private enhancement)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
+diff -Naur a/src/bfconf.c b/src/bfconf.c
+--- a/src/bfconf.c	2026-01-20 19:11:21.000000000 +0100
++++ b/src/bfconf.c	2026-04-08 08:31:52.507545312 +0200
+@@ -2386,7 +2386,8 @@
+ void
+ bfconf_init(char filename[],
+             bool quiet,
+-            bool nodefault)
++            bool nodefault,
++            bool run_as_daemon)
+ {
+     struct iodev *iodevs[2][BF_MAXCHANNELS];
+     struct filter *pfilters[BF_MAXFILTERS];
+@@ -2428,6 +2429,7 @@
+     }
+     bfconf->sdf_length = -1;
+     bfconf->quiet = quiet;
++    bfconf->daemon = run_as_daemon;
+     bfconf->realsize = sizeof(float);
+     bfconf->safety_limit = 0;
+ 
+diff -Naur a/src/bfconf.h b/src/bfconf.h
+--- a/src/bfconf.h	2026-01-20 19:11:21.000000000 +0100
++++ b/src/bfconf.h	2026-04-08 08:29:45.066257945 +0200
+@@ -36,6 +36,7 @@
+     bool benchmark;
+     bool debug;
+     bool quiet;
++    bool daemon;
+     bool overflow_warnings;
+     bool show_progress;
+     bool realtime_priority;
+@@ -81,6 +82,7 @@
+ void
+ bfconf_init(char filename[],
+             bool quiet,
+-            bool nodefault);
++            bool nodefault,
++            bool run_as_daemon);
+ 
+ #endif
+diff -Naur a/src/brutefir.c b/src/brutefir.c
+--- a/src/brutefir.c	2026-01-20 19:11:21.000000000 +0100
++++ b/src/brutefir.c	2026-04-08 07:48:58.181260363 +0200
+@@ -64,7 +64,7 @@
+ 
+     emalloc_set_exit_function(bf_exit, BF_EXIT_NO_MEMORY);
+ 
+-    bfconf_init(config_filename, quiet, nodefault);
++    bfconf_init(config_filename, quiet, nodefault, run_as_daemon);
+ 
+     /*
+       Note 2025: run as deamon should be considered a legacy option, today running
+diff -Naur a/src/dai.c b/src/dai.c
+--- a/src/dai.c	2026-01-20 19:11:21.000000000 +0100
++++ b/src/dai.c	2026-04-08 08:37:09.085162496 +0200
+@@ -1108,6 +1108,14 @@
+     if ((ca->frames_left != -1 && st.buf_index == ca->lastbuf_index + 1) ||
+         (ca->cb_frames_left != -1 && st.buf_index == ca->cb_lastbuf_index + 1))
+     {
++        /* do not stop inputs while running in server mode */
++        if (bfconf->daemon) {
++            ca->frames_left = ca->cb_frames_left = -1;
++            ca->lastbuf_index = ca->cb_lastbuf_index = -1;
++            st.buf_index++;
++            return;
++        }
++
+         for (int n = 0; n < bfconf->n_iomods; n++) {
+             if (bfconf->iomods[n].stop != NULL) {
+                 bfconf->iomods[n].stop(IN);
+@@ -1519,6 +1527,14 @@
+     }
+ 
+     if (st.islast) {
++
++        /* do not stop outputs while running in server mode */
++        if (bfconf->daemon) {
++            st.islast = false;
++            st.buf_index++;
++            return;
++        }
++
+         for (int n = 0; n < bfconf->n_iomods; n++) {
+             if (bfconf->iomods[n].iscallback) {
+                 /* callback I/O is stopped elsewhere */

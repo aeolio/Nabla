@@ -1,0 +1,50 @@
+Fixes segment violation due to uninitialized devices
+
+Upstream: n/a (private enhancement)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
+--- a/src/bfio_alsa.c	2026-04-08 07:15:34.857268526 +0200
++++ b/src/bfio_alsa.c	2026-01-20 19:11:21.000000000 +0100
+@@ -550,7 +550,8 @@
+         as->channel_selection = malloc(used_channels * sizeof(int));
+         memcpy(as->channel_selection, channel_selection, used_channels * sizeof(int));
+     }
+-    free(settings->device);
++    if (settings->device != NULL)
++        free(settings->device);
+     free(settings);
+     return pollfd.fd;
+ }
+@@ -732,6 +733,16 @@
+     struct alsa_access_state *as = &glob.fd2as[fd];
+     int frame_count, frame_size, err;
+ 
++    // handle restart before everything else
++    if (as->restart) {
++        as->restart = false;
++        if ((err = snd_pcm_start(as->handle)) < 0) {
++            fprintf(stderr, "ALSA I/O: Could not restart audio: %s.\n", snd_strerror(err));
++            errno = EPIPE;
++            return -1;
++        }
++    }
++
+     if (as->isinterleaved) {
+         frame_size = as->sample_size * as->open_channels;
+         if (as->ismmap) {
+@@ -760,14 +771,6 @@
+             goto bfio_write_error;
+         }
+     }
+-    if (as->restart) {
+-        as->restart = false;
+-        if ((err = snd_pcm_start(as->handle)) < 0) {
+-            fprintf(stderr, "ALSA I/O: Could not restart audio: %s.\n", snd_strerror(err));
+-            errno = EPIPE;
+-            return -1;
+-        }
+-    }
+ 
+     return frame_count * frame_size;
+ 

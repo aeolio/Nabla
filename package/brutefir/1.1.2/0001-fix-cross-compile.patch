@@ -1,0 +1,50 @@
+x86_64-buildroot-linux-uclibc-gcc: ERROR: unsafe header/library path used in cross-compilation: '-I/usr/local/include'
+x86_64-buildroot-linux-uclibc-gcc: ERROR: unsafe header/library path used in cross-compilation: '-I/usr/local/include'
+x86_64-buildroot-linux-uclibc-gcc: ERROR: unsafe header/library path used in cross-compilation: '-I/usr/local/include'
+
+Fix library and include paths
+
+src/bfio_jack.c:16:10: fatal error: jack/jack.h: No such file or directory
+   16 | #include <jack/jack.h>
+      |          ^~~~~~~~~~~~~
+
+Remove libraries that are not present in the build configuration 
+
+Upstream: n/a (Buildroot specific)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
+--- a/Makefile
++++ b/Makefile
+@@ -8,17 +8,17 @@
+ 
+ ###################################
+ # Where to install
+-INSTALL_PREFIX	= $(DESTDIR)/usr/local
++INSTALL_PREFIX	= $(DESTDIR)/usr
+ 
+ ###################################
+ # Where to find libraries, and their header files.
+-LIBPATHS	= -L/usr/local/lib
+-INCLUDE		= -I/usr/local/include
++LIBPATHS	= -L$(DESTDIR)/usr/lib
++INCLUDE		= -I$(DESTDIR)/usr/include
+ ifdef FFTW_PATH
+ LIBPATHS	+= -L$(FFTW_PATH)/lib
+ INCLUDE		+= -I$(FFTW_PATH)/include
+ endif
+-INCLUDE		+= -I/usr/include/pipewire-0.3 -I/usr/include/spa-0.2
++INCLUDE		+= -I$(DESTDIR)/usr/include/pipewire-0.3 -I$(DESTDIR)/usr/include/spa-0.2
+ INCLUDE 	+= -I$(SRCDIR)
+ 
+ ###################################
+@@ -88,7 +88,7 @@
+ BIN_TARGETS	= $(BUILDDIR)/brutefir
+ LIB_TARGETS	= $(BUILDDIR)/cli.bflogic $(BUILDDIR)/eq.bflogic $(BUILDDIR)/file.bfio
+ # These targets requires libs that are less portable
+-LIB_TARGETS	+= $(BUILDDIR)/alsa.bfio $(BUILDDIR)/jack.bfio $(BUILDDIR)/pipewire.bfio
++LIB_TARGETS	+= $(BUILDDIR)/alsa.bfio 
+ 
+ ###################################
+ # System-specific settings
+
