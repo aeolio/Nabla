@@ -94,7 +94,7 @@ endef
 PIHOLE_FTL_POST_INSTALL_TARGET_HOOKS += PIHOLE_FTL_INSTALL_EXTRA_FILES
 
 # for the patched version, create a gravity applet
-ifeq ($(BR2_PACKAGE_PIHOLE_FTL_GRAVITY_PATCH),y)
+ifeq ($(BR2_PACKAGE_PIHOLE_FTL_GRAVITY),y)
 define PIHOLE_FTL_GRAVITY_APPLET
 	ln -fs /usr/bin/pihole-FTL $(TARGET_DIR)/usr/bin/gravity
 endef
