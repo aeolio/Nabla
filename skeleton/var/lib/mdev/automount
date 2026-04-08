@@ -149,7 +149,8 @@ fi
 # the value of the MDEV_DEBUG flag. Values >= 1 will enable this feature
 if [ $MDEV_DEBUG -gt 0 ]; then
 	exec 3<>$MDEV_ERR # open file for rw
-	while [ ! $? ]; do read -r <&3; done # seek operation
+	# shellcheck disable=SC2034 # read w/o variable not allowed
+	while [ ! $? ]; do read -r _unused <&3; done # seek operation
 	exec 2>&3 # redirect standard error
 fi
 
