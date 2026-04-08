@@ -82,6 +82,7 @@ config BR2_PACKAGE_NCURSES_WIDE
 	default y if BR2_PACKAGE_NCURSES && BR2_USE_WCHAR
 	select BR2_PACKAGE_NCURSES_WCHAR
 
+# TODO: this can go once the patch use-ca-certificates-conditionally is through
 # libcurl needs ca-certificates for ssl connections
 config BR2_PACKAGE_LIBCURL_CA_CERTIFICATES
 	bool
@@ -162,27 +163,27 @@ endchoice # Machine type
 comment "additional packages"
 
 menu "Audio and video applications"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/brutefir/Config.in"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/folve/Config.in"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/zita-convolver/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/brutefir/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/folve/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/zita-convolver/Config.in"
 endmenu
 
 menu "Debugging, profiling and benchmark"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/interbench/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/interbench/Config.in"
 endmenu
 
 if BR2_arm || BR2_aarch64
 
 menu "Hardware handling"
-	menu "Firmware"
-		source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
-		source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
-	endmenu
+menu "Firmware"
+source "$BR2_EXTERNAL_NABLA_PATH/package/armbian-firmware/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/rk-firmware/Config.in"
+endmenu
 endmenu
 
 endif # BR2_arm || BR2_aarch64
 
 menu "Networking applications"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/pihole-ftl/Config.in"
-	source "$BR2_EXTERNAL_NABLA_PATH/package/pihole-web/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/pihole-ftl/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/pihole-web/Config.in"
 endmenu
