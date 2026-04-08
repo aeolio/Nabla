@@ -21,7 +21,7 @@ config BR2_PACKAGE_PIHOLE_FTL_GRAVITY
 	select BR2_PACKAGE_LIBCURL	# gravity list download
 	select BR2_PACKAGE_OPENSSL	# libcrypto
 	help
-	  "Build pihole-ftl with support for downloading blacklist files."
+	  Build pihole-ftl with support for downloading blacklist files.
 
 config BR2_PACKAGE_PIHOLE_FTL_READLINE
 	bool "use readline"
