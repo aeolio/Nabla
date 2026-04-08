@@ -1,7 +1,7 @@
 #!/bin/sh
 # post-image script to prepend initrd with ucode image
 #	see: kernel.org/doc/html/next/x86/microcode.html
-#	within buildroot this cannot be used, since the script woulf have to be 
+#	within buildroot this cannot be used, since the script woulf have to be
 #	executed between root fs generation and kernel rebuild, where no hook exists
 
 set -e

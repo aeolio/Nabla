@@ -145,7 +145,7 @@ _etc_init_d="${TARGET_DIR}/etc/init.d"
 
 ### modify os-release
 (
-	# execute in a subshell with exit-on-error reset, 
+	# execute in a subshell with exit-on-error reset,
 	# otherwise grep will abort the script
 	set +e
 	release_file="$TARGET_DIR/usr/lib/os-release"
