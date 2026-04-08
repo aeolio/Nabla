@@ -37,7 +37,7 @@ board/wandboard/patches/linux/0001-squeezelite_spdif.patch lib_patch.Sob lib_pat
 # does not start a daemon
 board/alix.2/skeleton/etc/init.d/S99led lib_sysv.Variables
 board/raspberrypi/skeleton/etc/init.d/S99led lib_sysv.Variables
-# do not force hash check
+# do not enforce hash check for _every_ download
 configs/alix2_defconfig lib_defconfig.ForceCheckHash
 configs/generic_i386_defconfig lib_defconfig.ForceCheckHash
 configs/generic_x86_64_defconfig lib_defconfig.ForceCheckHash
@@ -54,24 +54,26 @@ patches/linux/6.12/0001-timerlat_u-uclibc-settid.patch lib_patch.Upstream
 patches/linux/6.12/0101-timerlat_hist-display-average-with-two-digit-precision.patch lib_patch.Upstream
 patches/linux/6.12/0102-osnoise-timerlat-hist-add-standard-deviation.patch lib_patch.Upstream
 patches/linux/6.12/0103-fix-cpu_set_t-undefined.patch lib_patch.Sob lib_patch.Upstream
-patches/linux/6.17/0001-timerlat_u-uclibc-settid.patch lib_patch.Upstream
-patches/linux/6.17/0002-add-missing-_GNU_SOURCE.patch lib_patch.Sob lib_patch.Upstream
-patches/linux/6.17/0101-timerlat_hist-display-average-with-two-digit-precision.patch lib_patch.Upstream
-patches/linux/6.17/0102-utils-add-sqrth.patch lib_patch.Upstream
-patches/linux/6.17/0103-osnoise_hist-add-standard-deviation.patch lib_patch.Upstream
-patches/linux/6.17/0104-timerlat-hist-add-standard-deviation.patch lib_patch.Upstream
+patches/linux/6.18/0001-timerlat_u-uclibc-settid.patch lib_patch.Upstream
+patches/linux/6.18/0002-add-missing-_GNU_SOURCE.patch lib_patch.Sob lib_patch.Upstream
+patches/linux/6.18/0101-timerlat_hist-display-average-with-two-digit-precision.patch lib_patch.Upstream
+patches/linux/6.18/0102-utils-add-sqrth.patch lib_patch.Upstream
+patches/linux/6.18/0103-osnoise_hist-add-standard-deviation.patch lib_patch.Upstream
+patches/linux/6.18/0104-timerlat-hist-add-standard-deviation.patch lib_patch.Upstream
 patches/linux/6.6/0001-timerlat_u-uclibc-settid.patch lib_patch.Upstream
 patches/linux/6.6/0101-timerlat_hist-display-average-with-two-digit-precision.patch lib_patch.Upstream
 patches/linux/6.6/0102-osnoise-timerlat-hist-add-standard-deviation.patch lib_patch.Upstream
 # mpd patches are not intended for public use
-patches/mpd/0.24/0001-meson.patch lib_patch.Sob lib_patch.Upstream
-patches/mpd/0.24/0002-main.patch lib_patch.Sob lib_patch.Upstream
-patches/mpd/0.24/0003-config.patch lib_patch.Sob lib_patch.Upstream
-patches/mpd/0.24/0004-event.patch lib_patch.Sob lib_patch.Upstream
-patches/mpd/0.24/0005-output.patch lib_patch.Sob lib_patch.Upstream
-patches/mpd/0.24/0006-thread.patch lib_patch.Sob lib_patch.Upstream
-patches/mpd/0.24/0100-filecommand.patch lib_patch.Sob lib_patch.Upstream
-patches/mpd/0.24/0101-increase-binary-limit.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0001-meson.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0002-main.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0003-config.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0004-event.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0005-output.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0006-thread.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0100-filecommand.patch lib_patch.Sob lib_patch.Upstream
+patches/mpd/0101-increase-binary-limit.patch lib_patch.Sob lib_patch.Upstream
+# temporary patch for pihole-ftl
+package/pihole-ftl/6.6/0200-cmakelists-reorder-cflags.patch lib_patch.Sob lib_patch.Upstream
 # internal patch
 patches/python-installer/0.7/0001-destinations-overwrite-existing-files.patch lib_patch.Sob lib_patch.Upstream
 # not maintained
@@ -80,6 +82,7 @@ patches/rtl8723bs-master/0002-patch-rtw_debug.h-_seqdump-return-value.patch lib_
 # prefer pylint
 scripts/kupdate.py Flake8
 scripts/syslinux.py Flake8
+utils/kupdate.py Flake8
 # lots of trailing spaces ... 
 scripts/function_lib.sh lib_shellscript.TrailingSpace
 skeleton/etc/init.d/init_functions lib_shellscript.TrailingSpace
@@ -89,4 +92,3 @@ skeleton/etc/init.d/S87localopt lib_sysv.TrailingSpace lib_sysv.Variables
 skeleton/etc/init.d/S89rtopt lib_sysv.TrailingSpace lib_sysv.Variables
 skeleton/etc/init.d/S95automount lib_sysv.TrailingSpace lib_sysv.Variables
 skeleton/var/lib/mdev/automount lib_shellscript.TrailingSpace
-# test
