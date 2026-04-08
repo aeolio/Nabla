@@ -22,5 +22,6 @@ source="$source README"
 source="$source _backup/s87localopt/"
 
 mkdir -p "$archive_dir"
+# shellcheck disable=SC2086 # need separate parameters for tar
 tar cjf "$archive_file" $source
-echo "Created $(basename $archive_file) in $archive_dir"
+echo "Created $(basename "$archive_file") in $archive_dir"

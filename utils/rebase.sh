@@ -23,7 +23,7 @@ mkdir $pkg_name-$pkg_version-b
 xzcat "$archive" | tar --strip-components=1 -C "$pkg_name-$pkg_version-b" -xf -
 
 # apply buildroot patches
-for f in $pkg_dir/*.patch; do
+for f in "$pkg_dir"/*.patch; do
 	p=$(basename "$f")
 	patch -d "$pkg_name-$pkg_version-b" -p 1 -i "$f"
 	[ $? -gt 1 ] && exit 2
@@ -33,7 +33,7 @@ for f in $pkg_dir/*.patch; do
 done
 
 # apply package patches
-for f in $external_dir/*.patch; do
+for f in "$external_dir"/*.patch; do
 	p=$(basename "$f")
 	patch -d "$pkg_name-$pkg_version-b" -p 1 -i "$f"
 	[ $? -gt 1 ] && exit 2
@@ -46,4 +46,4 @@ done
 rm -fr $pkg_name-$pkg_version-a
 rm -fr $pkg_name-$pkg_version-b
 
-cd $_pwd
+cd "$_pwd"

@@ -260,6 +260,7 @@ LATEST_CIP_VERSION = 'BR2_LINUX_KERNEL_LATEST_CIP_RT_VERSION'
 LINUX_VERSION = 1
 LINUX_PATCH = 2
 
+# pylint: disable=too-many-instance-attributes
 class LineParser:
 	''' Stateful line parser for the Config.linux.in file '''
 
@@ -396,6 +397,7 @@ class LineParser:
 		return line
 
 
+# pylint: disable=too-many-locals
 def kupdate(argv):
 	''' Main function of the module '''
 

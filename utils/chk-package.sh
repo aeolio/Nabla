@@ -51,6 +51,6 @@ buildroot=~/buildroot
 output=/tmp/pkg-list.html
 
 pwd=$(pwd)
-cd $buildroot
+cd $buildroot || exit
 support/scripts/pkg-stats --html $output -p $pkg_list
-cd $pwd
+cd "$pwd" || exit
