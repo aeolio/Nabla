@@ -1,6 +1,9 @@
-Upstream: development
+Temporary patch to add gravity sources to build
 
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+Upstream: n/a (not yet implemented)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -222,6 +222,12 @@

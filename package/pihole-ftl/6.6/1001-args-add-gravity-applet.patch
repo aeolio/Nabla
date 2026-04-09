@@ -1,6 +1,9 @@
-Upstream: not sent
+Temporary patch to add gravity sources to build
 
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+Upstream: n/a (not yet implemented)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- a/src/args.c
 +++ b/src/args.c
 @@ -76,6 +76,8 @@

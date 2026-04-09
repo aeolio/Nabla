@@ -4,10 +4,10 @@ can be found in the Buildroot package directory.
 Instead of creating an overlay file and having to check manually, whenever
 changes are made within Buildroot, patch the master file with additional code
 
-Upstream: configuration change
+Upstream: n/a (Buildroot specific)
 
-Signed-off-by: Andreas Ziegler <br025@umbiko.net>
-
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- a/etc/init.d/S50sshd	2024-10-31 07:36:13.699379800 +0100
 +++ b/etc/init.d/S50sshd	2026-01-24 12:30:24.571682042 +0100
 @@ -2,18 +2,63 @@

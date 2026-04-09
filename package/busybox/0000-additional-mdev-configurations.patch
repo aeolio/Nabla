@@ -5,9 +5,9 @@ This adds devices found on arm64 hardware and
 rules for fuse and crda as well as automount
 options
 
-Upstream: n/a (configuration enhancement)
+Upstream: n/a (local customization)
 
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
 --- a/etc/mdev.conf
 +++ b/etc/mdev.conf

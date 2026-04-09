@@ -1,9 +1,9 @@
 Fix Makefile to be used in a Buildroot environment
 
-Upstream: n/a
+Upstream: n/a (Buildroot specific)
 
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
-
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- a/source/Makefile
 +++ b/source/Makefile
 @@ -20,10 +20,15 @@

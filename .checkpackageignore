@@ -63,22 +63,6 @@ patches/linux/6.18/0104-timerlat-hist-add-standard-deviation.patch lib_patch.Ups
 patches/linux/6.6/0001-timerlat_u-uclibc-settid.patch lib_patch.Upstream
 patches/linux/6.6/0101-timerlat_hist-display-average-with-two-digit-precision.patch lib_patch.Upstream
 patches/linux/6.6/0102-osnoise-timerlat-hist-add-standard-deviation.patch lib_patch.Upstream
-# mpd patches are not intended for public use
-patches/mpd/0001-meson.patch lib_patch.Sob lib_patch.Upstream
-patches/mpd/0002-main.patch lib_patch.Sob lib_patch.Upstream
-patches/mpd/0003-config.patch lib_patch.Sob lib_patch.Upstream
-patches/mpd/0004-event.patch lib_patch.Sob lib_patch.Upstream
-patches/mpd/0005-output.patch lib_patch.Sob lib_patch.Upstream
-patches/mpd/0006-thread.patch lib_patch.Sob lib_patch.Upstream
-patches/mpd/0100-filecommand.patch lib_patch.Sob lib_patch.Upstream
-patches/mpd/0101-increase-binary-limit.patch lib_patch.Sob lib_patch.Upstream
-# temporary patch for pihole-ftl
-package/pihole-ftl/6.6/0200-cmakelists-reorder-cflags.patch lib_patch.Sob lib_patch.Upstream
-# internal patch
-patches/python-installer/0.7/0001-destinations-overwrite-existing-files.patch lib_patch.Sob lib_patch.Upstream
-# not maintained
-patches/rtl8723bs-master/0001-patch-makefile-for-cross-compile.patch lib_patch.Sob lib_patch.Upstream
-patches/rtl8723bs-master/0002-patch-rtw_debug.h-_seqdump-return-value.patch lib_patch.Sob lib_patch.Upstream
 # prefer pylint
 scripts/kupdate.py Flake8
 scripts/syslinux.py Flake8

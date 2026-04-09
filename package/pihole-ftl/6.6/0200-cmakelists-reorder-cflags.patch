@@ -1,3 +1,9 @@
+Reorder compiler flags to enable reconfiguration from Buildroot
+
+Upstream: n/a (not yet implemented)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -59,8 +59,8 @@

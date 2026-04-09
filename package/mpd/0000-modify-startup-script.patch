@@ -4,9 +4,9 @@ can be found in the Buildroot package directory.
 Instead of creating an overlay file, having to check this manually whenever
 changes are made within Buildroot, patch the master file with additional code
 
-Upstream: configuration change
+Upstream: n/a (Buildroot specific)
 
-Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
 --- a/etc/init.d/S95mpd	2026-01-24 07:55:04.732178754 +0100
 +++ b/etc/init.d/S95mpd	2026-01-24 11:19:30.911692102 +0100

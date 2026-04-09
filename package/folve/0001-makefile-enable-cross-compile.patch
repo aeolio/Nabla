@@ -1,8 +1,8 @@
 Fix make variables to be used in a Buildroot environment
 
-Upstream: n/a
+Upstream: n/a (Buildroot specific)
 
-Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
 --- a/Makefile
 +++ b/Makefile
