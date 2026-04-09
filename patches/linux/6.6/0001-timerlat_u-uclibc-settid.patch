@@ -9,8 +9,10 @@ src/timerlat_u.c:46:36: warning: implicit declaration of function ‘gettid’; 
 Kernel documentation seems to prefer a syscall instead of the C library:
 ./Documentation/scheduler/sched-deadline.rst:   #define gettid() syscall(__NR_gettid)
 
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
---
+Upstream: n/a (uClibc specific)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- a/tools/tracing/rtla/src/timerlat_u.c
 +++ b/tools/tracing/rtla/src/timerlat_u.c
 @@ -19,6 +19,11 @@

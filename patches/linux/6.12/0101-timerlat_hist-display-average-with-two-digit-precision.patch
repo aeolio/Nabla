@@ -1,7 +1,11 @@
 Calculate average value in timerlat-hist summary with two-digit 
 precision to avoid displaying too optimitic results. 
 
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+Upstream: n/a (local customization)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+[rebase for 6.12]
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
 diff -Naur a/tools/tracing/rtla/src/timerlat_hist.c b/tools/tracing/rtla/src/timerlat_hist.c
 --- a/tools/tracing/rtla/src/timerlat_hist.c	2023-02-14 19:11:56.000000000 +0100

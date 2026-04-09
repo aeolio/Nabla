@@ -1,15 +1,14 @@
-Missing function declaration for re[c]allocarray(void leads to an 
+Missing function declaration for re[c]allocarray(void) leads to an 
 implicit interger conversion of the return value. The result is a 
 segmentation fault when the pointer is accessed. 
 
 Add function declarations to the main header file.
 
-Upstream: n/a
+Upstream: n/a (Buildroot specific)
 
-Signed-off-by: Andreas Ziegler <br025@umbiko.net>
----
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 [rebase for version 10]
-Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
 --- a/openbsd-compat/openbsd-compat.h 2025-04-09 09:02:43.000000000 +0200
 +++ b/openbsd-compat/openbsd-compat.h   2025-09-25 10:23:55.333450106 +0200

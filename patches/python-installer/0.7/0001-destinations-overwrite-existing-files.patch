@@ -1,6 +1,10 @@
 Quick and dirty hack to allow reinstalling python packages in an 
 existing build. 
 
+Upstream: n/a (local customization)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- a/src/installer/destinations.py  2022-02-16 20:24:54.873731900 +0100
 +++ b/src/installer/destinations.py  2024-02-07 21:21:25.492850505 +0100
 @@ -158,13 +158,13 @@

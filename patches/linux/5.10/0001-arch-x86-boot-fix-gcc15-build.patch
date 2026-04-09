@@ -1,3 +1,9 @@
+Fix compilation with gcc 15
+
+Upstream: n/a (Buildroot specific)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- a/arch/x86/boot/Makefile	2025-04-27 09:05:45.105771131 +0200
 +++ b/arch/x86/boot/Makefile	2025-04-27 08:48:05.813189396 +0200
 @@ -70,6 +70,7 @@

@@ -1,10 +1,11 @@
 Openssh default configurstion disallows root login.
 Fix this by patching the config file
-Upstream: n/a
-Signed-off-by: Andreas Ziegler <br025@umbiko.net>
----
+
+Upstream: n/a (local customization)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 [Rebase for version 10]
-Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
 --- a/openssh-10.0p1/sshd_config     2025-04-09 09:02:43.000000000 +0200
 +++ b/sshd_config       2025-09-25 10:23:55.329450086 +0200

@@ -1,3 +1,9 @@
+Update rtl8188eu to latest possible version
+
+Upstream: n/a (local customization)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- linux-3.18.91/include/linux/netdevice.h
 +++ linux-4.9.y/include/linux/netdevice.h
 @@ -1207,27 +1207,28 @@

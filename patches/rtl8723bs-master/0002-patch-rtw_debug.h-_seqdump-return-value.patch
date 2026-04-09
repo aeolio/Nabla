@@ -1,3 +1,9 @@
+Considered legacy.
+
+Upstream: n/a (Buildroot specific)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- a/include/rtw_debug.h
 +++ b/include/rtw_debug.h
 @@ -201,7 +201,7 @@

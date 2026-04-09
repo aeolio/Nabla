@@ -1,14 +1,14 @@
-# more space around code blocks
+# prefer more space around code blocks
 Config.in lib_config.ConsecutiveEmptyLines
 Config.in.linux lib_config.ConsecutiveEmptyLines
-# false positive
+# this is no package make file
 local.mk lib_mk.PackageHeader
 # these are no Buildroot defconfigs
 board/alix.2/configs/alix2_defconfig lib_defconfig.ForceCheckHash
 board/intel/i386/configs/linux_i386_defconfig lib_defconfig.ForceCheckHash
 board/intel/x86_64/configs/intel_x86_64_defconfig lib_defconfig.ForceCheckHash
 board/raspberrypi/configs/bcm2711_defconfig lib_defconfig.ForceCheckHash
-# not maintained
+# discontinued hardware, not maintained
 board/radxa/rockpi4/patches/linux/common/0001-mainline-rk3399-rock-pi-4-dts.patch lib_patch.Sob lib_patch.Upstream
 board/radxa/rockpi4/patches/linux/common/0002-brcm-firmware-path.patch lib_patch.Sob lib_patch.Upstream
 board/radxa/rockpi4/patches/linux/common/0003-drivers-media-common-siano-remove-redefinition-ir_default_timeout.patch lib_patch.Sob lib_patch.Upstream
@@ -25,7 +25,7 @@ board/radxa/rockpi4/patches/linux/rockchip-linux/0002-radxa-rockpi-4b-overlays.p
 board/radxa/rockpi4/patches/linux/rockchip-linux/0003-rkwifi-bcmdhd-pm_suspend.patch lib_patch.Sob lib_patch.Upstream
 board/radxa/rockpi4/scripts/post-build.sh Shellcheck
 board/radxa/rockpi4/scripts/post-image.sh Shellcheck
-# not maintained
+# discontinued hardware, not maintained
 board/wandboard/patches/alsa-lib/0001-add_conf_for_multichannel_support_in_imx.patch lib_patch.Upstream
 board/wandboard/patches/do_not_patch.linux/0000-patch-3.14.28-rt25.patch lib_patch.Sob lib_patch.Upstream
 board/wandboard/patches/do_not_patch.linux/0001-squeezelite_spdif.patch lib_patch.Sob lib_patch.Upstream
@@ -34,7 +34,7 @@ board/wandboard/patches/do_not_patch.linux/0012-fix-build-with-rt-enabled.patch 
 board/wandboard/patches/do_not_patch.linux/0013-no-split-ptlocks.patch lib_patch.Upstream
 board/wandboard/patches/do_not_patch.linux/0014-imx-sdma-channel-use-raw-spinlock.patch lib_patch.Upstream
 board/wandboard/patches/linux/0001-squeezelite_spdif.patch lib_patch.Sob lib_patch.Upstream
-# does not start a daemon
+# do not start a daemon
 board/alix.2/skeleton/etc/init.d/S99led lib_sysv.Variables
 board/raspberrypi/skeleton/etc/init.d/S99led lib_sysv.Variables
 # do not enforce hash check for _every_ download
@@ -44,27 +44,7 @@ configs/generic_x86_64_defconfig lib_defconfig.ForceCheckHash
 configs/n100_defconfig lib_defconfig.ForceCheckHash
 configs/raspberrypi_defconfig lib_defconfig.ForceCheckHash
 configs/wandboard_defconfig lib_defconfig.ForceCheckHash
-# Linux patches
-patches/linux/3.18.140/0001-patch-enum-netdev_priv_flags.patch lib_patch.Sob lib_patch.Upstream
-patches/linux/3.18.140/0002-patch-rtl8188eu.patch lib_patch.Sob lib_patch.Upstream
-patches/linux/3.18.140/0003-patch-rtl8188eu_recv_c.patch lib_patch.Sob lib_patch.Upstream
-patches/linux/4.4.302/0001-upgrade-rtl8188eu-from-upstream.patch lib_patch.Sob lib_patch.Upstream
-patches/linux/5.10/0001-arch-x86-boot-fix-gcc15-build.patch lib_patch.Sob lib_patch.Upstream
-patches/linux/6.12/0001-timerlat_u-uclibc-settid.patch lib_patch.Upstream
-patches/linux/6.12/0101-timerlat_hist-display-average-with-two-digit-precision.patch lib_patch.Upstream
-patches/linux/6.12/0102-osnoise-timerlat-hist-add-standard-deviation.patch lib_patch.Upstream
-patches/linux/6.12/0103-fix-cpu_set_t-undefined.patch lib_patch.Sob lib_patch.Upstream
-patches/linux/6.18/0001-timerlat_u-uclibc-settid.patch lib_patch.Upstream
-patches/linux/6.18/0002-add-missing-_GNU_SOURCE.patch lib_patch.Sob lib_patch.Upstream
-patches/linux/6.18/0101-timerlat_hist-display-average-with-two-digit-precision.patch lib_patch.Upstream
-patches/linux/6.18/0102-utils-add-sqrth.patch lib_patch.Upstream
-patches/linux/6.18/0103-osnoise_hist-add-standard-deviation.patch lib_patch.Upstream
-patches/linux/6.18/0104-timerlat-hist-add-standard-deviation.patch lib_patch.Upstream
-patches/linux/6.6/0001-timerlat_u-uclibc-settid.patch lib_patch.Upstream
-patches/linux/6.6/0101-timerlat_hist-display-average-with-two-digit-precision.patch lib_patch.Upstream
-patches/linux/6.6/0102-osnoise-timerlat-hist-add-standard-deviation.patch lib_patch.Upstream
 # prefer pylint
-scripts/kupdate.py Flake8
 scripts/syslinux.py Flake8
 utils/kupdate.py Flake8
 # lots of trailing spaces ... 

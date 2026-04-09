@@ -1,7 +1,10 @@
 Add standard deviation calculation and printout for osnoise and timerlat
 
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
----
+Upstream: n/a (local customization)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+[rebase for 6.12]
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 diff -Naur tools/tracing/rtla/src/osnoise_hist.c /home/iago/rpi64/build/linux-6.1.15/tools/tracing/rtla/src/osnoise_hist.c
 --- a/tools/tracing/rtla/src/osnoise_hist.c	2023-03-07 09:14:07.769838499 +0100
 +++ b/tools/tracing/rtla/src/osnoise_hist.c	2023-03-07 08:02:55.314455000 +0100

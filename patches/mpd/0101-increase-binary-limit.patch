@@ -1,3 +1,9 @@
+Permanently increase buffer size for transferring albumart
+
+Upstream: n/a (local customization)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- a/src/client/Client.hxx	2025-07-31 21:58:34.000000000 +0200
 +++ b/src/client/Client.hxx	2025-09-11 06:19:43.101915043 +0200
 @@ -75,7 +75,7 @@

@@ -1,3 +1,9 @@
+Series adds real-time capability to mpd threads
+
+Upstream: n/a (local customization)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- a/meson.build
 +++ b/meson.build
 @@ -323,6 +323,9 @@

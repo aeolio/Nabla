@@ -1,3 +1,9 @@
+Considered legacy.
+
+Upstream: n/a (Buildroot specific)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- a/Makefile
 +++ b/Makefile
 @@ -40,10 +40,11 @@

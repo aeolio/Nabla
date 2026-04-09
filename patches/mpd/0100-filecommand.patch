@@ -1,3 +1,9 @@
+Fix albumart detection
+
+Upstream: n/a (local customization)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- a/src/command/FileCommands.cxx
 +++ b/src/command/FileCommands.cxx
 @@ -137,8 +137,9 @@

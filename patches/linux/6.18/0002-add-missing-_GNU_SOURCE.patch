@@ -1,3 +1,8 @@
+Add missing _GNU_SOURCE
+
+Upstream: n/a (uClibc specific)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 --- a/tools/tracing/rtla/src/actions.h
 +++ b/tools/tracing/rtla/src/actions.h
 @@ -1,4 +1,5 @@
