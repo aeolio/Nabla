@@ -1,0 +1,33 @@
+uClibc definitions for the fanotify API are based on pre 5.1 kernels,
+which results in a build failure in util-linux 2.4.2:
+
+libmount/src/monitor_fanotify.c:33:43: error: field 'hdr' has incomplete type
+   33 |         struct fanotify_event_info_header hdr;
+      |                                           ^~~
+
+Quick fix: hide uClibc definitions and use the kernel headers instead.
+
+Upstream: n/a (local customization)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
+--- a/libc/sysdeps/linux/common/sys/fanotify.h	2026-03-01 06:49:31.000000000 +0100
++++ b/libc/sysdeps/linux/common/sys/fanotify.h	2026-04-11 13:55:36.024054506 +0200
+@@ -20,6 +20,9 @@
+ 
+ #include <stdint.h>
+ 
++#if 1
++#include <linux/fanotify.h>
++#else
+ struct fanotify_event_metadata {
+ 	unsigned event_len;
+ 	unsigned char vers;
+@@ -78,6 +81,7 @@
+ #define FAN_EVENT_METADATA_LEN (sizeof(struct fanotify_event_metadata))
+ #define FAN_EVENT_NEXT(meta, len) ((len) -= (meta)->event_len, (struct fanotify_event_metadata*)(((char *)(meta)) + (meta)->event_len))
+ #define FAN_EVENT_OK(meta, len) ((long)(len) >= (long)FAN_EVENT_METADATA_LEN && (long)(meta)->event_len >= (long)FAN_EVENT_METADATA_LEN && (long)(meta)->event_len <= (long)(len))
++#endif /* linux/fanotify.h */
+ 
+ 
+ __BEGIN_DECLS
