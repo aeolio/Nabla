@@ -3,7 +3,7 @@ failure on x86 hardware.
 
 Upstream: n/a (kernel version is obsolete)
 
-Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
 diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
 index 0a291cd..c1c1f83 100644

@@ -2,7 +2,7 @@ GCC Bug #111322 - non-canonical reference to canonical protected function '__pth
 
 First occurred in gcc 13.2.0, status unconfirmed since 2023-09-13
 
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 
 From d901175d36221fbf79a0eb8305823b88243b829c Mon Sep 17 00:00:00 2001
 From: Chris Packham <chris.packham@alliedtelesis.co.nz>
@@ -20,11 +20,11 @@ usage so it picks the intended pthread_cancel().
 
 Signed-off-by: Chris Packham <chris.packham@alliedtelesis.co.nz>
 Upstream: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=111322
-Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 [Rebase for 14.3.0]
-Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 [Rebase for gcc 15.1.0]
-Signed-off-by: Andreas Ziegler <br015@umbiko.net>
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
  libgcc/gthr-posix.h | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

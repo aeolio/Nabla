@@ -14,7 +14,7 @@ usage so it picks the intended pthread_cancel().
 
 Signed-off-by: Chris Packham <chris.packham@alliedtelesis.co.nz>
 Upstream: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=111322
-Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
  libgcc/gthr-posix.h | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
