@@ -133,6 +133,8 @@ struct config_data configuration;
 
 #define MOVE_CURSOR_LEFT "\033[D"
 
+#define ARRAY_SIZE(obj) (sizeof(obj)/sizeof(obj[0]))
+
 // forward declaration necessary because of function grouping
 static void _add_listentry(struct config_data *, const struct blocklist *);
 
@@ -552,7 +554,6 @@ static bool db_get_blocklists(struct config_data *pc) {
  *	result_array[0] contains the total row count,
  *	result_array[1] contains the number of distinct domains
  */
-#define	ARRAY_SIZE(obj) sizeof(obj)/sizeof(obj[0])
 static bool db_get_domain_count(const char *db_file, 
 	int *result_array, 
 	const unsigned array_size) {
@@ -824,8 +825,9 @@ static unsigned int _split(char *string,
 			result[index++] = curr;
 			curr = next;
 			}
-		// add final string
-		result[index++] = curr;
+		// add trailing string
+		if (index < result_size-1)
+			result[index++] = curr;
 
 		return index;
 		}
@@ -869,7 +871,7 @@ static bool _is_ip_address(const char *address, const int mode) {
 
 	// assume IPv4 address
 	if(strchr(ip, '.')) {
-		if (unsigned n = _split(ip, '.', false, fields, sizeof(fields))) {
+		if (unsigned n = _split(ip, '.', false, fields, ARRAY_SIZE(fields))) {
 			// exactly four fields must be specified, no range adress allowed
 			if (n != 4)
 				goto _ip_address_false;
@@ -896,7 +898,7 @@ static bool _is_ip_address(const char *address, const int mode) {
 		if(char *p = strchr(ip, '%'))
 			*p = 0;
 		// zero fields may be omitted
-		if (unsigned n = _split(ip, ':', false, fields, sizeof(fields))) {
+		if (unsigned n = _split(ip, ':', false, fields, ARRAY_SIZE(fields))) {
 			unsigned long long binary_address = 0;
 			for( unsigned int k = 0 ; k < n ; k++ ) {
 				unsigned int u = (unsigned int) strtol(fields[k], NULL, 16);
@@ -950,6 +952,10 @@ static unsigned int _parse_line(char *line) {
 	else if (_is_comment(line[0]))
 		goto _parse_line_exit;
 
+	// remove trailing comment
+	if (char *p = strchr(line, '#'))
+		*p = '\0';
+
 	// remove trailing white space
 	_rstrip(line, NULL);
 	if (line[0] == 0)
@@ -957,7 +963,7 @@ static unsigned int _parse_line(char *line) {
 
 	// split line on blank and use the final token
 	char *components[3];
-	if (unsigned int n = _split(line, ' ', true, components, sizeof(components))) {
+	if (unsigned int n = _split(line, ' ', true, components, ARRAY_SIZE(components))) {
 		// entry should have two fields
 		// reject valid ip addresses (e.g. 127.0.0.1 localhost)
 		// reject ip addresses in domain name field
@@ -1421,7 +1427,7 @@ static bool _clear_list_cache(const struct config_data *pc, const bool force) {
 		while( (e = readdir(d)) != NULL ) {
 			strcpy(path, e->d_name);
 			char *components[7] = {};
-			unsigned n = _split(path, '.', false, components, sizeof(components));
+			unsigned n = _split(path, '.', false, components, ARRAY_SIZE(components));
 			// strip status file name endings
 			if (strcmp(components[n-1], LIST_ETAG) == 0 ||
 				strcmp(components[n-1], LIST_CHKSUM) == 0)
