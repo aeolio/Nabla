@@ -803,6 +803,65 @@ static char *_strip(char *string, const char *pattern) {
 /*
  *	python-style split() function
  */
+#ifdef HAVE_DYNAMIC_SPLIT
+static char **_extend_array(char **array, unsigned int array_size, unsigned int increment) {
+	array_size += increment;
+	if (! array)
+		array = malloc(array_size * sizeof(char *));
+	else
+		array = realloc(array, array_size * sizeof(char *));
+	return array;
+	}
+
+static unsigned int _split(char *string, 
+	const char delimiter, 
+	const bool ignore_consecutive_delimiters,
+	char ***result) {
+
+	unsigned int increment = 5;
+	unsigned int array_size = 0;
+	char **array = NULL;
+	if ((array = _extend_array(array, array_size, increment))) {
+
+		array[0] = string;
+		*result = array;
+
+		// non-empty string
+		if (string && string[0]) {
+			char *curr = string;
+			char *next;
+			unsigned int index = 0;
+
+			while ((next = strchr(curr, delimiter)) != NULL) {
+				*next++ = 0;
+				// ignore multiple consecutive delimiters
+				if (ignore_consecutive_delimiters) {
+					while (*next == delimiter)
+						next += 1;
+					}
+				if (index == array_size-1) {
+					if ((array = _extend_array(array, array_size, increment)) == NULL)
+						return 0;
+					}
+				array[index++] = curr;
+				curr = next;
+				}
+			// add trailing string
+			if (index == array_size-1) {
+				if ((array = _extend_array(array, array_size, increment)) == NULL)
+					return 0;
+				}
+			array[index++] = curr;
+
+			return index;
+			}
+		}
+
+	// for empty string or error return []
+	return 0;
+	}
+
+#else
 static unsigned int _split(char *string, 
 	const char delimiter, 
 	const bool ignore_consecutive_delimiters,
@@ -835,6 +894,7 @@ static unsigned int _split(char *string,
 	// for empty string, return []
 	return 0;
 	}
+#endif // HAVE_DYNAMIC_SPLIT
 
 /*
  *	python-style join() function
