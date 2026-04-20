@@ -374,7 +374,7 @@ static unsigned long long os_fsize( const char *filename ) {
  * rename a file; if necessary, move it between mount points, similar to mv
  */
 static int os_rename( const char *source_file, const char *target_file ) {
-	
+
 	// try standard function first
 	if (rename(source_file, target_file) == EXIT_FAILURE) {
 		// cross device move
@@ -1000,7 +1000,7 @@ static int _parse_blocklist( const char *source_file, const char *target_file ) 
 
 	int error = 0;
 	int line_counter = 0;
-	
+
 	if (FILE *s = fopen(source_file, "r")) {
 		if (FILE *t = fopen(temp_file, "w")) {
 			while ((fgets(buffer, STD_BLK_SIZE, s)) != NULL) {
@@ -1166,7 +1166,7 @@ static bool ftl_get_configuration(struct config_data *pc) {
 
 	// sources
 	pc->vw_adlist = NULL;
-	
+
 	return true;
 	}
 
@@ -1517,7 +1517,7 @@ _copy_database_exit:
  */
 #define MAX_BACKUPS 10
 static bool _rotate_backups(const struct config_data *pc) {
-	
+
 	char fn_name[2][FN_SIZE];
 	const char *base_name = pc->gravity_db_backup_file;
 
@@ -1582,7 +1582,7 @@ static bool _swap_databases(const struct config_data *pc) {
 				strerror(errno));
 			return false;
 			}
-	
+
 		char fn_name[FN_SIZE];
 		sprintf (fn_name, "%s.%d", pc->gravity_db_backup_file, 1);
 		if (os_rename(pc->gravity_db_file, fn_name) != EXIT_SUCCESS) {
