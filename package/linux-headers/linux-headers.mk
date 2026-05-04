@@ -15,8 +15,10 @@ endif
 
 # remove stale build versions of linux and linux-headers
 define LINUX_HEADERS_REMOVE_STALE
-	find $(BUILD_DIR) -type d \
-		-regex .*/linux-[aedhrs-]*[0-9]*\.[0-9]*\.[0-9]* \
+	find $(BUILD_DIR) \
+		-maxdepth 1 \
+		-type d \
+		-regex .*/linux-[headers-]*[0-9]*\.[0-9]*\.[0-9]* \
 		-prune \
 		-exec sh -c \
 			'f=$$(basename $$0); \
