@@ -4,12 +4,14 @@ Upstream: n/a (local customization)
 
 Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
---- a/etc/init.d/rcS
-+++ a/etc/init.d/rcS
-@@ -1,5 +1,6 @@
- #!/bin/sh
- 
-+exec > /var/log/boot.log 2>&1
- 
+--- a/etc/init.d/rcS	2026-05-05 07:53:06.378627142 +0200
++++ b/etc/init.d/rcS	2026-05-05 08:10:23.831029241 +0200
+@@ -3,6 +3,8 @@
  # Start all init scripts in /etc/init.d
  # executing them in numerical order.
+ #
++exec > /var/log/boot.log 2>&1
++
+ for i in /etc/init.d/S??*; do
+ 
+ 	# Ignore dangling symlinks (if any).
