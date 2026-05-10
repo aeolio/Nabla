@@ -25,7 +25,7 @@ if BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_18
 
 config NABLA_LINUX_VERSION
 	string
-	default "6.18.26"
+	default "6.18.28"
 
 config NABLA_LINUX_PATCH
 	string
@@ -39,7 +39,7 @@ if BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_12
 
 config NABLA_LINUX_VERSION
 	string
-	default "6.12.85"
+	default "6.12.87"
 
 config NABLA_LINUX_PATCH
 	string
@@ -53,7 +53,7 @@ if BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_10 && BR2_i386
 
 config NABLA_LINUX_VERSION
 	string
-	default "5.10.254" if BR2_i386
+	default "5.10.255" if BR2_i386
 
 config NABLA_LINUX_PATCH
 	string
@@ -68,6 +68,6 @@ if BR2_LINUX_KERNEL_LATEST_CIP_RT_VERSION
 
 config NABLA_LINUX_VERSION
 	string
-	default "5.10.251-cip70-rt31"
+	default "5.10.254-cip72-rt32"
 
 endif # BR2_LINUX_KERNEL_LATEST_CIP_RT_VERSION
