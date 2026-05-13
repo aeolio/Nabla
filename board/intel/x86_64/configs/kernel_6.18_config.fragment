@@ -1,7 +1,8 @@
 # configuration fragment to upgrade Intel x86_64 based kernels
-# from kernel version 6.12.y to 6.x.y bleeding edge
+# from kernel version 6.12.y to 6.18.y bleeding edge
 
 # general setup
+# CONFIG_PREEMPT_RT is deprecated (6.17+)
 CONFIG_PREEMPT=y
 
 # Processor type and features
