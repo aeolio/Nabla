@@ -8,9 +8,18 @@ CONFIG_EXPERT=y
 # Processor type and features
 # CONFIG_X86_IOPL_IOPERM is not set
 
+# Devive drivers
+# CONFIG_SURFACE_PLATFORMS is not set
+
 # Device Drivers -> Character devices
 # CONFIG_LEGACY_TIOCSTI is not set
 # CONFIG_LDISC_AUTOLOAD is not set
+
+# Device drivers -> Network device support -> Wireless LAN
+# CONFIG_WLAN_VENDOR_SILABS is not set
+
+# File systems -> Network file systems
+# CONFIG_RPCSEC_GSS_KRB5 is not set
 
 # File systems -> Pseudo file systems
 CONFIG_TMPFS_INODE64=y
