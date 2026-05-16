@@ -1,0 +1,30 @@
+# configuration fragment to upgrade alix.2 kernel
+# from kernel version 6.12.y to 6.18.y
+
+# general setup
+# CONFIG_PREEMPT_RT is deprecated (6.17+)
+CONFIG_PREEMPT=y
+
+# Processor type and features
+CONFIG_X86_FRED=y
+
+# General architecture-dependent options
+# CONFIG_STACKPROTECTOR is not set
+
+# Device drivers -> Ethernet driver support
+# CONFIG_NET_VENDOR_HISILICON is not set
+
+# Device drivers -> Character devices -> Serial drivers
+# CONFIG_SERIAL_8250_EXAR is not set
+# CONFIG_SERIAL_8250_PERICOM is not set
+
+# Device drivers -> GPIO support
+# sysfs interface for GPIO is deprecated (6.17+)
+# CONFIG_GPIO_SYSFS_LEGACY is not set
+
+# Device drivers -> USB support
+CONFIG_USB_FEW_INIT_RETRIES=y
+
+# Device drivers -> Staging drivers
+# CONFIG_STAGING is not set
+

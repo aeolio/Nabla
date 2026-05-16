@@ -1,0 +1,15 @@
+# configuration fragment to upgrade alix.2 kernel
+# from version 6.18.y to 7.x.y bleeding edge
+
+# Device drivers -> Network device support -> Ethernet driver support
+# CONFIG_NET_VENDOR_ASIX is not set
+# CONFIG_NET_VENDOR_DAVICOM is not set
+# CONFIG_NET_VENDOR_ENGLEDER is not set
+# CONFIG_NET_VENDOR_FUNGIBLE is not set
+# CONFIG_NET_VENDOR_MICROSOFT is not set
+# CONFIG_NET_VENDOR_MUCSE is not set
+# CONFIG_NET_VENDOR_VERTEXCOM is not set
+# CONFIG_NET_VENDOR_WANGXUN is not set
+
+# Device drivers -> Network device support -> Wireless LAN
+# CONFIG_WLAN_VENDOR_PURELIFI is not set
