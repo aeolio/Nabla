@@ -3,6 +3,7 @@ Fix compilation failure with cpu_set_t undefined
 Upstream: n/a (uClibc specific)
 
 Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
 --- a/tools/tracing/rtla/src/osnoise.c
 +++ b/tools/tracing/rtla/src/osnoise.c
 @@ -3,6 +3,7 @@

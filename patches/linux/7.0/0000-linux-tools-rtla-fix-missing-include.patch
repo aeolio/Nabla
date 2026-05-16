@@ -1,0 +1,40 @@
+Building linux-tools for i386 fails with: 
+
+src/common.c: In function ‘set_signals’:
+src/common.c:40:17: error: implicit declaration of function ‘alarm’ [-Wimplicit-function-declaration]
+   40 |                 alarm(params->duration);
+      |                 ^~~~~
+src/common.c: In function ‘common_apply_config’:
+src/common.c:187:44: error: implicit declaration of function ‘getpid’; did you mean ‘getpt’? [-Wimplicit-function-declaration]
+  187 |                 retval = sched_setaffinity(getpid(), sizeof(params->hk_cpu_set),
+      |                                            ^~~~~~
+      |                                            getpt
+In file included from src/common.c:9:
+src/common.c: In function ‘run_tool’:
+src/common.c:262:19: error: implicit declaration of function ‘sysconf’; did you mean ‘sscanf’? [-Wimplicit-function-declaration]
+  262 |         nr_cpus = get_nprocs_conf();
+      |                   ^~~~~~~~~~~~~~~
+src/common.c:262:19: error: ‘_SC_NPROCESSORS_CONF’ undeclared (first use in this function)
+  262 |         nr_cpus = get_nprocs_conf();
+      |                   ^~~~~~~~~~~~~~~
+src/common.c:262:19: note: each undeclared identifier is reported only once for each function it appears in
+src/common.c:370:17: error: implicit declaration of function ‘sleep’ [-Wimplicit-function-declaration]
+  370 |                 sleep(1);
+      |                 ^~~~~
+
+Fix compilation failure by including missing unistd.h.
+
+Upstream: n/a (uClibc i386 only)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
+--- b/tools/tracing/rtla/src/common.c	2026-05-13 09:09:02.185758025 +0200
++++ b/tools/tracing/rtla/src/common.c	2026-05-10 23:08:09.000000000 +0200
+@@ -5,7 +5,6 @@
+ #include <signal.h>
+ #include <stdlib.h>
+ #include <string.h>
+-#include <unistd.h>
+ #include <getopt.h>
+ #include <sys/sysinfo.h>
+ 
