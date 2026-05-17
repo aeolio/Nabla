@@ -12,12 +12,12 @@ case "$1" in
     # start interbench without console interaction
     interbench -r -u -W Audio < /dev/zero > /dev/null 2>&1 &
     ;;
-  -w)
-    # start interbench without write benchmarks
-    interbench -r -u -w None -w Video -w X -w Burn -w Read -w Ring -W Audio
+  -u)
+    # start interbench with processor affinity
+    interbench -r -u -W Audio
     ;;
   *)
     # start interbench normally
-    interbench -r -u -W Audio
+    interbench -r -W Audio
     ;;
 esac
