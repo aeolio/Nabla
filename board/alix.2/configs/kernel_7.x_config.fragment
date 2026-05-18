@@ -1,6 +1,9 @@
 # configuration fragment to upgrade alix.2 kernel
 # from version 6.18.y to 7.x.y bleeding edge
 
+# alix configuration depends on GPIOLIB && GPIO_CS5535
+CONFIG_ALIX=y
+
 # Device drivers -> Network device support -> Ethernet driver support
 # CONFIG_NET_VENDOR_ASIX is not set
 # CONFIG_NET_VENDOR_DAVICOM is not set
@@ -13,3 +16,8 @@
 
 # Device drivers -> Network device support -> Wireless LAN
 # CONFIG_WLAN_VENDOR_PURELIFI is not set
+
+# Device drivers -> GPIO support
+CONFIG_GPIOLIB=y
+# Device drivers -> GPIO support -> MFD GPIO expanders
+CONFIG_GPIO_CS5535=y
