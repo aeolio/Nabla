@@ -445,7 +445,7 @@ def kupdate(argv):
 					if l[0].split('/')[-1] != v:
 						os.rename(l[0], link_dir)
 				elif not l:
-					os.link(base_dir, link_dir)
+					os.symlink(base_dir, link_dir)
 				else:
 					print(f"error: {v}: {l}")
 
