@@ -440,7 +440,7 @@ def kupdate(argv):
 			base_dir = os.path.join(p, vb)
 			link_dir = os.path.join(p, v)
 			if os.path.exists(base_dir):
-				l = glob('.'.join([base_dir, '*']))
+				l = glob(''.join([base_dir, '[.-]', '*']))
 				if len(l) == 1 and os.path.islink(l[0]):
 					if l[0].split('/')[-1] != v:
 						os.rename(l[0], link_dir)
