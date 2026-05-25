@@ -12,19 +12,29 @@ sysfs=/sys/class/leds
 [ ! -d "$sysfs" ] || _is_empty "$sysfs" && exit 0
 
 start() {
-	echo heartbeat > $sysfs/alix:1/trigger
-	echo netdev > $sysfs/alix:2/trigger
-	echo eth0 > $sysfs/alix:2/device_name
-	echo 1 > $sysfs/alix:2/tx
-	echo timer > $sysfs/alix:3/trigger
-	echo 500  > $sysfs/alix:3/delay_on
-	echo 1500  > $sysfs/alix:3/delay_off
+	n=1
+	for l in $(printf '%s\0' "$sysfs"/* | sort -V); do
+		if [ "$n" -eq 1 ]; then
+			echo heartbeat > "$l"/trigger
+		elif [ "$n" -eq 2 ]; then
+			echo netdev > "$l"/trigger
+			echo eth0 > "$l"/device_name
+			echo 1 > "$l"/tx
+		elif [ "$n" -eq 3 ]; then
+			echo timer > "$l"/trigger
+			echo 500  > "$l"/delay_on
+			echo 1500  > "$l"/delay_off
+		else
+			printf "Unexpected sysfs entry: %s" "$l"
+		fi
+		n=$((n+1))
+	done
 }
 
 stop() {
-	echo none > $sysfs/alix:3/trigger
-	echo none > $sysfs/alix:2/trigger
-	echo none > $sysfs/alix:1/trigger
+	for l in $(printf '%s\0' "$sysfs"/* | sort -rV); do
+		echo none > $l/trigger
+	done
 }
 
 load_module() {
