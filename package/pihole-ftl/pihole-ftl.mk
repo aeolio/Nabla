@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-PIHOLE_FTL_VERSION = 6.6.1
+PIHOLE_FTL_VERSION = 6.6.2
 PIHOLE_FTL_SITE = $(call github,pi-hole,FTL,v$(PIHOLE_FTL_VERSION))
 PIHOLE_FTL_LICENSE = EUPL-1.2
 PIHOLE_FTL_LICENSE_FILES = LICENSE
