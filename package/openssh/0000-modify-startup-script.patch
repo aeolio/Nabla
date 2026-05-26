@@ -9,7 +9,7 @@ Upstream: n/a (Buildroot specific)
 Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
 --- a/etc/init.d/S50sshd	2024-10-31 07:36:13.699379800 +0100
-+++ b/etc/init.d/S50sshd	2026-01-24 12:30:24.571682042 +0100
++++ b/etc/init.d/S50sshd	2026-05-26 08:38:40.030571271 +0200
 @@ -2,18 +2,63 @@
  #
  # sshd        Starts sshd.
@@ -76,7 +76,7 @@ Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
  
  	printf "Starting %s: " "$DAEMON"
  	start-stop-daemon --start --pidfile "$PIDFILE" \
-@@ -63,18 +108,9 @@
+@@ -64,18 +109,9 @@
  }
  
  case "$1" in
