@@ -123,7 +123,11 @@ _timestamp() {
 
 # calculat the checksum of a file
 _checksum() {
-	md5sum "$1" | awk '{print $1}'
+	if [ -f "$1" ]; then
+		md5sum "$1" | awk '{print $1}'
+	else
+		echo "00000000000000000000000000000000"
+	fi
 }
 
 # check if a directory is empty

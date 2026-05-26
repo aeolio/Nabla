@@ -198,8 +198,8 @@ setup_copy_list() {
 				# copy (preserve symlinks)
 				_src="${src_directory}${s}"
 				_dst="${dst_directory}${s}"
-				[ -f "$_src" ] && _h1=$(_checksum "$_src")
-				[ -f "$_dst" ] && _h2=$(_checksum "$_dst")
+				_h1=$(_checksum "$_src")
+				_h2=$(_checksum "$_dst")
 				if [ "$_h1" != "$_h2" ]; then 
 					cp -d "${src_directory}${s}" "${dst_directory}${s}"
 					touch -r "${src_directory}${s}" "${dst_directory}${s}"
