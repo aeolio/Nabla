@@ -8,14 +8,13 @@ Upstream: n/a (Buildroot specific)
 
 Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
---- a/etc/init.d/S95mpd	2026-01-24 07:55:04.732178754 +0100
-+++ b/etc/init.d/S95mpd	2026-01-24 11:19:30.911692102 +0100
-@@ -2,20 +2,93 @@
+--- a/etc/init.d/S95mpd	2026-06-07 07:06:17.380880971 +0200
++++ b/etc/init.d/S95mpd	2026-06-07 07:19:44.344205137 +0200
+@@ -2,19 +2,92 @@
  #
  # S95mpd	Starts Music Player daemon.
  #
 +# shellcheck source=/dev/null # do not follow included files
- # shellcheck disable=SC2329 # functions are called via variable
  
  DAEMON="mpd"
 -PIDFILE="/var/run/$DAEMON.pid"
