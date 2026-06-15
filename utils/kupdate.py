@@ -397,7 +397,7 @@ class LineParser:
 		return line
 
 
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals,too-many-branches
 def kupdate(argv):
 	''' Main function of the module '''
 
@@ -434,6 +434,7 @@ def kupdate(argv):
 		print(f"{'Github':>20} {v2:>11}")
 
 	p = os.path.join(dirname, PATCHES_LINUX)
+	# pylint: disable=too-many-nested-blocks
 	if not trial_run and os.path.exists(p):
 		for v in parser.configured:
 			vb = KernelVersions.base_version(v)
@@ -441,13 +442,17 @@ def kupdate(argv):
 			link_dir = os.path.join(p, v)
 			if os.path.exists(base_dir):
 				l = glob(''.join([base_dir, '[.-]', '*']))
-				if len(l) == 1 and os.path.islink(l[0]):
-					if l[0].split('/')[-1] != v:
-						os.rename(l[0], link_dir)
-				elif not l:
-					os.symlink(base_dir, link_dir)
+				if link_dir != base_dir:
+					if len(l) == 1 and os.path.islink(l[0]):
+						if l[0].split('/')[-1] != v:
+							os.rename(l[0], link_dir)
+					elif not l:
+						os.symlink(base_dir, link_dir)
+					else:
+						print(f"multiple versions: {v}: {l}")
 				else:
-					print(f"error: {v}: {l}")
+					for _l in l:
+						os.remove(_l)
 
 	# Overwrite the original file with the modified temporary file
 	# in a manner preserving file attributes (e.g., permissions).
