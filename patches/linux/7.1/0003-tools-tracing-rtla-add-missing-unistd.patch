@@ -1,0 +1,41 @@
+Compiling RTLA 7.1-rc6 with GCC 16 and uClibc as standard library fails
+with these errors:
+
+src/common.c: In function ‘set_signals’:
+src/common.c:40:17: error: implicit declaration of function ‘alarm’ [-Wimplicit-function-declaration]
+   40 |                 alarm(params->duration);
+      |                 ^~~~~
+src/common.c: In function ‘common_apply_config’:
+src/common.c:187:44: error: implicit declaration of function ‘getpid’; did you mean ‘getpt’? [-Wimplicit-function-declaration]
+  187 |                 retval = sched_setaffinity(getpid(), sizeof(params->hk_cpu_set),
+      |                                            ^~~~~~
+      |                                            getpt
+In file included from src/common.c:9:
+src/common.c: In function ‘run_tool’:
+src/common.c:262:19: error: implicit declaration of function ‘sysconf’; did you mean ‘sscanf’? [-Wimplicit-function-declaration]
+  262 |         nr_cpus = get_nprocs_conf();
+      |                   ^~~~~~~~~~~~~~~
+src/common.c:262:19: error: ‘_SC_NPROCESSORS_CONF’ undeclared (first use in this function)
+  262 |         nr_cpus = get_nprocs_conf();
+      |                   ^~~~~~~~~~~~~~~
+src/common.c:262:19: note: each undeclared identifier is reported only once for each function it appears in
+src/common.c:370:17: error: implicit declaration of function ‘sleep’ [-Wimplicit-function-declaration]
+  370 |                 sleep(1);
+      |                 ^~~~~
+
+Restore the missing unistd.h include.
+
+Fixes: 115b06a (tools/rtla: Consolidate nr_cpus usage across all tools)
+
+Signed-off-by: Andreas Ziegler <br025@umbiko.net>
+---
+--- a/tools/tracing/rtla/src/common.c
++++ b/tools/tracing/rtla/src/common.c
+@@ -5,6 +5,7 @@
+ #include <signal.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <unistd.h>
+ #include <getopt.h>
+ #include <sys/sysinfo.h>
+ 
