@@ -7,11 +7,11 @@ Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
 diff -Naur tools/tracing/rtla/src/utils.c /home/iago/rpi64/build/linux-6.1.15/tools/tracing/rtla/src/utils.c
---- a/tools/tracing/rtla/src/utils.c	2023-03-03 11:52:25.000000000 +0100
-+++ b/tools/tracing/rtla/src/utils.c	2023-03-07 08:54:21.051112944 +0100
-@@ -959,3 +959,40 @@
- 
- 	return 1;
+--- a/tools/tracing/rtla/src/utils.c	2026-06-19 13:44:16.000000000 +0200
++++ b/tools/tracing/rtla/src/utils.c	2026-06-24 07:44:11.581827184 +0200
+@@ -1014,3 +1014,40 @@
+ 	*res = (int) lres;
+ 	return 0;
  }
 +
 +/*
@@ -51,13 +51,14 @@ diff -Naur tools/tracing/rtla/src/utils.c /home/iago/rpi64/build/linux-6.1.15/to
 +	return (next_estimate);
 +}
 diff -Naur tools/tracing/rtla/src/utils.h /home/iago/rpi64/build/linux-6.1.15/tools/tracing/rtla/src/utils.h
---- a/tools/tracing/rtla/src/utils.h	2023-03-03 11:52:25.000000000 +0100
-+++ b/tools/tracing/rtla/src/utils.h	2023-03-07 08:02:22.851169000 +0100
-@@ -81,6 +81,7 @@
- static inline int have_libcpupower_support(void) { return 0; }
- #endif /* HAVE_LIBCPUPOWER_SUPPORT */
+--- a/tools/tracing/rtla/src/utils.h	2026-06-24 07:39:32.195745252 +0200
++++ b/tools/tracing/rtla/src/utils.h	2026-06-24 07:38:54.867561851 +0200
+@@ -85,6 +85,8 @@
  int auto_house_keeping(cpu_set_t *monitored_cpus);
-+double sqrth(double value);
+ __attribute__((__warn_unused_result__)) int strtoi(const char *s, int *res);
  
++double sqrth(double value);
++
  #define ns_to_usf(x) (((double)x/1000))
  #define ns_to_per(total, part) ((part * 100) / (double)total)
+ 

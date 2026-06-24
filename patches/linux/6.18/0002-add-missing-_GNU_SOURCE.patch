@@ -11,13 +11,13 @@ Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
  #include <tracefs.h>
  #include <stdbool.h>
  
---- a/tools/tracing/rtla/src/utils.h
-+++ b/tools/tracing/rtla/src/utils.h
+--- a/tools/tracing/rtla/src/utils.h	2026-06-24 07:32:54.217083210 +0200
++++ a/tools/tracing/rtla/src/utils.h	2026-06-24 07:31:53.536767378 +0200
 @@ -2,6 +2,7 @@
  
  #include <stdint.h>
  #include <time.h>
 +#define _GNU_SOURCE
  #include <sched.h>
+ #include <stdbool.h>
  
- /*
