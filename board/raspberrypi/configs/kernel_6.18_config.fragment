@@ -1,0 +1,38 @@
+# configuration fragment to upgrade BCM 2711 based kernels
+# from kernel version 6.12.y to 6.18.y
+
+
+# Kernel Features -> ARM errata workarounds via the alternatives framework
+# CONFIG_AMPERE_ERRATUM_AC04_CPU_23 is not set
+# CONFIG_ARM64_ERRATUM_826319 is not set
+# CONFIG_ARM64_ERRATUM_827319 is not set
+# CONFIG_ARM64_ERRATUM_824069 is not set
+# CONFIG_ARM64_ERRATUM_819472 is not set
+# CONFIG_ARM64_ERRATUM_832075 is not set
+# CONFIG_ARM64_ERRATUM_843419 is not set
+# CONFIG_ARM64_ERRATUM_1024718 is not set
+# CONFIG_ARM64_ERRATUM_1165522 is not set
+# CONFIG_ARM64_ERRATUM_1319367 is not set
+# CONFIG_ARM64_ERRATUM_1530923 is not set
+# CONFIG_ARM64_ERRATUM_1463225 is not set
+# CONFIG_ARM64_ERRATUM_1508412 is not set
+# CONFIG_ARM64_ERRATUM_3117295 is not set
+# CONFIG_ARM64_ERRATUM_3194386 is not set
+# CONFIG_ARM64_ERRATUM_4193714 is not set
+# CONFIG_HISILICON_ERRATUM_162100801 is not set
+# CONFIG_ROCKCHIP_ERRATUM_3568002 is not set
+
+# Kernel Features -> ARMv8.5 architectural features
+# CONFIG_ARM64_MTE is not set
+
+# Kernel Features -> ARMv8.7 architectural features
+# CONFIG_ARM64_EPAN is not set
+
+# Kernel Features -> ARMv9.4 architectural features
+# CONFIG_ARM64_GCS is not set
+
+# Network device support -> Ethernet driver support
+# CONFIG_NET_VENDOR_META is not set
+
+# Device drivers
+# CONFIG_SURFACE_PLATFORMS is not set
