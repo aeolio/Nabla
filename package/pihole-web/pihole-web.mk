@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-PIHOLE_WEB_VERSION = 6.5
+PIHOLE_WEB_VERSION = 6.6
 PIHOLE_WEB_SITE = $(call github,pi-hole,web,v$(PIHOLE_WEB_VERSION))
 PIHOLE_WEB_LICENSE = EUPL-1.2
 PIHOLE_WEB_LICENSE_FILES = LICENSE

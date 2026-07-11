@@ -6,7 +6,7 @@ Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -59,8 +59,8 @@
+@@ -60,8 +60,8 @@
  # -Wl,-z,relro: Read-only segments after relocation
  # -fno-common: Emit globals without explicit initializer from `.bss` to `.data`. This causes GCC to reject multiple definitions of global variables. This is the new default from GCC-10 on.
  if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
