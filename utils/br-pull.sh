@@ -12,14 +12,14 @@ RESET="\33[0m"
 
 backup_wip() {
 	if ! git diff-index --quiet HEAD -- ; then
-		git stash || exit 10
+		git stash push || exit 10
 		export BACKUP_CREATED=1
 	fi
 }
 
 restore_wip() {
 	if [ "$BACKUP_CREATED" = 1 ]; then
-		git stash apply || exit 11
+		git stash pop || exit 11
 		unset BACKUP_CREATED
 	fi
 }
