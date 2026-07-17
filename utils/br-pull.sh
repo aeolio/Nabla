@@ -4,6 +4,7 @@ instances="test/buildroot staging/buildroot buildroot"
 
 FG_RED="\33[31m"
 FG_GREEN="\33[32m"
+FG_BLUE="\33[94m"
 RESET="\33[0m"
 
 git_status="Your branch is ahead of 'origin/master' by .* commits."
@@ -32,7 +33,7 @@ pull_instance() {
 	elif ! git status | grep -q "$git_status"; then
 		git pull || exit 2
 	else
-		printf "${FG_RED}  skipped due to open change requests${RESET}\n"
+		printf "${FG_BLUE}  skipped due to open change requests${RESET}\n"
 	fi
 }
 
