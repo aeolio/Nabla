@@ -20,9 +20,10 @@ source=" \
 	README \
 \
 	_backup/s87localopt/ \
+	../staging/buildroot/outgoing/ \
 "
 
-mkdir -p "$archive_dir"
+mkdir -p "$archive_dir" || exit 1
 # shellcheck disable=SC2086 # need separate parameters for tar
-tar cjf "$archive_file" $source
+tar -cjf "$archive_file" $source || exit 2
 echo "Created $(basename "$archive_file") in $archive_dir"
