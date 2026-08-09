@@ -64,11 +64,11 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
  	trace_seq_printf(trace->seq, "\n");
 +
 +	/* standard deviation */
-+	if (!params->no_index)
++	if (!params->common.hist.no_index)
 +		trace_seq_printf(trace->seq, "sd:   ");
 +
 +	for (cpu = 0; cpu < data->nr_cpus; cpu++) {
-+		if (params->cpus && !CPU_ISSET(cpu, &params->monitored_cpus))
++		if (params->common.cpus && !CPU_ISSET(cpu, &params->common.monitored_cpus))
 +			continue;
 +
 +		if (!data->hist[cpu].irq_count 
@@ -76,7 +76,7 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
 +			&& !data->hist[cpu].user_count)
 +			continue;
 +
-+		if (!params->no_irq) {
++		if (!params->common.hist.no_irq) {
 +			if (data->hist[cpu].irq_count) {
 +				double var = ((double) data->hist[cpu].var_irq) / 
 +					(data->hist[cpu].irq_count-1);
@@ -89,7 +89,7 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
 +				trace_seq_printf(trace->seq, "        - ");
 +		}
 +
-+		if (!params->no_thread) {
++		if (!params->common.hist.no_thread) {
 +			if (data->hist[cpu].thread_count) {
 +				double var = ((double) data->hist[cpu].var_thread) /
 +					(data->hist[cpu].thread_count-1);
@@ -103,7 +103,7 @@ diff -Naur tools/tracing/rtla/src/timerlat_hist.c /home/iago/rpi64/build/linux-6
 +				trace_seq_printf(trace->seq, "        - ");
 +		}
 +
-+		if (params->user_data) {
++		if (params->common.user_data) {
 +			if (data->hist[cpu].user_count) {
 +				double var = ((double) data->hist[cpu].var_user) /
 +					(data->hist[cpu].user_count-1);

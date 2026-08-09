@@ -47,11 +47,11 @@ diff -Naur tools/tracing/rtla/src/osnoise_hist.c /home/iago/rpi64/build/linux-6.
 +	trace_seq_printf(trace->seq, "\n");
 +
 +	/* standard deviation */
-+	if (!params->no_index)
++	if (!params->common.hist.no_index)
 +		trace_seq_printf(trace->seq, "sd:   ");
 +
 +	for (cpu = 0; cpu < data->nr_cpus; cpu++) {
-+		if (params->cpus && !CPU_ISSET(cpu, &params->monitored_cpus))
++		if (params->common.cpus && !CPU_ISSET(cpu, &params->common.monitored_cpus))
 +			continue;
 +
 +		if (!data->hist[cpu].count)
