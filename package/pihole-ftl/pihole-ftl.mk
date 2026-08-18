@@ -40,11 +40,6 @@ endif
 PIHOLE_FTL_CMAKEFILE = $(@D)/src/CMakeLists.txt
 # target locations
 PIHOLE_FTL_CONFIGDIR = etc/pihole
-# template directory
-PIHOLE_FTL_TEMPLATE_DIR = advanced/Templates
-# database scripts
-PIHOLE_FTL_DB_INIT_SQL = $(PIHOLE_FTL_TEMPLATE_DIR)/gravity.db.sql
-PIHOLE_FTL_DB_COPY_SQL = $(PIHOLE_FTL_TEMPLATE_DIR)/gravity_copy.sql
 
 # development workaround: add gravity feature
 define PIHOLE_FTL_GRAVITY
@@ -69,27 +64,12 @@ define PIHOLE_FTL_LIBTERMCAP
 endef
 PIHOLE_FTL_PRE_BUILD_HOOKS += PIHOLE_FTL_LIBTERMCAP
 
-# fetch gravity sql scripts from github.com/pi-hole/pi-hole
-PIHOLE_FTL_SCRIPTS = https://raw.githubusercontent.com/pi-hole/pi-hole/refs/heads/master
-define PIHOLE_FTL_DOWNLOAD_SQL_SCRIPTS
-	mkdir -p "$(@D)/$(PIHOLE_FTL_TEMPLATE_DIR)"
-	wget "$(PIHOLE_FTL_SCRIPTS)/$(PIHOLE_FTL_DB_INIT_SQL)" -O "$(@D)/$(PIHOLE_FTL_DB_INIT_SQL)"
-	wget "$(PIHOLE_FTL_SCRIPTS)/$(PIHOLE_FTL_DB_COPY_SQL)" -O "$(@D)/$(PIHOLE_FTL_DB_COPY_SQL)"
-	$(SED) '/.timeout/ s/.timeout \([0-9]*\)/PRAGMA busy_timeout =\1;/' $(@D)/$(PIHOLE_FTL_DB_COPY_SQL)
-endef
-PIHOLE_FTL_POST_BUILD_HOOKS += PIHOLE_FTL_DOWNLOAD_SQL_SCRIPTS
-
-# install configuration file, default log directory, templates
+# install configuration file, create log directory
 define PIHOLE_FTL_INSTALL_EXTRA_FILES
 	$(INSTALL) -m 755 -d $(TARGET_DIR)/$(PIHOLE_FTL_CONFIGDIR)
 	$(INSTALL) -m 0644 -D $(PIHOLE_FTL_PKGDIR)/pihole.toml \
 		$(TARGET_DIR)/$(PIHOLE_FTL_CONFIGDIR)/pihole.toml
 	$(INSTALL) -m 755 -d $(TARGET_DIR)/var/log/pihole
-	$(INSTALL) -m 755 -d $(TARGET_DIR)/var/lib/pihole/$(PIHOLE_FTL_TEMPLATE_DIR)
-	$(INSTALL) -m 0644 -D $(@D)/$(PIHOLE_FTL_DB_INIT_SQL) \
-		$(TARGET_DIR)/var/lib/pihole/$(PIHOLE_FTL_DB_INIT_SQL)
-	$(INSTALL) -m 0644 -D $(@D)/$(PIHOLE_FTL_DB_COPY_SQL) \
-		$(TARGET_DIR)/var/lib/pihole/$(PIHOLE_FTL_DB_COPY_SQL)
 endef
 PIHOLE_FTL_POST_INSTALL_TARGET_HOOKS += PIHOLE_FTL_INSTALL_EXTRA_FILES
 

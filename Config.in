@@ -185,5 +185,6 @@ endif # BR2_arm || BR2_aarch64
 
 menu "Networking applications"
 source "$BR2_EXTERNAL_NABLA_PATH/package/pihole-ftl/Config.in"
+source "$BR2_EXTERNAL_NABLA_PATH/package/pihole-pi-hole/Config.in"
 source "$BR2_EXTERNAL_NABLA_PATH/package/pihole-web/Config.in"
 endmenu
