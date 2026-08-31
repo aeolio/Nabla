@@ -14,6 +14,7 @@ from dataclasses import dataclass
 @dataclass
 class BootParameters:
 	''' Holds the parameters parsed from Buildroot and Linux .config'''
+
 	port_id : str
 	port_type : str
 	port_number : int
@@ -21,6 +22,7 @@ class BootParameters:
 	processor_name : str
 	processor_count : int
 	multiprocessing : bool
+	kernel_initramfs : bool
 
 	def __init__(self):
 		self.port_id = None
@@ -30,6 +32,7 @@ class BootParameters:
 		self.processor_name = None
 		self.processor_count = 1
 		self.multiprocessing = False
+		self.kernel_initramfs = False
 
 main_config = [
 	"DEFAULT nabla\n",
@@ -40,7 +43,7 @@ main_config = [
 	"  KERNEL /boot/bzImage\n",
 	]
 
-DEBUG_OUTPUT = False
+DEBUG_OUTPUT = True
 
 
 def preamble(p: BootParameters):
@@ -73,17 +76,21 @@ def write_config(p, target_file):
 		print(f"processor_name = {p.processor_name}")
 		print(f"processor_count = {p.processor_count}")
 		print(f"multiprocessing = {p.multiprocessing}")
+		print(f"kernel_initramfs = {p.kernel_initramfs}")
 
 	with open(target_file, mode="w", encoding='UTF8') as config_file:
 		print(preamble(p), file=config_file, end='')
 		for s in main_config:
+			print(s, file=config_file, end='')
+		if not p.kernel_initramfs:
+			s = 'INITRD /boot/rootfs.cpio\n'
 			print(s, file=config_file, end='')
 		s = kernel_parameters(p)
 		print(s, file=config_file, end='')
 
 
 def parse(p, text):
-	''' extract information from buildroot or kernel config file '''
+	''' extract information from kconfig file (buildroot, linux) '''
 	try:
 		if text and text[0] != '#':
 			symbol, value = text.split('=')
@@ -97,6 +104,8 @@ def parse(p, text):
 					p.port_number = int(p.port_id[-1])
 			if symbol == 'BR2_TARGET_GENERIC_GETTY_BAUDRATE':
 				p.port_baudrate = int(value)
+			if symbol == 'BR2_TARGET_ROOTFS_INITRAMFS' and value == 'y':
+				p.kernel_initramfs = True
 			### from kernel config
 			if symbol == 'CONFIG_MGEODE_LX' and value == 'y':
 				p.processor_name = 'geode'
