@@ -71,10 +71,10 @@ Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 +# shellcheck disable=SC2174 # permissions changed only on last directoriy
 +initialize() {
 +	_owner="mpd:audio"
-+	[ -n "$CACHE_DIR" ] && mkdir -m 664 -p "$CACHE_DIR" && chown "$_owner" "$CACHE_DIR"
-+	[ -n "$PLIST_DIR" ] && mkdir -m 664 -p "$PLIST_DIR" && chown "$_owner" "$PLIST_DIR"
-+	[ -n "$PID_DIR" ] && mkdir -m 664 -p "$PID_DIR" && chown "$_owner" "$PID_DIR"
-+	[ -n "$LOG_DIR" ] && mkdir -m 664 -p "$LOG_DIR" && chown "$_owner" "$LOG_DIR"
++	[ -n "$CACHE_DIR" ] && mkdir -m 755 -p "$CACHE_DIR" && chown "$_owner" "$CACHE_DIR"
++	[ -n "$PLIST_DIR" ] && mkdir -m 755 -p "$PLIST_DIR" && chown "$_owner" "$PLIST_DIR"
++	[ -n "$PID_DIR" ] && mkdir -m 755 -p "$PID_DIR" && chown "$_owner" "$PID_DIR"
++	[ -n "$LOG_DIR" ] && mkdir -m 755 -p "$LOG_DIR" && chown "$_owner" "$LOG_DIR"
 +		# create ignore list
 +	echo "$NABLA_PARTITION" > "$HOTPLUG_DIR"/.mpdignore
 +	# library file attributes may be broken by import
