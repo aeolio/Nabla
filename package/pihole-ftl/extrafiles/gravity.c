@@ -130,7 +130,7 @@ struct config_data configuration;
 
 #define	_PRINT_DEBUG_OUTPUT 1
 #define	_DEBUG_IP_PARSER	0
-#define	_DEBUG_LIBCURL		1
+#define	_DEBUG_LIBCURL		0
 
 #define MOVE_CURSOR_LEFT "\033[D"
 
@@ -1302,6 +1302,7 @@ static bool _download_single_list(struct blocklist *plist,
 				sprintf(header_text, "%s: %s", "If-None-Match", etag);
 				hdr = curl_slist_append(hdr, header_text);
 				curl_easy_setopt(session, CURLOPT_HTTPHEADER, hdr);
+				}
 
 			if (CURLcode cr = curl_easy_perform(session) != CURLE_OK) {
 				result = false;
