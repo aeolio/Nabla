@@ -942,7 +942,7 @@ static bool _is_ip_address(const char *address, const int mode) {
 				binary_address += (u << (8 * (4-1-k)));
 				}
 		#if _DEBUG_IP_PARSER
-			iprintf("%s", GY)
+			iprintf("%s", GY);
 			for( unsigned int k = 0 ; k < n ; k++ )
 				printf("%s.", fields[k]);
 			printf("%s %04x%s\n", MOVE_CURSOR_LEFT, binary_address, NC);
@@ -966,8 +966,8 @@ static bool _is_ip_address(const char *address, const int mode) {
 				// interface identifier part should not appear in routing tables
 				binary_address += ((long long unsigned int) u << (16 * (4-1-k)));
 				}
-		#if	_DEBUG_IP_PARSER
-			iprintf("%s", GY)
+		#if _DEBUG_IP_PARSER
+			iprintf("%s", GY);
 			for( unsigned int k = 0 ; k < n ; k++ )
 				printf("%s:", fields[k]);
 			printf(" %u %llx\n", n, binary_address);
@@ -1295,7 +1295,6 @@ static bool _download_single_list(struct blocklist *plist,
 				sprintf(header_text, "%s: %s", "If-None-Match", etag);
 				hdr = curl_slist_append(hdr, header_text);
 				curl_easy_setopt(session, CURLOPT_HTTPHEADER, hdr);
-				}
 
 			if (CURLcode cr = curl_easy_perform(session) != CURLE_OK) {
 				print_result(false, "Curl execution error: %u\n", cr);
