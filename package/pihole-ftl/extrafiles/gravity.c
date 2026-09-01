@@ -1591,7 +1591,7 @@ _copy_database_exit:
 /*
  * if backup directory exists, rotate backup files
  */
-#define MAX_BACKUPS 10
+#define MAX_BACKUPS 7
 static bool _rotate_backups(const struct config_data *pc) {
 
 	char fn_name[2][FN_SIZE];
