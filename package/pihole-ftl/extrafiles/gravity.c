@@ -130,6 +130,7 @@ struct config_data configuration;
 
 #define	_PRINT_DEBUG_OUTPUT 1
 #define	_DEBUG_IP_PARSER	0
+#define	_DEBUG_LIBCURL		1
 
 #define MOVE_CURSOR_LEFT "\033[D"
 
@@ -1282,11 +1283,14 @@ static bool _download_single_list(struct blocklist *plist,
 		/* open file for writing */
 		if (FILE *f = fopen(fn_temp, "wb")) {
 
+		#if _DEBUG_LIBCURL
+			curl_easy_setopt(session, CURLOPT_VERBOSE, (long) _DEBUG_LIBCURL);
+		#endif
+
 			curl_easy_setopt(session, CURLOPT_URL, plist->address);
 			curl_easy_setopt(session, CURLOPT_ACCEPT_ENCODING, "");	// accept all builtin encodings
 			curl_easy_setopt(session, CURLOPT_WRITEFUNCTION, response_callback);
 			curl_easy_setopt(session, CURLOPT_WRITEDATA, f);
-			curl_easy_setopt(session, CURLOPT_VERBOSE, 0L);	// full protocol output
 
 			// set an if-none-match header
 			struct curl_slist *hdr = NULL;
