@@ -1268,6 +1268,8 @@ static bool _download_single_list(struct blocklist *plist,
 	char *fn_list, 
 	char *fn_temp) {
 
+	char error_buffer[CURL_ERROR_SIZE]; // buffer for curl error messages
+
 	bool result = false;
 	const char *ce[] = {fn_list, LIST_ETAG};
 	char *fn_etag = _join(calloc(FN_SIZE, sizeof(char)), '.', ce, ARRAY_SIZE(ce));
@@ -1287,6 +1289,7 @@ static bool _download_single_list(struct blocklist *plist,
 			curl_easy_setopt(session, CURLOPT_VERBOSE, (long) _DEBUG_LIBCURL);
 		#endif
 
+			curl_easy_setopt(session, CURLOPT_ERRORBUFFER, error_buffer);
 			curl_easy_setopt(session, CURLOPT_URL, plist->address);
 			curl_easy_setopt(session, CURLOPT_ACCEPT_ENCODING, "");	// accept all builtin encodings
 			curl_easy_setopt(session, CURLOPT_WRITEFUNCTION, response_callback);
@@ -1301,8 +1304,10 @@ static bool _download_single_list(struct blocklist *plist,
 				curl_easy_setopt(session, CURLOPT_HTTPHEADER, hdr);
 
 			if (CURLcode cr = curl_easy_perform(session) != CURLE_OK) {
-				print_result(false, "Curl execution error: %u\n", cr);
 				result = false;
+				print_result(result,
+					"Curl execution error: %s",
+					curl_easy_strerror(cr));
 				fclose(f);
 				goto _download_single_list_exit;
 				}
@@ -1316,16 +1321,20 @@ static bool _download_single_list(struct blocklist *plist,
 			long response_code = 0;
 			if (CURLcode cr = curl_easy_getinfo(session, 
 				CURLINFO_RESPONSE_CODE, &response_code) != CURLE_OK) {
-				print_result(false, "Curl getinfo error: %u\n", cr);
 				result = false;
+				print_result(result,
+					"Curl getinfo error: %s",
+					curl_easy_strerror(cr));
 				goto _download_single_list_exit;
 				}
 
 			struct curl_header *ptag = NULL;
 			if (CURLHcode ch = curl_easy_header(session, 
 				"etag", 0, CURLH_HEADER, -1, &ptag) != CURLHE_OK) {
-				print_result(false, "Curl header error: %u\n", ch);
 				result = false;
+				print_result(result = false,
+					"Curl header error: %s",
+					curl_easy_strerror((CURLcode) ch));
 				goto _download_single_list_exit;
 				}
 
@@ -1333,8 +1342,12 @@ static bool _download_single_list(struct blocklist *plist,
 				case 200:	// OK
 					// parse blocklist file into domain list file
 					if ((plist->count = _parse_blocklist(fn_temp, fn_list)) == EXIT_FAILURE) {
-						print_result(false, "Moving %s to %s failed: %s\n", fn_temp, fn_list, strerror(errno));
 						result = false;
+						print_result(result, 
+							"Moving %s to %s failed: %s", 
+							fn_temp, 
+							fn_list, 
+							strerror(errno));
 						goto _download_single_list_exit;
 						}
 					_set_file_permissions(fn_list);
@@ -1350,8 +1363,8 @@ static bool _download_single_list(struct blocklist *plist,
 					// create SHA1 value
 					unsigned char sha1_digest[SHA_DIGEST_LENGTH];
 					if (! _sha1_sum(fn_list, sha1_digest)) {
-						print_result(false, "SHA digest failed for %s\n", fn_list);
 						result = false;
+						print_result(result, "SHA digest failed for %s", fn_list);
 						goto _download_single_list_exit;
 						}
 					char sha_sum[FN_SIZE];
@@ -1433,7 +1446,7 @@ static bool _download_blocklists(struct config_data *pc) {
 			);
 		print_info("Download blocklist from %s\n", plist->domain);
 		if (! _download_single_list(plist, base_file_name, temp_file_name)) {
-			print_result(false, "could not download: %s\n", plist->address);
+			print_result(false, "could not download: %s", plist->address);
 			return false;
 			}
 
