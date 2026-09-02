@@ -1,0 +1,13 @@
+diff --git a/experimental/build/pihole-ftl-6.7/src/files.h b/alix/build/pihole-ftl-6.7/src/files.h
+index f098865..0c0ec12 100644
+--- a/src/files.h
++++ b/src/files.h
+@@ -19,7 +19,7 @@
+ // getpwuid()
+ #include <pwd.h>
+ 
+-#define MAX_ROTATIONS 15
++#define MAX_ROTATIONS 7
+ #define BACKUP_DIR "/etc/pihole/config_backups"
+ 
+ bool chmod_file(const char *filename, const mode_t mode);
