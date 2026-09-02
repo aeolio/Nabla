@@ -1693,8 +1693,8 @@ static void _gravity_cleanup(const struct config_data *pc) {
 		if (curr->address)
 			free(curr->address);
 		if (curr->domain)
-			free(curr->filename);
-		if (curr->domain)
+			free(curr->domain);
+		if (curr->filename)
 			free(curr->filename);
 		curr = curr->next;
 		}
