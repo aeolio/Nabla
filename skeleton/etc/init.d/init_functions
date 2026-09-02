@@ -121,7 +121,14 @@ _timestamp() {
 	echo $(( ${sec%.*} * 1000 + ${sec#*.} ))
 }
 
-# calculat the checksum of a file
+# calculate the elapsed time between now and a previous timestamp
+_elapsed_time() {
+	dt=$(( $(_timestamp) - $1 ))
+	[ "$dt" -lt 0 ] && dt=$(( dt + 60 * 1000 ))
+	echo "$dt"
+}
+
+# calculate the checksum of a file
 _checksum() {
 	if [ -f "$1" ]; then
 		md5sum "$1" | awk '{print $1}'

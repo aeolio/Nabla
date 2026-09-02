@@ -208,7 +208,7 @@ setup_copy_list() {
 					echo "$script:  ${indent}Skipped $s"
 				fi
 			else
-				echo "$script:  ${indent}Missing entity $s"
+				echo "$script:  ${indent}Not found: $s"
 			fi
 		done
 	fi
@@ -221,7 +221,7 @@ setup_copy_shutdown() {
 	t=$(_timestamp)
 	echo "$script:  Export to ${config_directory}"
 	setup_copy_list "" "${config_directory}" "$NABLA_SYNC_DIRECTORIES $NABLA_SYNC_SHUTDOWN"
-	echo "$script:  Used $(( $(_timestamp) - t )) ms"
+	echo "$script:  Used $(_elapsed_time "$t") ms"
 }
 
 #
@@ -231,7 +231,7 @@ setup_copy_startup() {
 	t=$(_timestamp)
 	echo "$script:  Import from ${config_directory}"
 	setup_copy_list "${config_directory}" "" "$NABLA_SYNC_DIRECTORIES"
-	echo "$script:  Used $(( $(_timestamp) - t )) ms"
+	echo "$script:  Used $(_elapsed_time "$t") ms"
 }
 
 #
