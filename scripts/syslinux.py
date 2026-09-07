@@ -50,7 +50,7 @@ def preamble(p: BootParameters):
 	''' for serial consoles, define baud rate '''
 	if p.port_type == 'serial':
 		return f"SERIAL {p.port_number} {p.port_baudrate}\n\n"
-	return None
+	return ''
 
 
 def kernel_parameters(p):
