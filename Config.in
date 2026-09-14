@@ -109,7 +109,7 @@ config BR2_PACKAGE_LIBCURL_ZLIB
 
 # mpd server needs BR2_PACKAGE_MPD_MPG123 to extract mp3 meta data
 # mpd client uses BR2_PACKAGE_MPD_MAD for playback and
-# BR2_PACKAGE_MPD_LIBNFS for remote database access
+#   BR2_PACKAGE_MPD_LIBNFS for remote database access
 # mpd standalone needs both BR2_PACKAGE_MPD_MPG123 and BR2_PACKAGE_MPD_MAD
 # both server and standalone can use liburing for async access to local files
 # playback functionality requires alsa
