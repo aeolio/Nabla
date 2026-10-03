@@ -40,6 +40,7 @@ FORCE_EXCLUSION = [
 	'patchelf',
 
 	# breaks build
+	'libopenssl',
 	'libtool',
 	'pkgconf',
 	]
