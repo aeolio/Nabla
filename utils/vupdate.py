@@ -66,7 +66,11 @@ EXCLUDE_PROVIDERS = [
 
 # used for release-monitoring.org
 PACKAGE_PROJECT_MAP = {
+	'exfat': 'fuse-exfat',
 	'libfuse3': 'libfuse',
+	'libidn2': 'libidn',
+	'pihole-pi-hole': 'pi-hole',
+	'pypa-build': 'build',
 	'python3': 'python',
 	'uclibc': 'uclibc-ng',
 	}
@@ -74,6 +78,7 @@ PACKAGE_PROJECT_MAP = {
 # used for hashing
 PACKAGE_SOURCE_MAP = {
 	'libopenssl': 'openssl',
+	'libtalloc': 'talloc',
 	'python3': 'Python',
 	}
 
@@ -178,7 +183,7 @@ class BuildrootPackage:
 				n -= 1
 
 	def process_release_monitoring_request(self, response, **kwargs):
-		''' 
+		'''
 			Response function: retrieve latest software version from
 			the project's data on release-monitoring.org.
 		'''
@@ -186,9 +191,7 @@ class BuildrootPackage:
 			del kwargs	# W0613: unused-argument
 		project = json.loads(response.text)
 		latest_version = ''
-		excluded_providers = EXCLUDE_PROVIDERS.copy()
-		if not _is_python_package(self.package['name']):
-			excluded_providers.append('PyPI')
+		excluded_providers = _exclude_providers(self.package['name'])
 		# there may be more than one provider (e.g. ca-certificates)
 		for item in project['items']:
 			if item['backend'] in  excluded_providers:
@@ -299,6 +302,14 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 def _is_python_package(name: str) -> bool:
 	result = name in PYTHON_PACKAGES or name.startswith('python-')
 	return result
+
+def _exclude_providers(name: str) -> list:
+	excluded_providers = EXCLUDE_PROVIDERS.copy()
+	if not _is_python_package(name):
+		excluded_providers.append('PyPI')
+	if name == 'cmake':
+		excluded_providers.remove('GitLab')
+	return excluded_providers
 
 
 def _version_value(version_string: str):
