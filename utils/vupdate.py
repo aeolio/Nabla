@@ -196,7 +196,7 @@ class BuildrootPackage:
 		for item in project['items']:
 			if item['backend'] in  excluded_providers:
 				continue
-			v = item['version']
+			v = item['stable_versions'][0]
 			if _version_value(v) > _version_value(latest_version):
 				latest_version = v
 		self.package['_rm_version'] = latest_version
