@@ -164,10 +164,18 @@ class BuildrootPackage:
 
 	def get_release_version(self):
 		''' get current release version from release-monitoring.org '''
-		self._session.get(self._release_monitoring_url,
-			params={ 'name': self.package['project'] },
-			timeout=TIMEOUT,
-			hooks = {'response': self.process_release_monitoring_request})
+		n = 4
+		while n > 0:
+			try:
+				self._session.get(self._release_monitoring_url,
+					params={ 'name': self.package['project'] },
+					timeout=TIMEOUT,
+					hooks = {'response': self.process_release_monitoring_request})
+				return
+			# requests.exceptions.ConnectionError: ('Connection aborted.',
+			# RemoteDisconnected('Remote end closed connection without response'))
+			except ConnectionError as e:
+				n -= 1
 
 	def process_release_monitoring_request(self, response, **kwargs):
 		''' 
