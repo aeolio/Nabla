@@ -35,6 +35,7 @@ stop() {
 		echo "OK"
 	else
 		echo "FAIL"
+		return "$status"
 	fi
 	# $DAEMON clears its PID file on exit, but does not delete it
 	while grep -q '[^[:space:]]' "$PIDFILE" ; do
