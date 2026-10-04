@@ -21,8 +21,11 @@ TIMEOUT = 10
 DEBUG_LEVEL = 0	# set to 1 to enable DEBUG_LEVEL output, to 2 to use TEST_PKG_NAMES
 
 TEST_PKG_NAMES = [
-	'libopenssl',
-	'python3',
+	'pihole-ftl',
+	'pihole-pi-hole',
+	'pihole-web',
+	'python-pypa-build',
+	'elfutils',
 	]
 
 FORCE_EXCLUSION = [
@@ -89,6 +92,13 @@ class BuildrootPackage:
 
 	_release_monitoring_url = "https://release-monitoring.org/api/v2/projects/"
 	_session = None
+
+	version_pattern = (
+		r'(?P<major>[0-9]{1,2})'
+		r'(?P<minor>.[0-9]{1,3}){0,1}'
+		r'(?P<patch>.[0-9]{1,2}){0,1}'
+		r'(?P<point>[.p][0-9]{1,2}){0,1}'
+		)
 
 	def __init__(self, package: dict):
 		self.package = package
@@ -209,12 +219,6 @@ class BuildrootPackage:
 
 	def update(self) -> bool:
 		''' Uodate the package version in the Buildroot makefile '''
-		_pattern = (
-			r'(?P<major>[0-9]{1,2}){0,1}'
-			r'(?P<minor>.[0-9]{1,2}){0,1}'
-			r'(?P<patch>.[0-9]{1,2}){0,1}'
-			r'(?P<point>[.p][0-9]{1,2}){0,1}'
-			)
 		version_values = self.package['_version_values']
 		new_version = self.package['_rm_version']
 		if DEBUG_LEVEL:
@@ -226,7 +230,7 @@ class BuildrootPackage:
 				version_values[version_string] = new_version
 			# consume from the start of the version value
 			elif i < len(version_values):
-				if m := match(_pattern, version_value):
+				if m := match(self.version_pattern, version_value):
 					sz = 0
 					for s in m.groups():
 						if s:
@@ -318,12 +322,7 @@ def _version_value(version_string: str):
 		and return a weighted value for the vrsion
 	'''
 	_patterns = {
-		'dotted': (
-			r'(?P<major>[0-9]{1,2})'
-			r'(?P<minor>.[0-9]{1,2}){0,1}'
-			r'(?P<patch>.[0-9]{1,2}){0,1}'
-			r'(?P<point>.[0-9]{1,2}){0,1}'
-			),
+		'dotted': BuildrootPackage.version_pattern,
 		'date': r'(?P<year>[0-9]{4})(?P<month>.[0-9]{2})(?P<day>.[0-9]{2})',
 		'hash': r'[0-9][a-f]{7,12}',
 		}
