@@ -21,11 +21,9 @@ TIMEOUT = 10
 DEBUG_LEVEL = 0	# set to 1 to enable DEBUG_LEVEL output, to 2 to use TEST_PKG_NAMES
 
 TEST_PKG_NAMES = [
-	'pihole-ftl',
-	'pihole-pi-hole',
-	'pihole-web',
-	'python-pypa-build',
-	'elfutils',
+	'exfat:',
+	'meson',
+	'ninja',
 	]
 
 FORCE_EXCLUSION = [
@@ -67,23 +65,46 @@ EXCLUDE_PROVIDERS = [
 	'Rubygems',
 	]
 
-# used for release-monitoring.org
-PACKAGE_PROJECT_MAP = {
-	'exfat': 'fuse-exfat',
-	'libfuse3': 'libfuse',
-	'libidn2': 'libidn',
-	'pihole-pi-hole': 'pi-hole',
-	'pypa-build': 'build',
-	'python3': 'python',
-	'uclibc': 'uclibc-ng',
-	}
-
+# generate with
+'''
+from glob import glob
+from os omport path
+projects = glob('buildroot/dl/*')
+print('PACKAGE_SOURCE_MAP = {')
+for p in projects:
+	n = path.basename(p)
+	if n.startswith('python-'):
+		n = '-'.join(p.split('-')[1:])
+	a = glob(path.join(p, n + '-*'))
+	if not a:
+		b = glob(path.join(p, '*'))
+		b = path.basename(b[0])
+		print(f"\t'{n}': '{b}',")
+print('\t}')
+'''
 # used for hashing
 PACKAGE_SOURCE_MAP = {
+	'exfat': 'fuse-exfat',
+	'libconfuse': 'confuse',
+	'libcurl': 'curl',
+	'libid3tag': 'id3tag',
 	'libopenssl': 'openssl',
+	'libsoxr': 'soxr',
 	'libtalloc': 'talloc',
+	'libzlib': 'zlib',
+	'pypa-build': 'build',
 	'python3': 'Python',
+	'uclibc': 'uClibc',
 	}
+
+# used for release-monitoring.org
+PACKAGE_PROJECT_MAP = PACKAGE_SOURCE_MAP | {
+	'libfuse3': 'libfuse',
+	'libid3tag': 'libid3tag',
+	'libidn2': 'libidn',
+	'pihole-pi-hole': 'pi-hole',
+	}
+
 
 class BuildrootPackage:
 	'''
@@ -128,9 +149,14 @@ class BuildrootPackage:
 	@staticmethod
 	def _map_name(_map: dict, name: str, ch='-')-> str:
 		''' map names if found in dictionary '''
+		python_package = _is_python_package(name)
 		if name.startswith('python-'):
-			name = ch.join(name.split('-')[1:])
-		return _map[name] if name in _map else name
+			name = '-'.join(name.split('-')[1:])
+		if name in _map:
+			name = _map[name]
+		if python_package:
+			name = name.replace('-', ch)
+		return name
 
 	@staticmethod
 	def _makefile_path(pkg_name, root_path) -> str:
@@ -377,9 +403,6 @@ def create_package_list(pkg_names):
 		if p := BuildrootPackage.from_package(n):
 			p.get_release_version()
 			# some libraries have a stripped project name
-			if not p.package['_rm_version'] and p.package['project'].startswith('lib'):
-				p.package['project'] = p.package['project'][3:]
-				p.get_release_version()
 			packages[n] = p
 		elif DEBUG_LEVEL:
 			print(f"{n}: not defined as package")
