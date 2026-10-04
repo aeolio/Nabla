@@ -215,7 +215,7 @@ class BuildrootPackage:
 				return
 			# requests.exceptions.ConnectionError: ('Connection aborted.',
 			# RemoteDisconnected('Remote end closed connection without response'))
-			except requests.exceptions.ConnectionError as e:
+			except requests.exceptions.ConnectionError:
 				n -= 1
 
 	def process_release_monitoring_request(self, response, **kwargs):
@@ -428,7 +428,7 @@ def update_packages(pkg_list):
 
 def hash_pattern(name: str) -> str:
 	''' build the pattern used in the hash file '''
-	return r'([\w]+)  [0-9a-f]{32,64}  ' + name + r'[-_][\w.-]+'
+	return r'([\w]+)  [0-9a-f]{32,128}  ' + name + r'[-_][\w.-]+'
 
 def read_hash_file(name: str) -> object:
 	''' read all current hash values from the hash file '''
@@ -444,6 +444,8 @@ def read_hash_file(name: str) -> object:
 		else:
 			print(f"{pkg.package['name']}: hash file does not exist")
 			sys.exit(0)
+		if DEBUG_LEVEL:
+			print(hash_entries)
 		pkg.package['hash_entries'] = hash_entries
 	return pkg
 
