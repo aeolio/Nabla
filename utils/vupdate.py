@@ -18,7 +18,7 @@ EXTERNAL_DIR = '~/br2-external'
 DOWNLOAD = 'dl'
 PACKAGE = 'package'
 TIMEOUT = 10
-DEBUG = 0	# set to 1 to enable debug output, to 2 to use TEST_PKG_NAMES
+DEBUG_LEVEL = 0	# set to 1 to enable DEBUG_LEVEL output, to 2 to use TEST_PKG_NAMES
 
 TEST_PKG_NAMES = [
 	'libopenssl',
@@ -140,7 +140,7 @@ class BuildrootPackage:
 		''' read the package version from the Buildroot makefile '''
 		version_string = f"{pkg_name.replace('-','_').upper()}_VERSION"
 		version_values = {}
-		if DEBUG:
+		if DEBUG_LEVEL:
 			print(f"{pkg_name}: {file_name}")
 		with open(file_name, 'r', encoding='UTF8') as makefile:
 			for line in makefile:
@@ -217,7 +217,7 @@ class BuildrootPackage:
 			)
 		version_values = self.package['_version_values']
 		new_version = self.package['_rm_version']
-		if DEBUG:
+		if DEBUG_LEVEL:
 			print(version_values)
 		i = 1
 		for version_string, version_value in version_values.items():
@@ -247,7 +247,7 @@ class BuildrootPackage:
 			if not version_value:
 				break
 
-		if DEBUG:
+		if DEBUG_LEVEL:
 			print(version_values)
 			return True
 
@@ -355,7 +355,7 @@ def read_package_names():
 	# retrieve all downloaded packages
 	p = os.path.join(os.path.expanduser(BUILDROOT_DIR), DOWNLOAD, '*')
 	pkg_names = [ os.path.basename(d) for d in glob(p) if os.path.isdir(d) ]
-	if DEBUG > 1:
+	if DEBUG_LEVEL > 1:
 		pkg_names = TEST_PKG_NAMES
 	# filter names against buildroot packages
 	pb = os.path.join(os.path.expanduser(BUILDROOT_DIR), PACKAGE)
@@ -373,7 +373,7 @@ def create_package_list(pkg_names):
 	total = len(pkg_names)
 	BuildrootPackage.create_session()
 	for n in pkg_names:
-		if not DEBUG:
+		if not DEBUG_LEVEL:
 			printProgressBar(iteration, total, prefix=f"  {n:17.17} ", length=40)
 		if p := BuildrootPackage.from_package(n):
 			p.get_release_version()
@@ -382,7 +382,7 @@ def create_package_list(pkg_names):
 				p.package['project'] = p.package['project'][3:]
 				p.get_release_version()
 			packages[n] = p
-		elif DEBUG:
+		elif DEBUG_LEVEL:
 			print(f"{n}: not defined as package")
 		iteration += 1
 	BuildrootPackage.close_session()
@@ -401,7 +401,7 @@ def update_packages(pkg_list):
 				print(f"{n}: updated from {vb} to {vr}")
 			else:
 				print(f"{n}: could not update")
-		elif DEBUG:
+		elif DEBUG_LEVEL:
 			print(f"{n}: {vb} {vr}")
 
 def hash_pattern(name: str) -> str:
@@ -473,12 +473,17 @@ def _print_usage(argv: list):
 	cmd = argv[0].split('/')[-1].split('.')[0]
 	print(f"Usage: {cmd} --update to update active Buildroot package versions")
 	print("  or           --hash <pkg> to update a packages hash value")
+	print("               --debug (repeated N times) to activate debug level N")
 	return 1
 
 
 def vupdate(argv: list):
 	''' Main function of the module '''
 
+	global DEBUG_LEVEL
+	while '--debug' in argv:
+		DEBUG_LEVEL += 1
+		argv.remove('--debug')
 	if len(argv) == 2 and argv[1] == '--update':
 		packages = read_package_names()
 		packages = create_package_list(packages)
