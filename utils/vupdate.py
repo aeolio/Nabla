@@ -119,7 +119,7 @@ class BuildrootPackage:
 	def _map_name(_map: dict, name: str, ch='-')-> str:
 		''' map names if found in dictionary '''
 		if name.startswith('python-'):
-			return ch.join(name.split('-')[1:])
+			name = ch.join(name.split('-')[1:])
 		return _map[name] if name in _map else name
 
 	@staticmethod
