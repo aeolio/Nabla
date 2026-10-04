@@ -1,0 +1,35 @@
+Building Linux with openssl fails with:
+
+  HOSTCC  scripts/extract-cert
+/usr/bin/x86_64-linux-gnu-ld.bfd: /tmp/cceKURam.o: in function `main':
+extract-cert.c:(.text.startup+0xc9): undefined reference to `ENGINE_load_builtin_engines'
+/usr/bin/x86_64-linux-gnu-ld.bfd: extract-cert.c:(.text.startup+0xda): undefined reference to `ENGINE_by_id'
+/usr/bin/x86_64-linux-gnu-ld.bfd: extract-cert.c:(.text.startup+0xf8): undefined reference to `ENGINE_init'
+/usr/bin/x86_64-linux-gnu-ld.bfd: extract-cert.c:(.text.startup+0x122): undefined reference to `ENGINE_ctrl_cmd_string'
+/usr/bin/x86_64-linux-gnu-ld.bfd: extract-cert.c:(.text.startup+0x153): undefined reference to `ENGINE_ctrl_cmd'
+collect2: error: ld returned 1 exit status
+
+Upstream: n/a (inofficial Buildroot version)
+
+Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
+---
+--- linux-5.10.268/scripts/extract-cert.c	2026-08-28 08:19:55.000000000 +0200
++++ linux-5.10.268/scripts/extract-cert.c	2026-10-02 13:59:52.955194936 +0200
+@@ -21,6 +21,7 @@
+ #include <openssl/bio.h>
+ #include <openssl/pem.h>
+ #include <openssl/err.h>
++#define OPENSSL_ENGINE_STUBS
+ #include <openssl/engine.h>
+ 
+ /*
+--- linux-5.10.268/scripts/sign-file.c	2026-08-28 08:19:55.000000000 +0200
++++ linux-5.10.268/scripts/sign-file.c	2026-10-02 14:00:34.299261811 +0200
+@@ -27,6 +27,7 @@
+ #include <openssl/evp.h>
+ #include <openssl/pem.h>
+ #include <openssl/err.h>
++#define OPENSSL_ENGINE_STUBS
+ #include <openssl/engine.h>
+ 
+ /*
