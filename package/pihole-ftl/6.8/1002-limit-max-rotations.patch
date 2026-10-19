@@ -10,4 +10,4 @@ index f098865..0c0ec12 100644
 +#define MAX_ROTATIONS 7
  #define BACKUP_DIR "/etc/pihole/config_backups"
  
- bool chmod_file(const char *filename, const mode_t mode);
+ bool in_pihole_dir(const char *path);

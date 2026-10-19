@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-PIHOLE_PI_HOLE_VERSION = 6.4.3
+PIHOLE_PI_HOLE_VERSION = 6.5
 PIHOLE_PI_HOLE_SITE = $(call github,pi-hole,pi-hole,v$(PIHOLE_PI_HOLE_VERSION))
 PIHOLE_PI_HOLE_LICENSE = EUPL-1.2
 PIHOLE_PI_HOLE_LICENSE_FILES = LICENSE

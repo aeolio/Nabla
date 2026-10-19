@@ -86,7 +86,7 @@ struct blocklist {
 	int type;	// 0 == gravity, 1 == antigravity
 	int count;
 	int file_status;
-	// below values are bot contained in database
+	// below values are not contained in database
 	char *domain;
 	char *filename;
 	bool db_entry_exists;
@@ -1243,7 +1243,8 @@ static int ftl_import_domains(char *list_file,
 		db_file, 
 		i2str(id, list_id), 
 		false, 
-		antigravity);
+		antigravity,
+		NULL);
 	}
 
 
