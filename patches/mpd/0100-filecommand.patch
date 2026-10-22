@@ -6,14 +6,11 @@ Signed-off-by: Andreas Ziegler <15275159+aeolio@users.noreply.github.com>
 ---
 --- a/src/command/FileCommands.cxx
 +++ b/src/command/FileCommands.cxx
-@@ -131,8 +131,9 @@
- find_stream_art(std::string_view directory, Mutex &mutex)
+@@ -175,6 +175,7 @@
+ 		const Client *check_client)
  {
  	static constexpr auto art_names = std::array {
 +		"folder.jpg",
-+		"cover.jpg",
  		"cover.png",
--		"cover.jpg",
+ 		"cover.jpg",
  		"cover.webp",
- 	};
- 
