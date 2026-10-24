@@ -30,7 +30,8 @@ do
 		;;
 
 		--add-syslinux-cfg)
-		SYSLINUX=/usr/bin/syslinux
+		SYSLINUX_BIN=/usr/bin/syslinux
+		[ -e "$HOSTDIR/$SYSLINUX_BIN" ] && SYSLINUX_BIN="$HOSTDIR/$SYSLINUX_BIN" 
 		if [ ! -f "${BINARIES_DIR}/syslinux.cfg" ]; then
 			echo "Creating syslinux.cfg file for image."
 			"$HOST_DIR/bin/python" "$script_dir/syslinux.py" \
@@ -71,9 +72,9 @@ genimage \
 # remove intermediate files
 rm -fr "$BINARIES_DIR"/*.vfat
 
-# there is no host-syslinux; use the installation on the host machine, if present
-if [ -x "$SYSLINUX" ]; then
-	$SYSLINUX -t 0x100000 -d boot/syslinux "${BINARIES_DIR}/sdcard.img"
+# install the boot loader only if called with --add-syslinux-cfg
+if [ -x "$SYSLINUX_BIN" ]; then
+	"$SYSLINUX_BIN" -t 0x100000 -d boot/syslinux "${BINARIES_DIR}/sdcard.img"
 else
 	echo "SD card image does not have a boot loader."
 fi
