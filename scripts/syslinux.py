@@ -28,7 +28,7 @@ class BootParameters:
 		self.port_id = None
 		self.port_type = 'console'
 		self.port_number = -1
-		self.port_baudrate = -1
+		self.port_baudrate = 115200
 		self.processor_name = None
 		self.processor_count = 1
 		self.multiprocessing = False
@@ -46,9 +46,9 @@ main_config = [
 DEBUG_OUTPUT = True
 
 
-def preamble(p: BootParameters):
+def preamble(p: BootParameters) -> str:
 	''' for serial consoles, define baud rate '''
-	if p.port_type == 'serial':
+	if p.serial_console and p.port_type == 'serial':
 		return f"SERIAL {p.port_number} {p.port_baudrate}\n\n"
 	return ''
 
@@ -69,6 +69,7 @@ def write_config(p, target_file):
 	''' generate a syslinux.cfg file '''
 
 	if DEBUG_OUTPUT:
+		print(f"serial_console = {p.serial_console}")
 		print(f"port_id = {p.port_id}")
 		print(f"port_type = {p.port_type}")
 		print(f"port_number = {p.port_number}")
@@ -101,9 +102,11 @@ def parse(p, text):
 				p.port_id = value
 				if p.port_id[3] == 'S':
 					p.port_type = 'serial'
-					p.port_number = int(p.port_id[-1])
+					p.port_number = int(p.port_id[4:])
 			if symbol == 'BR2_TARGET_GENERIC_GETTY_BAUDRATE':
 				p.port_baudrate = int(value)
+				if not p.port_baudrate:
+					p.port_baudrate = BootParameters().port_baudrate
 			if symbol == 'BR2_TARGET_ROOTFS_INITRAMFS' and value == 'y':
 				p.kernel_initramfs = True
 			### from kernel config
@@ -113,6 +116,8 @@ def parse(p, text):
 				p.multiprocessing = True
 			if symbol == 'CONFIG_NR_CPUS':
 				p.processor_count = int(value)
+			if symbol == 'CONFIG_SERIAL_8250_CONSOLE':
+				p.serial_console = True
 
 	# line with second assignment in value part
 	except ValueError:
