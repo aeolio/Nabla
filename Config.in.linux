@@ -25,11 +25,11 @@ if BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_18
 
 config NABLA_LINUX_VERSION
 	string
-	default "6.18.58"
+	default "6.18.59"
 
 config NABLA_LINUX_PATCH
 	string
-	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.18/patch-6.18.57-rt9.patch.xz"
+	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/6.18/patch-6.18.59-rt9.patch.xz"
 
 endif # BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_18
 
@@ -57,7 +57,7 @@ config NABLA_LINUX_VERSION
 
 config NABLA_LINUX_PATCH
 	string
-	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/5.10/patch-5.10.272-rt164.patch.xz"
+	default "https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/5.10/patch-5.10.272-rt168.patch.xz"
 
 endif # BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_10
 
