@@ -53,12 +53,19 @@ def preamble(p: BootParameters) -> str:
 	return ''
 
 
-def kernel_parameters(p):
+def kernel_parameters(p: BootParameters) -> str:
 	''' generate kernel parameters '''
 	s = '  APPEND'
 	if p.multiprocessing or p.processor_count > 1:
 		n = p.processor_count - 1
-		s += f" isolcpus=nohz,domain,managed_irq,{n} nohz_full={n} rcu_nocbs={n}"
+		irq = f"0-{n-1}" if n > 1 else "0"
+		s += (
+			f" irqaffinity={irq}"
+			f" isolcpus=nohz,domain,managed_irq,{n}"
+			f" nohz_full={n}"
+			f" rcu_nocbs={n}"
+			f" nosmt"
+			)
 	if p.port_type == 'serial':
 		s += f" console={p.port_id},{p.port_baudrate}n8"
 	s += ' quiet\n'

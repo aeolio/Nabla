@@ -19,6 +19,10 @@ fi
 if grep -q 'rootwait' "${BOOT_FILE}"; then
 	sed -i 's/rootwait //' "${BOOT_FILE}"
 fi
+# append irqaffinity parameter
+if ! grep -q 'irqaffinity=' "${BOOT_FILE}"; then
+	sed -i 's/$/ irqaffinity=0-2/' "${BOOT_FILE}"
+fi
 # append isolcpus parameter
 if ! grep -q 'isolcpus=' "${BOOT_FILE}"; then
 	sed -i 's/$/ isolcpus=nohz,domain,managed_irq,3/' "${BOOT_FILE}"
