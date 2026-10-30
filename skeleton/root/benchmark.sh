@@ -19,6 +19,6 @@ case "$1" in
     ;;
   *)
     # start interbench normally
-    interbench -r -W Audio
+    interbench -r -$@ W Audio
     ;;
 esac
