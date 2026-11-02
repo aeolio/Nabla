@@ -33,6 +33,8 @@ FORCE_EXCLUSION = [
 	'fakeroot',
 	# symlink to gcc
 	'gcc-bare-metal',
+	# similar to gcc
+	'gdb',
 	# version handling is non-standard
 	'ncurses',
 	'sqlite',
