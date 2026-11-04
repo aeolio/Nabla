@@ -14,6 +14,14 @@ PIHOLE_FTL_DEPENDENCIES += \
 	libunistring \
 	nettle
 
+# Pi-hole FTL uses its own set of compiler options, so set the build type
+# to switch between debug and release builds
+ifeq ($(BR2_ENABLE_DEBUG), y)
+	PIHOLE_FTL_CONF_OPTS += -DCMAKE_BUILD_TYPE=Debug
+else
+	PIHOLE_FTL_CONF_OPTS += -DCMAKE_BUILD_TYPE=Release
+endif
+
 # build with gravity support
 ifeq ($(BR2_PACKAGE_PIHOLE_FTL_GRAVITY),y)
 PIHOLE_FTL_DEPENDENCIES += libcurl openssl
