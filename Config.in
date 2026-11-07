@@ -160,6 +160,17 @@ config NABLA_STANDALONE
 
 endchoice # Machine type
 
+if !NABLA_UNCONFIGURED
+config NABLA_RT_OPTION
+	bool "RT option"
+	default NABLA_CLIENT || NABLA_STANDALONE	# only usefull with player
+	help
+	  Yan's RT patch, ported from MPD 0.18. This allows
+	  to assign different RT priorities to MPD's threads.
+
+	  https://github.com/lintweaker/mpd-dsd-018/blob/master/rt-patches/0001-Import-Yan-s-RT-patch-mpd-0.18.9-rtopt20140327.patch
+endif
+
 comment "additional packages"
 
 menu "Audio and video applications"

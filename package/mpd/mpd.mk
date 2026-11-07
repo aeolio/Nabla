@@ -15,7 +15,9 @@ MPD_CONF_OPTS += -Dwave_encoder=false
 endif
 
 # Yan's realtime patch
+ifeq ($(NABLA_RT_OPTION),y)
 MPD_CONF_OPTS += -Drtopt=true
+endif
 
 # mpd user
 define MPD_USERS
