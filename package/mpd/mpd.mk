@@ -27,6 +27,15 @@ endef
 # this is necessary because fragment files do not get processed by inner-generic-package
 PACKAGES_USERS += $(MPD_USERS)$(sep)
 
+# create mpd.conf
+script_dir=$(BR2_EXTERNAL_NABLA_PATH)/scripts
+define MPD_CREATE_CONFIG
+	"$(HOST_DIR)/bin/python" "$(script_dir)/mpd_conf.py" \
+		"$(BR2_CONFIG)" \
+		"$(TARGET_DIR)/etc/mpd.conf"
+endef
+MPD_POST_INSTALL_TARGET_HOOKS += MPD_CREATE_CONFIG
+
 # modify init.d configuration
 MPD_INIT_SCRIPT = $(TARGET_DIR)/etc/init.d/S95mpd
 define MPD_MODIFY_INIT_SCRIPT
